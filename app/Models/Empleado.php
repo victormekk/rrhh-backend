@@ -20,9 +20,18 @@ class Empleado extends Model
         'id_info_laboral', 'id_puesto', 'id_departamento', 'id_usuario',
     ];
 
+    protected $appends = ['foto_url'];
+
     protected $casts = [
         'fecha_nacimiento' => 'date',
     ];
+
+    public function getFotoUrlAttribute(): ?string
+    {
+        return $this->foto_path
+            ? asset('storage/' . $this->foto_path)
+            : null;
+    }
 
     public function informacionLaboral()
     {
