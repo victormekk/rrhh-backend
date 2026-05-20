@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  @page { size: letter landscape; margin: 0; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 9px; color: #1e293b; }
+  .page { padding: 25mm 30mm; }
   .header { background: #1d4ed8; color: white; padding: 10px 14px; margin-bottom: 12px; }
   .header h1 { font-size: 14px; font-weight: bold; }
   .header p  { font-size: 9px; opacity: .85; margin-top: 2px; }
@@ -25,6 +27,7 @@
 </style>
 </head>
 <body>
+<div class="page">
 
 <div class="header">
   <h1>{{ $nombre }}</h1>
@@ -125,6 +128,8 @@
     <div class="sig"><div class="sig-line"></div><small>Recursos Humanos</small></div>
     <div class="sig"><div class="sig-line"></div><small>Contabilidad</small></div>
   </div>
+</div>
+
 </div>
 </body>
 </html>

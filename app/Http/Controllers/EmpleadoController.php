@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Empleado;
 use App\Models\InformacionLaboral;
+use App\Traits\LogsActividad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class EmpleadoController extends Controller
 {
+    use LogsActividad;
     public function index(Request $request)
     {
         $query = Empleado::with(['informacionLaboral', 'puesto', 'departamento'])
@@ -97,6 +99,8 @@ class EmpleadoController extends Controller
                 'id_usuario'      => $request->user()->id,
             ]);
 
+            $this->logActividad('creado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} registrado.", $empleado->id);
+
             return response()->json(
                 $empleado->load(['informacionLaboral.banco', 'puesto', 'departamento']),
                 201
@@ -168,6 +172,8 @@ class EmpleadoController extends Controller
                 'edad' => now()->diffInYears($request->fecha_nacimiento),
             ]);
 
+            $this->logActividad('editado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} actualizado.", $empleado->id);
+
             return response()->json(
                 $empleado->fresh(['informacionLaboral.banco', 'puesto', 'departamento'])
             );
@@ -197,6 +203,8 @@ class EmpleadoController extends Controller
     {
         $empleado = Empleado::with('informacionLaboral')->findOrFail($id);
         $empleado->informacionLaboral->update(['estado' => 'Inactivo']);
+
+        $this->logActividad('eliminado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} desactivado.", $id);
 
         return response()->json(['message' => 'Empleado desactivado correctamente.']);
     }

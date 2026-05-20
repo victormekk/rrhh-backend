@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CabeceraPlanilla;
+use App\Models\CampoVariable;
 use App\Models\DeduccionCuota;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
@@ -47,6 +48,10 @@ class PlanillaController extends Controller
         ]);
 
         return DB::transaction(function () use ($request) {
+            // Leer campos variables al momento de crear la planilla
+            $campos   = CampoVariable::whereIn('nombre_campo', ['ihss'])->get()->keyBy('nombre_campo');
+            $ihssFijo = (float) ($campos['ihss']->monto ?? 297.58);
+
             $cabecera = CabeceraPlanilla::create([
                 'nombre_planilla' => $request->nombre_planilla,
                 'tipo_planilla'   => $request->tipo_planilla,
@@ -76,7 +81,7 @@ class PlanillaController extends Controller
                     ->where('estado', 'Activo')
                     ->sum('monto');
 
-                $ihss  = $this->calcularIhss($salarioBase);
+                $ihss  = $ihssFijo; // valor fijo configurable desde Campos Variables
                 $rap   = round($salarioBase * 0.015, 2);
                 $isr   = $this->calcularIsr($salarioBase);
 
@@ -213,9 +218,12 @@ class PlanillaController extends Controller
 
         $totales  = $this->calcularTotales($planilla);
         $pdf      = Pdf::loadView('planillas.pdf', compact('planilla', 'totales'))
-            ->setPaper('a4', 'landscape');
+            ->setPaper('letter', 'landscape');
 
-        return $pdf->download("planilla_{$planilla->id}_{$planilla->nombre_planilla}.pdf");
+        $n = iconv('UTF-8', 'ASCII//TRANSLIT', $planilla->nombre_planilla) ?? $planilla->nombre_planilla;
+        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
+
+        return $pdf->download(now()->format('dmY') . '-' . $n . '-planilla.pdf');
     }
 
     // ─── Helpers ────────────────────────────────────────────────

@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: letter landscape; margin: 0; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; }
+  .page { padding: 25mm 30mm; }
 
   .header { text-align: center; margin-bottom: 10px; border-bottom: 2px solid #1d4ed8; padding-bottom: 6px; }
   .header h1 { font-size: 13px; color: #1d4ed8; font-weight: bold; }
@@ -38,6 +40,7 @@
 </style>
 </head>
 <body>
+<div class="page">
 
 <div class="header">
   <h1>Hotel Palma Real</h1>
@@ -126,5 +129,6 @@
   </div>
 </div>
 
+</div>
 </body>
 </html>

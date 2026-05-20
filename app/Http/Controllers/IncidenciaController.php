@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Incidencia;
+use App\Traits\LogsActividad;
 use Illuminate\Http\Request;
 
 class IncidenciaController extends Controller
 {
+    use LogsActividad;
     public function index(Request $request)
     {
         $incidencias = Incidencia::with('empleado:id,nombres,apellidos,id_departamento')
@@ -41,10 +43,10 @@ class IncidenciaController extends Controller
 
         $incidencia = Incidencia::create($data);
 
-        return response()->json(
-            $incidencia->load('empleado:id,nombres,apellidos'),
-            201
-        );
+        $incidencia->load('empleado:id,nombres,apellidos');
+        $this->logActividad('creado', 'Incidencias', "Incidencia '{$incidencia->titulo}' registrada para {$incidencia->empleado->nombres} {$incidencia->empleado->apellidos}.", $incidencia->id);
+
+        return response()->json($incidencia, 201);
     }
 
     public function show($id)
@@ -75,7 +77,10 @@ class IncidenciaController extends Controller
 
     public function destroy($id)
     {
-        Incidencia::findOrFail($id)->delete();
+        $inc = Incidencia::with('empleado:id,nombres,apellidos')->findOrFail($id);
+        $inc->delete();
+        $this->logActividad('eliminado', 'Incidencias', "Incidencia '{$inc->titulo}' de {$inc->empleado->nombres} {$inc->empleado->apellidos} eliminada.", $id);
+
         return response()->json(['message' => 'Incidencia eliminada.']);
     }
 }

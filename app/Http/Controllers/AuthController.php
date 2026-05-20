@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LogSistema;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -25,6 +26,14 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
+
+        LogSistema::create([
+            'id_usuario'         => $user->id,
+            'accion'             => 'login',
+            'descripcion'        => "Inicio de sesión: {$user->name}.",
+            'objeto_actualizado' => 'Sistema',
+            'fecha'              => now()->toDateString(),
+        ]);
 
         return response()->json([
             'user'  => $user,

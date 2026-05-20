@@ -281,9 +281,12 @@ class AguinaldoController extends Controller
 
         $pdf = Pdf::loadView('aguinaldo.pdf', compact(
             'nombre', 'fijos', 'extras', 'meta', 'totalesFijos', 'totalesExtras'
-        ))->setPaper('a4', 'landscape');
+        ))->setPaper('letter', 'landscape');
 
-        return $pdf->download("aguinaldo_{$nombre}.pdf");
+        $n = iconv('UTF-8', 'ASCII//TRANSLIT', $nombre) ?? $nombre;
+        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
+
+        return $pdf->download(now()->format('dmY') . '-' . $n . '-aguinaldo.pdf');
     }
 
     // ─── Helpers ─────────────────────────────────────────────────
