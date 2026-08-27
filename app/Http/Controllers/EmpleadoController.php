@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CampoVariable;
 use App\Models\Empleado;
 use App\Models\InformacionLaboral;
 use App\Traits\LogsActividad;
@@ -70,6 +71,11 @@ class EmpleadoController extends Controller
         ]);
 
         return DB::transaction(function () use ($request) {
+            $usaMinimo   = $request->boolean('usa_salario_minimo');
+            $salarioBase = $usaMinimo
+                ? (float) (CampoVariable::where('nombre_campo', 'salario_minimo')->value('monto') ?? 16317.60)
+                : (float) $request->salario_base;
+
             $infoLaboral = InformacionLaboral::create([
                 'tipo_contrato'      => $request->tipo_contrato,
                 'fecha_inicio'       => $request->fecha_inicio,
@@ -77,11 +83,11 @@ class EmpleadoController extends Controller
                 'moneda'             => $request->moneda,
                 'forma_de_pago'      => $request->forma_de_pago,
                 'num_cuenta'         => $request->num_cuenta,
-                'salario_base'       => $request->salario_base,
-                'salario_quincenal'  => round($request->salario_base / 2, 2),
-                'salario_diario'     => round($request->salario_base / 30, 2),
-                'salario_por_hora'   => round($request->salario_base / 30 / 8, 2),
-                'usa_salario_minimo' => $request->boolean('usa_salario_minimo'),
+                'salario_base'       => $salarioBase,
+                'salario_quincenal'  => round($salarioBase / 2, 2),
+                'salario_diario'     => round($salarioBase / 30, 2),
+                'salario_por_hora'   => round($salarioBase / 30 / 8, 2),
+                'usa_salario_minimo' => $usaMinimo,
                 'id_banco'           => $request->id_banco,
                 'id_usuario'         => $request->user()->id,
             ]);
@@ -144,6 +150,11 @@ class EmpleadoController extends Controller
         ]);
 
         return DB::transaction(function () use ($request, $empleado) {
+            $usaMinimo   = $request->boolean('usa_salario_minimo');
+            $salarioBase = $usaMinimo
+                ? (float) (CampoVariable::where('nombre_campo', 'salario_minimo')->value('monto') ?? 16317.60)
+                : (float) $request->salario_base;
+
             $empleado->informacionLaboral->update([
                 'tipo_contrato'      => $request->tipo_contrato,
                 'fecha_inicio'       => $request->fecha_inicio,
@@ -153,11 +164,11 @@ class EmpleadoController extends Controller
                 'moneda'             => $request->moneda,
                 'forma_de_pago'      => $request->forma_de_pago,
                 'num_cuenta'         => $request->num_cuenta,
-                'salario_base'       => $request->salario_base,
-                'salario_quincenal'  => round($request->salario_base / 2, 2),
-                'salario_diario'     => round($request->salario_base / 30, 2),
-                'salario_por_hora'   => round($request->salario_base / 30 / 8, 2),
-                'usa_salario_minimo' => $request->boolean('usa_salario_minimo'),
+                'salario_base'       => $salarioBase,
+                'salario_quincenal'  => round($salarioBase / 2, 2),
+                'salario_diario'     => round($salarioBase / 30, 2),
+                'salario_por_hora'   => round($salarioBase / 30 / 8, 2),
+                'usa_salario_minimo' => $usaMinimo,
                 'id_banco'           => $request->id_banco,
             ]);
 

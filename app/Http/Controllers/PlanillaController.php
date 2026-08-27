@@ -64,22 +64,23 @@ class PlanillaController extends Controller
                 ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))
                 ->get();
 
+            // Pre-cargar para evitar N+1: 2 queries en lugar de 2×N
+            $ingresosMap = OtroIngreso::where('nombre_planilla', $request->nombre_planilla)
+                ->get()->groupBy('id_empleado');
+
+            $cuotasMap = DeduccionCuota::whereIn('id_empleado', $empleados->pluck('id'))
+                ->where('estado', 'Activo')
+                ->get()->groupBy('id_empleado');
+
             foreach ($empleados as $emp) {
                 $il              = $emp->informacionLaboral;
                 $diasTrabajados  = $request->tipo_planilla === 'Fijos' ? 15 : 0;
                 $salarioBase     = round($il->salario_diario * $diasTrabajados, 2);
 
-                $otrosIngresos = OtroIngreso::where('id_empleado', $emp->id)
-                    ->where('nombre_planilla', $request->nombre_planilla)
-                    ->sum('monto');
-
-                $descIngresos = OtroIngreso::where('id_empleado', $emp->id)
-                    ->where('nombre_planilla', $request->nombre_planilla)
-                    ->pluck('descripcion')->filter()->implode(', ');
-
-                $cuotasMonto = DeduccionCuota::where('id_empleado', $emp->id)
-                    ->where('estado', 'Activo')
-                    ->sum('monto');
+                $empIngresos   = $ingresosMap->get($emp->id, collect());
+                $otrosIngresos = (float) $empIngresos->sum('monto');
+                $descIngresos  = $empIngresos->pluck('descripcion')->filter()->implode(', ');
+                $cuotasMonto   = (float) $cuotasMap->get($emp->id, collect())->sum('monto');
 
                 $ihss  = $ihssFijo; // valor fijo configurable desde Campos Variables
                 $rap   = round($salarioBase * 0.015, 2);

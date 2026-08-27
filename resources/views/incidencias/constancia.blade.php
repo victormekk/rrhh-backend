@@ -39,27 +39,20 @@ table.fields td:last-child { padding-right: 0; }
 .lbl:first-child { margin-top: 0; }
 .val { display: block; font-size: 8px; font-weight: 600; color: #0f172a; border-bottom: 1px dotted #cbd5e1; padding-bottom: 1px; margin-bottom: 3px; }
 
-/* ── Cuadros de días ── */
-table.dias { width: 100%; border-collapse: collapse; border: 1px solid #e3c777; margin-bottom: 8px; }
-table.dias td { text-align: center; padding: 5px 2px; border-right: 1px solid #e3c777; }
-table.dias td:last-child { border-right: none; }
-.d-lbl { font-size: 6px; color: #64748b; text-transform: uppercase; }
-.d-num { font-size: 18px; font-weight: bold; color: #3b2b16; line-height: 1.1; margin: 1px 0; }
-.d-sub { font-size: 6px; color: #94a3b8; }
-.hl { background: #3b2b16; }
-.hl .d-lbl { color: #d9c78f; }
-.hl .d-num { color: #f3d42c; }
-.hl .d-sub { color: #b9921a; }
+/* ── Cuadro de gravedad ── */
+table.grado { width: 100%; border-collapse: collapse; border: 1px solid #e3c777; margin-bottom: 8px; }
+table.grado td { text-align: center; padding: 5px 2px; border-right: 1px solid #e3c777; }
+table.grado td:last-child { border-right: none; }
+.g-lbl { font-size: 6px; color: #64748b; text-transform: uppercase; }
+.g-num { font-size: 13px; font-weight: bold; color: #3b2b16; line-height: 1.3; margin: 1px 0; }
+.g-sub { font-size: 6px; color: #94a3b8; }
+.hl { background: {{ ['Leve' => '#16a34a', 'Moderada' => '#d97706', 'Grave' => '#dc2626'][$incidencia->grado] ?? '#3b2b16' }}; }
+.hl .g-lbl { color: rgba(255,255,255,.75); }
+.hl .g-num { color: #fff; }
+.hl .g-sub { color: rgba(255,255,255,.85); }
 
-/* ── Período de ausencia ── */
-.periodo { background: #3b2b16; color: #fff; text-align: center; padding: 7px 14px; margin-bottom: 8px; border-radius: 3px; }
-.p-tit { font-size: 6.5px; opacity: .75; text-transform: uppercase; letter-spacing: .7px; }
-.p-rng { font-size: 11.5px; font-weight: bold; margin: 3px 0 2px; }
-.p-sub { font-size: 7px; opacity: .85; }
-.p-ret { font-size: 7px; margin-top: 3px; opacity: .9; }
-
-/* ── Observaciones ── */
-.obs { border: 1px solid #e2e8f0; border-radius: 2px; padding: 5px 9px; min-height: 22px; font-size: 7.5px; color: #334155; line-height: 1.55; margin-bottom: 10px; }
+/* ── Descripción de los hechos ── */
+.obs { border: 1px solid #e2e8f0; border-radius: 2px; padding: 7px 9px; min-height: 60px; font-size: 7.5px; color: #334155; line-height: 1.6; margin-bottom: 10px; }
 
 /* ── Firmas ── */
 table.firmas { width: 100%; border-collapse: collapse; margin-top: 18px; }
@@ -76,18 +69,9 @@ table.firmas td { text-align: center; padding: 0 30px; }
 <body>
 
 @php
-  $emp     = $solicitud->empleado;
-  $il      = $emp->informacionLaboral;
-  $fInicio = $il?->fecha_inicio ? \Carbon\Carbon::parse($il->fecha_inicio) : null;
-  $fSolIni = \Carbon\Carbon::parse($solicitud->fecha_inicio);
-  $fSolFin = \Carbon\Carbon::parse($solicitud->fecha_fin);
-
-  $retorno = $fSolFin->copy()->addDay();
-  while ($retorno->dayOfWeek === \Carbon\Carbon::SUNDAY) $retorno->addDay();
-
-  $diasPrevios   = max(0, $saldo['dias_tomados'] - $solicitud->dias_tomados);
-  $saldoRestante = max(0, $saldo['saldo']);
-
+  $emp   = $incidencia->empleado;
+  $il    = $emp->informacionLaboral;
+  $fInc  = \Carbon\Carbon::parse($incidencia->fecha_incidencia);
   $meses = ['enero','febrero','marzo','abril','mayo','junio',
             'julio','agosto','septiembre','octubre','noviembre','diciembre'];
 @endphp
@@ -99,11 +83,11 @@ table.firmas td { text-align: center; padding: 0 30px; }
     <tr>
       <td class="hdr-logo"><img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas"></td>
       <td class="hdr-info">
-        <h2>CONSTANCIA DE VACACIONES</h2>
+        <h2>CONSTANCIA DE INCIDENCIA</h2>
         <p>Departamento de Recursos Humanos &nbsp;·&nbsp; Tegucigalpa, Honduras</p>
       </td>
       <td class="hdr-doc">
-        <div class="num">N° {{ str_pad($solicitud->id, 5, '0', STR_PAD_LEFT) }}</div>
+        <div class="num">N° {{ str_pad($incidencia->id, 5, '0', STR_PAD_LEFT) }}</div>
         <div class="fecha">Emitido: {{ now()->format('d/m/Y') }}</div>
       </td>
     </tr>
@@ -111,9 +95,9 @@ table.firmas td { text-align: center; padding: 0 30px; }
 
   {{-- ══ BASE LEGAL ══ --}}
   <div class="legal">
-    <strong>Base legal:</strong> Art. 346 Código de Trabajo de Honduras &nbsp;·&nbsp;
-    <strong>1 año = 10 días · 2 años = 12 días · 3 años = 15 días · 4 años o más = 20 días</strong>
-    &nbsp;(días laborables; los domingos no se contabilizan).
+    <strong>Base legal:</strong> Reglamento Interno de Trabajo &nbsp;·&nbsp;
+    Código de Trabajo de Honduras &nbsp;·&nbsp;
+    Se deja constancia de la presente incidencia para el expediente laboral del colaborador.
   </div>
 
   {{-- ══ I. DATOS DEL EMPLEADO ══ --}}
@@ -125,78 +109,49 @@ table.firmas td { text-align: center; padding: 0 30px; }
         <span class="val">{{ $emp->nombres }} {{ $emp->apellidos }}</span>
         <span class="lbl">DNI / Cédula de identidad</span>
         <span class="val">{{ $emp->cedula ?? '—' }}</span>
-        <span class="lbl">RTN</span>
-        <span class="val">{{ $emp->rtn ?? '—' }}</span>
       </td>
       <td width="32%">
         <span class="lbl">Puesto</span>
         <span class="val">{{ $emp->puesto?->nombre ?? '—' }}</span>
         <span class="lbl">Departamento</span>
         <span class="val">{{ $emp->departamento?->nombre ?? '—' }}</span>
-        <span class="lbl">Tipo de contrato</span>
-        <span class="val">{{ $il?->tipo_contrato ?? '—' }}</span>
       </td>
       <td width="32%">
-        <span class="lbl">Fecha de ingreso</span>
-        <span class="val">{{ $fInicio ? $fInicio->format('d/m/Y') : '—' }}</span>
-        <span class="lbl">Antigüedad</span>
-        <span class="val">
-          {{ $saldo['anios_laborados'] }} {{ $saldo['anios_laborados'] === 1 ? 'año' : 'años' }}
-          @if($fInicio) ({{ $fInicio->diffInMonths(now()) % 12 }} meses) @endif
-        </span>
-        <span class="lbl">Período vacacional activo</span>
-        <span class="val">
-          @if($saldo['periodo_inicio'])
-            {{ \Carbon\Carbon::parse($saldo['periodo_inicio'])->format('d/m/Y') }} — {{ \Carbon\Carbon::parse($saldo['periodo_fin'])->format('d/m/Y') }}
-          @else — @endif
-        </span>
+        <span class="lbl">Tipo de contrato</span>
+        <span class="val">{{ $il?->tipo_contrato ?? '—' }}</span>
+        <span class="lbl">Fecha de la incidencia</span>
+        <span class="val">{{ $fInc->format('d/m/Y') }}</span>
       </td>
     </tr>
   </table>
 
-  {{-- ══ II. DETALLE DE VACACIONES ══ --}}
-  <div class="sec">II. Detalle de Vacaciones</div>
-  <table class="dias">
+  {{-- ══ II. DETALLE DE LA INCIDENCIA ══ --}}
+  <div class="sec">II. Detalle de la Incidencia</div>
+  <table class="grado">
     <tr>
-      <td>
-        <div class="d-lbl">Días por ley</div>
-        <div class="d-num">{{ number_format($saldo['dias_por_ley'], 0) }}</div>
-        <div class="d-sub">según antigüedad</div>
+      <td width="34%">
+        <div class="g-lbl">Título</div>
+        <div class="g-num" style="font-size:9px;">{{ $incidencia->titulo }}</div>
+        <div class="g-sub">registrado en el sistema</div>
       </td>
-      <td>
-        <div class="d-lbl">Tomados previos</div>
-        <div class="d-num">{{ number_format($diasPrevios, 0) }}</div>
-        <div class="d-sub">este período</div>
+      <td width="33%">
+        <div class="g-lbl">Fecha</div>
+        <div class="g-num" style="font-size:9px;">
+          {{ $fInc->format('d') }} de {{ $meses[$fInc->month - 1] }} de {{ $fInc->format('Y') }}
+        </div>
+        <div class="g-sub">día de la incidencia</div>
       </td>
-      <td class="hl">
-        <div class="d-lbl">Esta solicitud</div>
-        <div class="d-num">{{ number_format($solicitud->dias_tomados, 0) }}</div>
-        <div class="d-sub">días laborables</div>
-      </td>
-      <td>
-        <div class="d-lbl">Saldo restante</div>
-        <div class="d-num">{{ number_format($saldoRestante, 0) }}</div>
-        <div class="d-sub">días disponibles</div>
+      <td class="hl" width="33%">
+        <div class="g-lbl">Gravedad</div>
+        <div class="g-num">{{ strtoupper($incidencia->grado) }}</div>
+        <div class="g-sub">clasificación</div>
       </td>
     </tr>
   </table>
 
-  {{-- ══ III. PERÍODO DE AUSENCIA ══ --}}
-  <div class="sec">III. Período de Ausencia</div>
-  <div class="periodo">
-    <div class="p-tit">El empleado se ausentará durante el siguiente período</div>
-    <div class="p-rng">
-      Del {{ $fSolIni->format('d') }} de {{ $meses[$fSolIni->month - 1] }}
-      al {{ $fSolFin->format('d') }} de {{ $meses[$fSolFin->month - 1] }}
-      de {{ $fSolFin->format('Y') }}
-    </div>
-    <div class="p-sub">{{ number_format($solicitud->dias_tomados, 0) }} días laborables &nbsp;·&nbsp; domingos excluidos conforme al Código de Trabajo</div>
-    <div class="p-ret">Fecha de reintegro: <strong>{{ $retorno->format('d') }} de {{ $meses[$retorno->month - 1] }} de {{ $retorno->format('Y') }}</strong></div>
-  </div>
-
-  {{-- ══ IV. OBSERVACIONES ══ --}}
-  <div class="sec">IV. Observaciones</div>
-  <div class="obs">{{ $solicitud->observaciones ?: 'Sin observaciones adicionales.' }}</div>
+  {{-- ══ III. DESCRIPCIÓN DE LOS HECHOS ══ --}}
+  <div class="sec">III. Descripción de los Hechos</div>
+  <div class="obs">{{ $incidencia->descripcion }}</div>
 
   {{-- ══ FIRMAS ══ --}}
   <table class="firmas">
@@ -219,8 +174,7 @@ table.firmas td { text-align: center; padding: 0 30px; }
   {{-- ══ PIE ══ --}}
   <div class="footer">
     Emitido por el Depto. de Recursos Humanos · Hotel Palma Real &nbsp;·&nbsp;
-    Art. 346 Código de Trabajo de Honduras &nbsp;·&nbsp;
-    N° {{ str_pad($solicitud->id, 5, '0', STR_PAD_LEFT) }} &nbsp;·&nbsp;
+    N° {{ str_pad($incidencia->id, 5, '0', STR_PAD_LEFT) }} &nbsp;·&nbsp;
     {{ now()->format('d/m/Y H:i') }}
   </div>
 

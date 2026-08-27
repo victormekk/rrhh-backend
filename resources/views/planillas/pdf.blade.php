@@ -4,21 +4,22 @@
 <meta charset="UTF-8">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: letter landscape; margin: 0; }
+  @page { size: letter landscape; margin: 25mm 30mm; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; }
-  .page { padding: 25mm 30mm; }
+  .page { padding: 0; }
 
-  .header { text-align: center; margin-bottom: 10px; border-bottom: 2px solid #1d4ed8; padding-bottom: 6px; }
-  .header h1 { font-size: 13px; color: #1d4ed8; font-weight: bold; }
-  .header h2 { font-size: 11px; margin-top: 2px; }
-  .header p  { font-size: 8px; color: #64748b; margin-top: 2px; }
+  /* Marrón #3b2b16 y dorado #b9921a extraídos del logotipo oficial */
+  .header { text-align: center; margin-bottom: 12px; border-bottom: 2px solid #3b2b16; padding-bottom: 8px; }
+  .header img { height: 60px; margin-bottom: 6px; }
+  .header h2 { font-size: 18px; margin-top: 2px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; }
+  .header p  { font-size: 8.5px; color: #8a6d10; margin-top: 3px; font-weight: 600; }
 
   .meta { display: flex; gap: 20px; margin-bottom: 8px; font-size: 8px; }
   .meta span { color: #64748b; }
   .meta strong { color: #1e293b; }
 
   table { width: 100%; border-collapse: collapse; }
-  thead tr { background-color: #1d4ed8; color: white; }
+  thead tr { background-color: #3b2b16; color: white; }
   thead th { padding: 4px 3px; text-align: center; font-size: 7px; font-weight: bold; }
   thead th:first-child { text-align: left; }
 
@@ -28,7 +29,7 @@
   tbody td.num { text-align: right; }
   tbody td.emp { font-weight: 600; }
 
-  .totals-row td { background-color: #1e40af; color: white; font-weight: bold; font-size: 7.5px; padding: 4px 3px; }
+  .totals-row td { background-color: #b9921a; color: #3b2b16; font-weight: bold; font-size: 7.5px; padding: 4px 3px; }
   .totals-row td.num { text-align: right; }
 
   .footer { margin-top: 30px; display: flex; justify-content: space-between; }
@@ -43,7 +44,7 @@
 <div class="page">
 
 <div class="header">
-  <h1>Hotel Palma Real</h1>
+  <img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas">
   <h2>PLANILLA DE PAGO — {{ strtoupper($planilla->nombre_planilla) }}</h2>
   <p>
     Tipo: {{ $planilla->tipo_planilla }} &nbsp;|&nbsp;

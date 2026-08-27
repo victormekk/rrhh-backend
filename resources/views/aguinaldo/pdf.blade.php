@@ -4,21 +4,26 @@
 <meta charset="UTF-8">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  @page { size: letter landscape; margin: 0; }
+  @page { size: letter landscape; margin: 25mm 30mm; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 9px; color: #1e293b; }
-  .page { padding: 25mm 30mm; }
-  .header { background: #1d4ed8; color: white; padding: 10px 14px; margin-bottom: 12px; }
-  .header h1 { font-size: 14px; font-weight: bold; }
-  .header p  { font-size: 9px; opacity: .85; margin-top: 2px; }
-  .section-title { font-size: 11px; font-weight: bold; color: #1d4ed8;
-                   border-bottom: 1px solid #93c5fd; padding-bottom: 3px; margin: 10px 0 6px; }
+  .page { padding: 0; }
+  /* Marrón #3b2b16 y dorado #b9921a extraídos del logotipo oficial */
+  table.header { width: 100%; border-collapse: collapse; border-bottom: 2px solid #3b2b16; padding-bottom: 10px; margin-bottom: 14px; }
+  table.header td { vertical-align: middle; }
+  .header .hdr-logo { width: 100px; }
+  .header .hdr-logo img { width: 100px; height: auto; display: block; }
+  .header .hdr-info { padding-left: 16px; }
+  .header h1 { font-size: 20px; font-weight: bold; color: #3b2b16; letter-spacing: 0.3px; }
+  .header p  { font-size: 9px; color: #8a6d10; margin-top: 4px; font-weight: 600; }
+  .section-title { font-size: 11px; font-weight: bold; color: #3b2b16;
+                   border-bottom: 1px solid #e3c777; padding-bottom: 3px; margin: 10px 0 6px; }
   table { width: 100%; border-collapse: collapse; font-size: 8px; }
-  th { background: #dbeafe; color: #1e40af; font-weight: bold; text-align: center;
-       padding: 4px 3px; border: 1px solid #93c5fd; }
+  th { background: #f8f2df; color: #3b2b16; font-weight: bold; text-align: center;
+       padding: 4px 3px; border: 1px solid #e3c777; }
   td { padding: 3px; border: 1px solid #e2e8f0; text-align: center; }
   td.left { text-align: left; }
   tr:nth-child(even) td { background: #f8fafc; }
-  .totals td { background: #1d4ed8 !important; color: white; font-weight: bold; }
+  .totals td { background: #b9921a !important; color: #3b2b16; font-weight: bold; }
   .footer { margin-top: 20px; }
   .sigs { display: flex; justify-content: space-around; margin-top: 30px; }
   .sig { text-align: center; width: 28%; }
@@ -29,12 +34,17 @@
 <body>
 <div class="page">
 
-<div class="header">
-  <h1>{{ $nombre }}</h1>
-  <p>Hotel Palma Real &mdash; Generado el {{ now()->format('d/m/Y') }}
-     &mdash; Tipo: {{ $meta->tipo_aguinaldo }}
-     &mdash; Estado: {{ $meta->estado }}</p>
-</div>
+<table class="header">
+  <tr>
+    <td class="hdr-logo"><img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas"></td>
+    <td class="hdr-info">
+      <h1>{{ $nombre }}</h1>
+      <p>Generado el {{ now()->format('d/m/Y') }}
+         &mdash; Tipo: {{ $meta->tipo_aguinaldo }}
+         &mdash; Estado: {{ $meta->estado }}</p>
+    </td>
+  </tr>
+</table>
 
 @if($fijos->isNotEmpty())
 <div class="section-title">Empleados Fijos</div>

@@ -49,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('aguinaldo/{nombre}',    [AguinaldoController::class, 'destroy'])->where('nombre', '.*');
 
     // Incidencias
+    Route::get('incidencias/{id}/pdf', [IncidenciaController::class, 'pdf']);
     Route::apiResource('incidencias', IncidenciaController::class);
 
     // Vacaciones
@@ -72,7 +73,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('estadistica-laboral/{empleado}', [EstadisticaLaboralController::class, 'show']);
 
     // Log del sistema
-    Route::get('log-sistema', [LogSistemaController::class, 'index']);
+    Route::get('log-sistema',     [LogSistemaController::class, 'index']);
+    Route::get('log-sistema/pdf', [LogSistemaController::class, 'exportPdf']);
 
     // Gestión de usuarios (solo admin)
     Route::apiResource('usuarios', UsuarioController::class)->except(['show']);

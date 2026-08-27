@@ -4,21 +4,22 @@
 <meta charset="UTF-8">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: letter landscape; margin: 0; }
+  @page { size: letter landscape; margin: 25mm 30mm; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; }
-  .page { padding: 25mm 30mm; }
+  .page { padding: 0; }
 
-  .header { text-align: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid #1d4ed8; }
-  .header h1 { font-size: 13px; color: #1d4ed8; font-weight: bold; }
-  .header h2 { font-size: 10px; margin-top: 2px; color: #1e293b; }
-  .header p  { font-size: 7.5px; color: #64748b; margin-top: 2px; }
+  /* Marrón #3b2b16 y dorado #b9921a extraídos del logotipo oficial */
+  .header { text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #3b2b16; }
+  .header img { height: 58px; margin-bottom: 6px; }
+  .header h2 { font-size: 17px; margin-top: 2px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; }
+  .header p  { font-size: 8px; color: #8a6d10; margin-top: 3px; font-weight: 600; }
 
   .meta { display: flex; gap: 24px; margin-bottom: 8px; font-size: 8px; padding: 5px 8px; background: #f8fafc; border-radius: 4px; }
   .meta-item span { color: #64748b; }
   .meta-item strong { color: #1e293b; }
 
   table { width: 100%; border-collapse: collapse; }
-  thead tr { background-color: #1d4ed8; color: white; }
+  thead tr { background-color: #3b2b16; color: white; }
   thead th { padding: 4px 4px; text-align: left; font-size: 7.5px; font-weight: bold; white-space: nowrap; }
   thead th.num { text-align: right; }
   thead th.ctr { text-align: center; }
@@ -31,10 +32,10 @@
   tbody td.emp  { font-weight: 600; }
   tbody td.dept { color: #64748b; font-size: 7.5px; }
 
-  .badge-fijos  { background:#dbeafe; color:#1e40af; border-radius:3px; padding:1px 4px; font-size:7px; }
+  .badge-fijos  { background:#f8f2df; color:#8a6d10; border-radius:3px; padding:1px 4px; font-size:7px; }
   .badge-extras { background:#fef3c7; color:#92400e; border-radius:3px; padding:1px 4px; font-size:7px; }
 
-  .totals-row td { background-color: #1e40af; color: white; font-weight: bold; font-size: 8px; padding: 4px; }
+  .totals-row td { background-color: #b9921a; color: #3b2b16; font-weight: bold; font-size: 8px; padding: 4px; }
   .totals-row td.num { text-align: right; }
   .totals-row td.ctr { text-align: center; }
 
@@ -45,7 +46,7 @@
 <div class="page">
 
   <div class="header">
-    <h1>Hotel Palma Real</h1>
+    <img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas">
     <h2>ESTADÍSTICA LABORAL</h2>
     <p>Días trabajados y salario neto devengado por empleado</p>
   </div>

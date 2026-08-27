@@ -46,35 +46,46 @@ class VacacionController extends Controller
     {
         $il = $empleado->informacionLaboral;
 
+        $zeroBase = [
+            'anios_laborados'     => 0, 'dias_por_ley'         => 0,
+            'dias_anio_actual'    => 0, 'dias_previos'         => 0,
+            'dias_tomados'        => 0, 'dias_tomados_periodo' => 0,
+            'saldo'               => 0, 'periodo_inicio'       => null,
+            'periodo_fin'         => null,
+        ];
+
         if (!$il || !$il->fecha_inicio) {
-            return [
-                'anios_laborados' => 0, 'dias_por_ley' => 0,
-                'dias_tomados' => 0,    'saldo' => 0,
-                'periodo_inicio' => null, 'periodo_fin' => null,
-                'sin_fecha_inicio' => true,
-            ];
+            return array_merge($zeroBase, ['sin_fecha_inicio' => true]);
         }
 
         $inicio = Carbon::parse($il->fecha_inicio)->startOfDay();
         $hoy    = Carbon::today();
 
         if ($hoy->lt($inicio)) {
-            return [
-                'anios_laborados' => 0, 'dias_por_ley' => 0,
-                'dias_tomados' => 0,    'saldo' => 0,
-                'periodo_inicio' => null, 'periodo_fin' => null,
-            ];
+            return $zeroBase;
         }
 
         $anios = (int) floor($inicio->diffInDays($hoy) / 365);
         $tasas = $this->tasasDias();
 
-        $diasPorLey = match(true) {
-            $anios >= 4 => $tasas[4],
+        // Días ganados por cada año laboral completado (acumulados)
+        $diasAcumulados = 0;
+        for ($i = 1; $i <= $anios; $i++) {
+            $diasAcumulados += match(true) {
+                $i >= 4  => $tasas[4],
+                $i === 3 => $tasas[3],
+                $i === 2 => $tasas[2],
+                default  => $tasas[1],
+            };
+        }
+
+        // Entitlement del año aniversario actual
+        $diasAnioActual = match(true) {
+            $anios >= 4  => $tasas[4],
             $anios === 3 => $tasas[3],
             $anios === 2 => $tasas[2],
-            $anios >= 1 => $tasas[1],
-            default     => 0,
+            $anios >= 1  => $tasas[1],
+            default      => 0,
         };
 
         // Período: último aniversario → siguiente aniversario
@@ -83,18 +94,32 @@ class VacacionController extends Controller
         $periodoInicio = $aniversario->copy();
         $periodoFin    = $aniversario->copy()->addYear()->subDay();
 
-        $diasTomados = SolicitudVacacion::where('id_empleado', $empleado->id)
-            ->where('fecha_inicio', '>=', $periodoInicio)
-            ->where('fecha_inicio', '<=', $periodoFin)
-            ->sum('dias_tomados');
+        // Una sola query con SUM condicional en lugar de dos queries separadas
+        $tomados = SolicitudVacacion::where('id_empleado', $empleado->id)
+            ->selectRaw(
+                'SUM(dias_tomados) as total, SUM(CASE WHEN fecha_inicio >= ? THEN dias_tomados ELSE 0 END) as periodo',
+                [$periodoInicio->format('Y-m-d')]
+            )->first();
+
+        $diasTomados        = (float) ($tomados->total  ?? 0);
+        $diasTomadosPeriodo = (float) ($tomados->periodo ?? 0);
+
+        // Días previos = lo ganado antes del período actual menos lo tomado antes del período actual.
+        // Si el empleado agotó todo antes de este período, previos = 0 (se reinicia).
+        $diasGanadosAnteriores  = $diasAcumulados - $diasAnioActual;
+        $diasTomadosAnteriores  = $diasTomados - $diasTomadosPeriodo;
+        $diasPrevios            = max(0, $diasGanadosAnteriores - $diasTomadosAnteriores);
 
         return [
-            'anios_laborados' => $anios,
-            'dias_por_ley'    => $diasPorLey,
-            'dias_tomados'    => (float) $diasTomados,
-            'saldo'           => max(0, $diasPorLey - $diasTomados),
-            'periodo_inicio'  => $periodoInicio->format('Y-m-d'),
-            'periodo_fin'     => $periodoFin->format('Y-m-d'),
+            'anios_laborados'     => $anios,
+            'dias_por_ley'        => $diasAcumulados,
+            'dias_anio_actual'    => $diasAnioActual,
+            'dias_previos'        => $diasPrevios,
+            'dias_tomados'        => $diasTomados,
+            'dias_tomados_periodo'=> $diasTomadosPeriodo,
+            'saldo'               => max(0, $diasAcumulados - $diasTomados),
+            'periodo_inicio'      => $periodoInicio->format('Y-m-d'),
+            'periodo_fin'         => $periodoFin->format('Y-m-d'),
         ];
     }
 
@@ -111,7 +136,7 @@ class VacacionController extends Controller
                 )
             )
             ->orderByDesc('fecha_inicio')
-            ->paginate(15);
+            ->paginate($request->input('per_page', 10));
 
         return response()->json($solicitudes);
     }
@@ -163,7 +188,7 @@ class VacacionController extends Controller
 
     public function update(Request $request, $id)
     {
-        $solicitud = SolicitudVacacion::findOrFail($id);
+        $solicitud = SolicitudVacacion::with('empleado.informacionLaboral')->findOrFail($id);
 
         $data = $request->validate([
             'fecha_inicio'  => 'required|date',
@@ -174,6 +199,16 @@ class VacacionController extends Controller
         $inicio = Carbon::parse($data['fecha_inicio']);
         $fin    = Carbon::parse($data['fecha_fin']);
         $dias   = $this->diasLaborables($inicio, $fin);
+
+        // Saldo efectivo: sumar de vuelta los días originales antes de comparar
+        $saldo         = $this->calcularSaldo($solicitud->empleado);
+        $saldoEfectivo = $saldo['saldo'] + $solicitud->dias_tomados;
+
+        if ($saldoEfectivo < $dias) {
+            return response()->json([
+                'message' => "Saldo insuficiente. Disponibles: {$saldoEfectivo} día(s), solicitados: {$dias}.",
+            ], 422);
+        }
 
         $solicitud->update([...$data, 'dias_tomados' => $dias]);
 

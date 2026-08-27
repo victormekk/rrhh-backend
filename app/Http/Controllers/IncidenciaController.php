@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Incidencia;
 use App\Traits\LogsActividad;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class IncidenciaController extends Controller
@@ -82,5 +83,24 @@ class IncidenciaController extends Controller
         $this->logActividad('eliminado', 'Incidencias', "Incidencia '{$inc->titulo}' de {$inc->empleado->nombres} {$inc->empleado->apellidos} eliminada.", $id);
 
         return response()->json(['message' => 'Incidencia eliminada.']);
+    }
+
+    public function pdf($id)
+    {
+        $incidencia = Incidencia::with([
+            'empleado.informacionLaboral',
+            'empleado.puesto',
+            'empleado.departamento',
+        ])->findOrFail($id);
+
+        $pdf = Pdf::loadView('incidencias.constancia', compact('incidencia'))
+            ->setPaper('letter', 'portrait');
+
+        $nombres   = $incidencia->empleado->nombres;
+        $apellidos = $incidencia->empleado->apellidos;
+        $n = iconv('UTF-8', 'ASCII//TRANSLIT', "{$nombres}+{$apellidos}") ?? "{$nombres}+{$apellidos}";
+        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
+
+        return $pdf->download(now()->format('dmY') . '-' . $n . '-incidencia.pdf');
     }
 }
