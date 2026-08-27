@@ -49,6 +49,11 @@ Este cambio vive en el `php.ini` del entorno (Laragon), **no en el repositorio**
 
 Corregida el 2026-08-26: la migración original referenciaba una columna `modulo` inexistente en `log_sistema` (la columna real es `objeto_actualizado`, usada en `LogSistemaController::filtrar()`). Ya está corrida contra la base local.
 
+### ⚠️ Documento raíz del código servido (corregido 2026-08-27)
+El vhost de Laragon `rrhh-backend.test` (`C:\laragon\etc\apache2\sites-enabled\auto.rrhh-backend.test.conf`) tenía el `DocumentRoot` apuntando a **`C:\laragon\www\rrhh-backend\public`** — una copia de git **completamente separada** de este repo (`C:\Users\victo\Desktop\rrhh-backend`), congelada en el commit `75fc033` (mayo). Ambas copias comparten la misma base de datos MySQL (`rrhh_hpr`), pero el código PHP servido por Apache era el viejo: **ningún cambio de esta sesión (ni de sesiones previas) estuvo realmente corriendo en `rrhh-backend.test` hasta este fix**.
+
+Se corrigió el `DocumentRoot`/`Directory` del `.conf` para apuntar a `C:/Users/victo/Desktop/rrhh-backend/public` (requiere reiniciar Apache desde Laragon para tomar el cambio). **Riesgo:** el archivo se llama `auto.*.conf` — Laragon podría regenerarlo automáticamente a partir de las carpetas que encuentre en `www\` y revertir el fix. Si `rrhh-backend.test` vuelve a comportarse "raro" (cambios de código que no aparecen), lo primero a revisar es este `DocumentRoot`. La carpeta vieja `C:\laragon\www\rrhh-backend` no se borró — sigue ahí, sin usarse.
+
 ---
 
 ## Módulos y endpoints (`routes/api.php`)
@@ -115,11 +120,15 @@ GET /api/incidencias/{id}/pdf   — constancia PDF (agregado 2026-08-26, vista: 
 ```
 apiResource /api/planillas (except update)   — filtros tipo/estado, paginado
 GET  /api/planillas/{id}/pdf
+GET  /api/planillas/{id}/excel               — agregado 2026-08-27, ver abajo
 POST /api/planillas/{id}/cerrar              — incrementa cuotas_aplicadas de DeduccionCuota, marca Completado si llega al total
 PUT  /api/planillas/{id}/detalles/{detalle}
 ```
-- **IHSS:** 3.5% sobre quincenal (techo L 25,500). **RAP:** 1.5% sobre salario base quincenal. **ISR:** escala anual progresiva dividida entre 24 quincenas.
+- **IHSS:** valor fijo tomado de Campos Variables (por defecto L 297.58). **RAP e ISR:** ya NO se calculan automático (corregido 2026-08-27) — arrancan en 0 y se editan a mano por empleado, porque en la nómina real de Hotel Palma Real y Villas se escriben a mano y no coinciden con una fórmula progresiva. `calcularIsr()` fue eliminado del controlador.
 - `store()` corregido 2026-08-26: precarga `OtroIngreso` y `DeduccionCuota` por planilla en 2 queries agrupadas (`groupBy('id_empleado')`) en vez de 2 queries por empleado dentro del loop (N+1).
+- **Columnas agregadas 2026-08-27** a `detalle_planillas` (migración `2026_08_27_055636_...`): `horas_extras` (cantidad), `monto_horas_extras` (siempre recalculado server-side en `updateDetalle()` como `salario_diario del empleado / 8 × horas_extras` — nunca se confía en un monto enviado por el cliente) e `i_vecinal`. `uniforme`/`garden` se mantienen aunque no aparezcan en el Excel real de Fijos (decisión explícita: "por si acaso").
+- **`GET /api/planillas/{id}/excel`** (agregado 2026-08-27): genera un `.xlsx` (PhpSpreadsheet, ya usado por `barryvdh/laravel-dompdf`/`maatwebsite/excel`) con 2 columnas — `Empleado` y `Salario Neto` (2 decimales) — pensado para armar el archivo de pago del banco. No usa las clases `Export` de Laravel Excel, construye el `Spreadsheet` directamente en el controlador (mismo patrón que `exportPdf`).
+- El PDF de planilla (`resources/views/planillas/pdf.blade.php`) agrupa por departamento con fila de subtotal por grupo (`->groupBy('departamento')`), igual que el Excel real de nómina.
 
 ### Aguinaldo (`AguinaldoController`)
 ```
@@ -180,6 +189,12 @@ Todas comparten identidad visual **Hotel Palma Real y Villas** (rebrand 2026-08-
 ---
 
 ## Historial de sesiones / cambios
+
+### 2026-08-27 — commit `0e4c2d3`
+- **Corregido el `DocumentRoot` del vhost de Apache** — `rrhh-backend.test` servía una copia de código vieja y separada (ver sección Infraestructura). Causa raíz de que los fixes de sesiones anteriores no se vieran reflejados en el sitio.
+- **Planilla Fijos rediseñada** para calzar con el Excel real de nómina: RAP e ISR dejan de calcularse automático (se editan a mano), se agregan `horas_extras`/`monto_horas_extras` e `i_vecinal` a `detalle_planillas`, y se elimina `calcularIsr()`.
+- Nuevo endpoint `GET /api/planillas/{id}/excel` — exporta Empleado + Salario Neto a `.xlsx` para el archivo de pago del banco.
+- El PDF de planilla ahora agrupa por departamento con subtotales, igual que el Excel real.
 
 ### 2026-08-26 — commit `2b5469d`
 - **OPcache activado** en el entorno local (ver sección Infraestructura) — causa raíz de la lentitud percibida entre pantallas.
