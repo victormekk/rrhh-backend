@@ -14,8 +14,9 @@ class DetallePlanilla extends Model
     protected $fillable = [
         'id_cabecera_planilla', 'id_empleado', 'nombre_planilla', 'departamento',
         'tipo_planilla', 'dias_trabajados', 'salario_diario', 'salario_base',
-        'desc_ingresos', 'otros_ingresos', 'ihss', 'retencion_ahorro',
-        'crefisa', 'isr', 'transporte', 'radios', 'uniforme', 'garden',
+        'desc_ingresos', 'otros_ingresos', 'horas_extras', 'monto_horas_extras',
+        'ihss', 'retencion_ahorro', 'crefisa', 'isr', 'transporte', 'radios',
+        'uniforme', 'garden', 'i_vecinal',
         'desc_otras_deducciones', 'otras_deducciones', 'deduccion_neta',
         'salario_neto', 'cuenta_banco', 'fecha_generada', 'id_usuario',
     ];

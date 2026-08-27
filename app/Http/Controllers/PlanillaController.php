@@ -11,6 +11,9 @@ use App\Models\OtroIngreso;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanillaController extends Controller
 {
@@ -83,10 +86,10 @@ class PlanillaController extends Controller
                 $cuotasMonto   = (float) $cuotasMap->get($emp->id, collect())->sum('monto');
 
                 $ihss  = $ihssFijo; // valor fijo configurable desde Campos Variables
-                $rap   = round($salarioBase * 0.015, 2);
-                $isr   = $this->calcularIsr($salarioBase);
 
-                $deduccionNeta = $ihss + $rap + $isr + $cuotasMonto;
+                // RAP e ISR se editan a mano por empleado (no calzan con una formula automatica
+                // en la practica real de nomina), arrancan en 0.
+                $deduccionNeta = $ihss + $cuotasMonto;
                 $salarioNeto   = $salarioBase + $otrosIngresos - $deduccionNeta;
 
                 DetallePlanilla::create([
@@ -100,14 +103,17 @@ class PlanillaController extends Controller
                     'salario_base'           => $salarioBase,
                     'desc_ingresos'          => $descIngresos ?: null,
                     'otros_ingresos'         => $otrosIngresos,
+                    'horas_extras'           => 0,
+                    'monto_horas_extras'     => 0,
                     'ihss'                   => $ihss,
-                    'retencion_ahorro'       => $rap,
-                    'isr'                    => $isr,
+                    'retencion_ahorro'       => 0,
+                    'isr'                    => 0,
                     'crefisa'                => 0,
                     'transporte'             => 0,
                     'radios'                 => 0,
                     'uniforme'               => 0,
                     'garden'                 => 0,
+                    'i_vecinal'              => 0,
                     'otras_deducciones'      => $cuotasMonto,
                     'desc_otras_deducciones' => null,
                     'deduccion_neta'         => $deduccionNeta,
@@ -138,6 +144,7 @@ class PlanillaController extends Controller
             'dias_trabajados'        => 'sometimes|integer|min:0|max:30',
             'otros_ingresos'         => 'sometimes|numeric|min:0',
             'desc_ingresos'          => 'nullable|string|max:100',
+            'horas_extras'           => 'sometimes|numeric|min:0|max:200',
             'ihss'                   => 'sometimes|numeric|min:0',
             'retencion_ahorro'       => 'sometimes|numeric|min:0',
             'crefisa'                => 'sometimes|numeric|min:0',
@@ -146,6 +153,7 @@ class PlanillaController extends Controller
             'radios'                 => 'sometimes|numeric|min:0',
             'uniforme'               => 'sometimes|numeric|min:0',
             'garden'                 => 'sometimes|numeric|min:0',
+            'i_vecinal'              => 'sometimes|numeric|min:0',
             'otras_deducciones'      => 'sometimes|numeric|min:0',
             'desc_otras_deducciones' => 'nullable|string|max:100',
         ]);
@@ -155,22 +163,29 @@ class PlanillaController extends Controller
 
         $get = fn(string $field) => (float) $request->input($field, $detalle->$field);
 
+        // El monto de horas extra siempre se recalcula en el servidor a partir del salario
+        // diario propio de este empleado — nunca se confia en un monto enviado por el cliente.
+        $horasExtras       = $get('horas_extras');
+        $montoHorasExtras  = round($detalle->salario_diario / 8 * $horasExtras, 2);
+
         $deduccionNeta = $get('ihss') + $get('retencion_ahorro') + $get('crefisa')
             + $get('isr') + $get('transporte') + $get('radios')
-            + $get('uniforme') + $get('garden') + $get('otras_deducciones');
+            + $get('uniforme') + $get('garden') + $get('i_vecinal') + $get('otras_deducciones');
 
-        $salarioNeto = $salarioBase + $get('otros_ingresos') - $deduccionNeta;
+        $salarioNeto = $salarioBase + $get('otros_ingresos') + $montoHorasExtras - $deduccionNeta;
 
         $detalle->update([
             ...$request->only([
                 'dias_trabajados', 'otros_ingresos', 'desc_ingresos',
                 'ihss', 'retencion_ahorro', 'crefisa', 'isr',
-                'transporte', 'radios', 'uniforme', 'garden',
+                'transporte', 'radios', 'uniforme', 'garden', 'i_vecinal',
                 'otras_deducciones', 'desc_otras_deducciones',
             ]),
-            'salario_base'   => $salarioBase,
-            'deduccion_neta' => $deduccionNeta,
-            'salario_neto'   => $salarioNeto,
+            'horas_extras'       => $horasExtras,
+            'monto_horas_extras' => $montoHorasExtras,
+            'salario_base'       => $salarioBase,
+            'deduccion_neta'     => $deduccionNeta,
+            'salario_neto'       => $salarioNeto,
         ]);
 
         return response()->json($detalle->fresh(['empleado:id,nombres,apellidos']));
@@ -227,6 +242,43 @@ class PlanillaController extends Controller
         return $pdf->download(now()->format('dmY') . '-' . $n . '-planilla.pdf');
     }
 
+    public function exportExcel($id)
+    {
+        $planilla = CabeceraPlanilla::with([
+            'detalles' => fn($q) => $q->with('empleado:id,nombres,apellidos')
+                                      ->orderBy('departamento')
+                                      ->orderBy('id_empleado'),
+        ])->findOrFail($id);
+
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Pago');
+        $sheet->setCellValue('A1', 'Empleado');
+        $sheet->setCellValue('B1', 'Salario Neto');
+        $sheet->getStyle('A1:B1')->getFont()->setBold(true);
+
+        $row = 2;
+        foreach ($planilla->detalles as $d) {
+            $sheet->setCellValue("A{$row}", trim("{$d->empleado->nombres} {$d->empleado->apellidos}"));
+            $sheet->setCellValueExplicit("B{$row}", round((float) $d->salario_neto, 2), DataType::TYPE_NUMERIC);
+            $row++;
+        }
+
+        $sheet->getStyle("B2:B" . ($row - 1))->getNumberFormat()->setFormatCode('#,##0.00');
+        foreach (['A', 'B'] as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $n = iconv('UTF-8', 'ASCII//TRANSLIT', $planilla->nombre_planilla) ?? $planilla->nombre_planilla;
+        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'planilla') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tempFile);
+
+        return response()->download($tempFile, now()->format('dmY') . '-' . $n . '-pago.xlsx')
+            ->deleteFileAfterSend(true);
+    }
+
     // ─── Helpers ────────────────────────────────────────────────
 
     private function calcularIhss(float $quincenal): float
@@ -235,43 +287,31 @@ class PlanillaController extends Controller
         return round(min($quincenal, $techo) * 0.035, 2);
     }
 
-    private function calcularIsr(float $quincenal): float
-    {
-        $anual = $quincenal * 24;
-
-        $isr = match (true) {
-            $anual <= 187016 => 0,
-            $anual <= 282437 => ($anual - 187016) * 0.15,
-            $anual <= 376583 => (282437 - 187016) * 0.15 + ($anual - 282437) * 0.20,
-            default          => (282437 - 187016) * 0.15
-                + (376583 - 282437) * 0.20
-                + ($anual - 376583) * 0.25,
-        };
-
-        return round($isr / 24, 2);
-    }
-
     private function calcularTotales(CabeceraPlanilla $planilla): array
     {
         return $planilla->detalles->reduce(function (array $acc, DetallePlanilla $d) {
-            $acc['salario_base']     += $d->salario_base;
-            $acc['otros_ingresos']   += $d->otros_ingresos;
-            $acc['ihss']             += $d->ihss;
-            $acc['retencion_ahorro'] += $d->retencion_ahorro;
-            $acc['isr']              += $d->isr;
-            $acc['crefisa']          += $d->crefisa;
-            $acc['transporte']       += $d->transporte;
-            $acc['radios']           += $d->radios;
-            $acc['uniforme']         += $d->uniforme;
-            $acc['garden']           += $d->garden;
-            $acc['otras_deducciones']+= $d->otras_deducciones;
-            $acc['deduccion_neta']   += $d->deduccion_neta;
-            $acc['salario_neto']     += $d->salario_neto;
+            $acc['salario_base']       += $d->salario_base;
+            $acc['otros_ingresos']     += $d->otros_ingresos;
+            $acc['horas_extras']       += $d->horas_extras;
+            $acc['monto_horas_extras'] += $d->monto_horas_extras;
+            $acc['ihss']               += $d->ihss;
+            $acc['retencion_ahorro']   += $d->retencion_ahorro;
+            $acc['isr']                += $d->isr;
+            $acc['crefisa']            += $d->crefisa;
+            $acc['transporte']         += $d->transporte;
+            $acc['radios']             += $d->radios;
+            $acc['uniforme']           += $d->uniforme;
+            $acc['garden']             += $d->garden;
+            $acc['i_vecinal']          += $d->i_vecinal;
+            $acc['otras_deducciones']  += $d->otras_deducciones;
+            $acc['deduccion_neta']     += $d->deduccion_neta;
+            $acc['salario_neto']       += $d->salario_neto;
             return $acc;
         }, array_fill_keys([
-            'salario_base','otros_ingresos','ihss','retencion_ahorro','isr',
-            'crefisa','transporte','radios','uniforme','garden',
-            'otras_deducciones','deduccion_neta','salario_neto',
+            'salario_base','otros_ingresos','horas_extras','monto_horas_extras',
+            'ihss','retencion_ahorro','isr','crefisa','transporte','radios',
+            'uniforme','garden','i_vecinal','otras_deducciones',
+            'deduccion_neta','salario_neto',
         ], 0));
     }
 }

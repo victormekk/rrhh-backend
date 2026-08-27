@@ -57,32 +57,37 @@
 <table>
   <thead>
     <tr>
-      <th style="width:14%">Empleado</th>
-      <th style="width:8%">Depto.</th>
+      <th style="width:13%">Empleado</th>
       <th style="width:3%">Días</th>
-      <th style="width:7%">Sal. Base</th>
-      <th style="width:6%">Otros Ing.</th>
+      <th style="width:6%">Sal. Base</th>
+      <th style="width:5%">H. Extra</th>
+      <th style="width:5%">Otros Ing.</th>
       <th style="width:5%">IHSS</th>
-      <th style="width:5%">RAP</th>
-      <th style="width:5%">ISR</th>
-      <th style="width:5%">Crefisa</th>
-      <th style="width:5%">Transp.</th>
-      <th style="width:5%">Radios</th>
-      <th style="width:5%">Uniforme</th>
-      <th style="width:5%">Garden</th>
-      <th style="width:6%">Otras Ded.</th>
+      <th style="width:4%">RAP</th>
+      <th style="width:4%">ISR</th>
+      <th style="width:4%">Crefisa</th>
+      <th style="width:4%">Transp.</th>
+      <th style="width:4%">Radios</th>
+      <th style="width:5%">I. Vecinal</th>
+      <th style="width:4%">Uniforme</th>
+      <th style="width:4%">Garden</th>
+      <th style="width:5%">Otras Ded.</th>
       <th style="width:6%">Ded. Neta</th>
-      <th style="width:7%">Sal. Neto</th>
+      <th style="width:6%">Sal. Neto</th>
       <th style="width:8%">Cuenta</th>
     </tr>
   </thead>
   <tbody>
-    @foreach($planilla->detalles as $d)
+    @foreach($planilla->detalles->groupBy('departamento') as $departamento => $filas)
+    <tr>
+      <td colspan="18" style="background-color:#f8f2df; color:#3b2b16; font-weight:bold; padding:4px;">{{ $departamento }}</td>
+    </tr>
+    @foreach($filas as $d)
     <tr>
       <td class="emp">{{ $d->empleado->apellidos }}, {{ $d->empleado->nombres }}</td>
-      <td>{{ $d->departamento }}</td>
       <td class="num">{{ $d->dias_trabajados }}</td>
       <td class="num">{{ number_format($d->salario_base, 2) }}</td>
+      <td class="num">{{ number_format($d->monto_horas_extras, 2) }}</td>
       <td class="num">{{ number_format($d->otros_ingresos, 2) }}</td>
       <td class="num">{{ number_format($d->ihss, 2) }}</td>
       <td class="num">{{ number_format($d->retencion_ahorro, 2) }}</td>
@@ -90,6 +95,7 @@
       <td class="num">{{ number_format($d->crefisa, 2) }}</td>
       <td class="num">{{ number_format($d->transporte, 2) }}</td>
       <td class="num">{{ number_format($d->radios, 2) }}</td>
+      <td class="num">{{ number_format($d->i_vecinal, 2) }}</td>
       <td class="num">{{ number_format($d->uniforme, 2) }}</td>
       <td class="num">{{ number_format($d->garden, 2) }}</td>
       <td class="num">{{ number_format($d->otras_deducciones, 2) }}</td>
@@ -98,10 +104,32 @@
       <td style="font-family:monospace">{{ $d->cuenta_banco ?? '—' }}</td>
     </tr>
     @endforeach
+    <tr style="background-color:#eee3c3; font-weight:bold;">
+      <td style="padding:3px;">SUBTOTAL: {{ $departamento }}</td>
+      <td class="num">{{ $filas->sum('dias_trabajados') }}</td>
+      <td class="num">{{ number_format($filas->sum('salario_base'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('monto_horas_extras'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('otros_ingresos'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('ihss'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('retencion_ahorro'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('isr'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('crefisa'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('transporte'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('radios'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('i_vecinal'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('uniforme'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('garden'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('otras_deducciones'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('deduccion_neta'), 2) }}</td>
+      <td class="num">{{ number_format($filas->sum('salario_neto'), 2) }}</td>
+      <td></td>
+    </tr>
+    @endforeach
   </tbody>
   <tr class="totals-row">
-    <td colspan="3" style="text-align:left; padding-left:4px;">TOTALES</td>
+    <td colspan="2" style="text-align:left; padding-left:4px;">TOTAL GENERAL</td>
     <td class="num">{{ number_format($totales['salario_base'], 2) }}</td>
+    <td class="num">{{ number_format($totales['monto_horas_extras'], 2) }}</td>
     <td class="num">{{ number_format($totales['otros_ingresos'], 2) }}</td>
     <td class="num">{{ number_format($totales['ihss'], 2) }}</td>
     <td class="num">{{ number_format($totales['retencion_ahorro'], 2) }}</td>
@@ -109,6 +137,7 @@
     <td class="num">{{ number_format($totales['crefisa'], 2) }}</td>
     <td class="num">{{ number_format($totales['transporte'], 2) }}</td>
     <td class="num">{{ number_format($totales['radios'], 2) }}</td>
+    <td class="num">{{ number_format($totales['i_vecinal'], 2) }}</td>
     <td class="num">{{ number_format($totales['uniforme'], 2) }}</td>
     <td class="num">{{ number_format($totales['garden'], 2) }}</td>
     <td class="num">{{ number_format($totales['otras_deducciones'], 2) }}</td>

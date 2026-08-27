@@ -59,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Planillas
     Route::get('planillas/{planilla}/pdf', [PlanillaController::class, 'exportPdf']);
+    Route::get('planillas/{planilla}/excel', [PlanillaController::class, 'exportExcel']);
     Route::post('planillas/{planilla}/cerrar', [PlanillaController::class, 'cerrar']);
     Route::put('planillas/{planilla}/detalles/{detalle}', [PlanillaController::class, 'updateDetalle']);
     Route::apiResource('planillas', PlanillaController::class)->except(['update']);
