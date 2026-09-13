@@ -63,8 +63,16 @@ class PlanillaController extends Controller
                 'id_usuario'      => $request->user()->id,
             ]);
 
+            // tipo_planilla (Fijos/Extras/Especial) -> tipo_contrato (Fijo/Extra/Especial)
+            $tipoContrato = [
+                'Fijos'    => 'Fijo',
+                'Extras'   => 'Extra',
+                'Especial' => 'Especial',
+            ][$request->tipo_planilla];
+
             $empleados = Empleado::with(['informacionLaboral.banco', 'departamento'])
-                ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))
+                ->whereHas('informacionLaboral', fn ($q) => $q->where('estado', 'Activo')
+                    ->where('tipo_contrato', $tipoContrato))
                 ->get();
 
             // Pre-cargar para evitar N+1: 2 queries en lugar de 2×N
