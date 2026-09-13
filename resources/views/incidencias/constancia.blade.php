@@ -84,7 +84,7 @@ table.firmas td { text-align: center; padding: 0 30px; }
       <td class="hdr-logo"><img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas"></td>
       <td class="hdr-info">
         <h2>CONSTANCIA DE INCIDENCIA</h2>
-        <p>Departamento de Recursos Humanos &nbsp;·&nbsp; Tegucigalpa, Honduras</p>
+        <p>Departamento de Recursos Humanos &nbsp;·&nbsp; La Ceiba, Atlántida, Honduras</p>
       </td>
       <td class="hdr-doc">
         <div class="num">N° {{ str_pad($incidencia->id, 5, '0', STR_PAD_LEFT) }}</div>

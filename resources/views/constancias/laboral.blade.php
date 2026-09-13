@@ -36,7 +36,7 @@
   <div class="header">
     <img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas">
     <h2>Departamento de Recursos Humanos</h2>
-    <p>Tegucigalpa, Honduras</p>
+    <p>La Ceiba, Atlántida, Honduras</p>
   </div>
 
   <div class="titulo">CONSTANCIA DE TRABAJO</div>
@@ -53,7 +53,7 @@
     </p>
     <p>
       Se extiende la presente constancia a solicitud del(la) interesado(a), para los fines que estime
-      convenientes, en la ciudad de Tegucigalpa, a los {{ now()->format('d') }} días del mes de
+      convenientes, en la ciudad de La Ceiba, a los {{ now()->format('d') }} días del mes de
       {{ $meses[now()->month - 1] }} de {{ now()->format('Y') }}.
     </p>
   </div>
