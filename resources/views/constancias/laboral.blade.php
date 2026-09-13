@@ -11,7 +11,7 @@
 
   /* Marrón #3b2b16 y dorado #b9921a extraídos del logotipo oficial */
   .header { text-align: center; border-bottom: 2px solid #3b2b16; padding-bottom: 10px; margin-bottom: 30px; }
-  .header img { height: 62px; margin-bottom: 8px; }
+  .header img { height: 90px; margin-bottom: 8px; }
   .header h2 { font-size: 14px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; }
   .header p  { font-size: 8px; color: #8a6d10; margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
 

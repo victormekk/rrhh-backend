@@ -18,8 +18,8 @@ body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; lin
 
 /* ── Header ── */
 table.hdr { width: 100%; border-collapse: collapse; border-bottom: 2px solid #3b2b16; padding-bottom: 9px; margin-bottom: 9px; }
-.hdr-logo { width: 100px; vertical-align: middle; }
-.hdr-logo img { width: 100px; height: auto; display: block; }
+.hdr-logo { width: 130px; vertical-align: middle; }
+.hdr-logo img { width: 130px; height: auto; display: block; }
 .hdr-info { vertical-align: middle; padding-left: 14px; }
 .hdr-info h2 { font-size: 19px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; line-height: 1.2; }
 .hdr-info p  { font-size: 7.5px; color: #b9921a; margin-top: 4px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
