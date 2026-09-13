@@ -31,7 +31,6 @@
   tbody td { padding: 3px; font-size: 7.5px; border-bottom: 1px solid #e2e8f0; overflow-wrap: break-word; word-break: break-word; }
   tbody td.num { text-align: right; }
   tbody td.emp { font-weight: 600; }
-  tbody td.cuenta { font-family: DejaVu Sans Mono, monospace; }
 
   .totals-row td { background-color: #b9921a; color: #3b2b16; font-weight: bold; font-size: 7.5px; padding: 4px 3px; }
   .totals-row td.num { text-align: right; }
@@ -65,7 +64,7 @@
 <table>
   <thead>
     <tr>
-      <th style="width:13%">Empleado</th>
+      <th style="width:24%">Empleado</th>
       <th style="width:3%">Días</th>
       <th style="width:6%">Sal. Base</th>
       <th style="width:5%">H. Extra</th>
@@ -82,13 +81,12 @@
       <th style="width:5%">Otras Ded.</th>
       <th style="width:6%">Ded. Neta</th>
       <th style="width:6%">Sal. Neto</th>
-      <th style="width:8%">Cuenta</th>
     </tr>
   </thead>
   <tbody>
     @foreach($planilla->detalles->groupBy('departamento') as $departamento => $filas)
     <tr>
-      <td colspan="18" style="background-color:#f8f2df; color:#3b2b16; font-weight:bold; padding:4px;">{{ $departamento }}</td>
+      <td colspan="17" style="background-color:#f8f2df; color:#3b2b16; font-weight:bold; padding:4px;">{{ $departamento }}</td>
     </tr>
     @foreach($filas as $d)
     <tr>
@@ -109,7 +107,6 @@
       <td class="num">{{ number_format($d->otras_deducciones, 2) }}</td>
       <td class="num" style="color:#dc2626">{{ number_format($d->deduccion_neta, 2) }}</td>
       <td class="num" style="font-weight:bold">{{ number_format($d->salario_neto, 2) }}</td>
-      <td class="cuenta">{{ $d->cuenta_banco ?? '—' }}</td>
     </tr>
     @endforeach
     <tr style="background-color:#eee3c3; font-weight:bold;">
@@ -130,7 +127,6 @@
       <td class="num">{{ number_format($filas->sum('otras_deducciones'), 2) }}</td>
       <td class="num">{{ number_format($filas->sum('deduccion_neta'), 2) }}</td>
       <td class="num">{{ number_format($filas->sum('salario_neto'), 2) }}</td>
-      <td></td>
     </tr>
     @endforeach
   </tbody>
@@ -152,7 +148,6 @@
     <td class="num">{{ number_format($totales['otras_deducciones'], 2) }}</td>
     <td class="num">{{ number_format($totales['deduccion_neta'], 2) }}</td>
     <td class="num">{{ number_format($totales['salario_neto'], 2) }}</td>
-    <td></td>
   </tr>
 </table>
 
