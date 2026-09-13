@@ -239,7 +239,9 @@ class PlanillaController extends Controller
         $n = iconv('UTF-8', 'ASCII//TRANSLIT', $planilla->nombre_planilla) ?? $planilla->nombre_planilla;
         $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
 
-        return $pdf->download(now()->format('dmY') . '-' . $n . '-planilla.pdf');
+        return $pdf->download(now()->format('dmY') . '-' . $n . '-planilla.pdf')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     public function exportExcel($id)
