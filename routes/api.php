@@ -4,6 +4,7 @@ use App\Http\Controllers\AguinaldoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BancoController;
 use App\Http\Controllers\CamposVariablesController;
+use App\Http\Controllers\ConstanciaController;
 use App\Http\Controllers\CumpleanosController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EstadisticaLaboralController;
@@ -47,6 +48,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('aguinaldo/{nombre}/cerrar',[AguinaldoController::class, 'cerrar'])->where('nombre', '.*');
     Route::get('aguinaldo/{nombre}',       [AguinaldoController::class, 'show'])->where('nombre', '.*');
     Route::delete('aguinaldo/{nombre}',    [AguinaldoController::class, 'destroy'])->where('nombre', '.*');
+
+    // Constancias
+    Route::get('constancias/laboral/{id}/pdf', [ConstanciaController::class, 'laboral']);
 
     // Incidencias
     Route::get('incidencias/{id}/pdf', [IncidenciaController::class, 'pdf']);
