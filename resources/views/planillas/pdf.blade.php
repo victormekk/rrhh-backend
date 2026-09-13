@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: letter landscape; margin: 3cm; }
+  /* :not(html):not(body) evita un bug de dompdf: si <body> recibe margin:0
+     explicito y la pagina tiene una <table>, dompdf ignora el margen del
+     @page y dibuja los fondos de la tabla de borde a borde de la hoja. */
+  *:not(html):not(body) { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: letter landscape; margin: 1.27cm; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; }
   .page { padding: 0; }
 
@@ -33,9 +36,11 @@
   .totals-row td { background-color: #b9921a; color: #3b2b16; font-weight: bold; font-size: 7.5px; padding: 4px 3px; }
   .totals-row td.num { text-align: right; }
 
-  .footer { margin-top: 30px; display: flex; justify-content: space-between; }
-  .firma  { text-align: center; width: 30%; }
-  .firma .linea { border-top: 1px solid #1e293b; padding-top: 4px; font-size: 8px; }
+  /* Tabla en vez de flexbox: dompdf no soporta bien justify-content:space-between
+     en divs (apilaba las 3 firmas en una sola columna en vez de ponerlas lado a lado). */
+  table.footer { width: 100%; border-collapse: collapse; margin-top: 30px; }
+  table.footer td { text-align: center; width: 33.33%; }
+  table.footer td.linea { border-top: 1px solid #1e293b; padding-top: 4px; font-size: 8px; }
 
   .badge-activo  { background:#dcfce7; color:#166534; border-radius:3px; padding:1px 5px; }
   .badge-cerrado { background:#fee2e2; color:#991b1b; border-radius:3px; padding:1px 5px; }
@@ -148,17 +153,13 @@
   </tr>
 </table>
 
-<div class="footer">
-  <div class="firma">
-    <div class="linea">Elaborado por</div>
-  </div>
-  <div class="firma">
-    <div class="linea">Revisado por</div>
-  </div>
-  <div class="firma">
-    <div class="linea">Autorizado por</div>
-  </div>
-</div>
+<table class="footer">
+  <tr>
+    <td class="linea">Elaborado por</td>
+    <td class="linea">Revisado por</td>
+    <td class="linea">Autorizado por</td>
+  </tr>
+</table>
 
 </div>
 </body>
