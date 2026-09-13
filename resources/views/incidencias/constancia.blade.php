@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <style>
 /* Márgenes nativos de página: se repiten en cada página física (a diferencia del padding en .page) */
-@page { size: letter portrait; margin: 25mm 30mm; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { margin: 0; padding: 0; font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; line-height: 1.35; }
+@page { size: letter portrait; margin: 1.27cm; }
+/* :not(html):not(body) evita un bug de dompdf: si <body> recibe margin:0
+   explicito y la pagina tiene una <table>, dompdf ignora el margen del
+   @page y dibuja los fondos de la tabla de borde a borde de la hoja. */
+*:not(html):not(body) { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; line-height: 1.35; }
 
 .page { padding: 0; }
 
