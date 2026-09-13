@@ -54,6 +54,13 @@ El vhost de Laragon `rrhh-backend.test` (`C:\laragon\etc\apache2\sites-enabled\a
 
 Se corrigió el `DocumentRoot`/`Directory` del `.conf` para apuntar a `C:/Users/victo/Desktop/rrhh-backend/public` (requiere reiniciar Apache desde Laragon para tomar el cambio). **Riesgo:** el archivo se llama `auto.*.conf` — Laragon podría regenerarlo automáticamente a partir de las carpetas que encuentre en `www\` y revertir el fix. Si `rrhh-backend.test` vuelve a comportarse "raro" (cambios de código que no aparecen), lo primero a revisar es este `DocumentRoot`. La carpeta vieja `C:\laragon\www\rrhh-backend` no se borró — sigue ahí, sin usarse.
 
+### ⚠️ Fotos de empleado rotas: falta `storage:link` + `APP_URL` sin puerto (corregido 2026-09-13)
+Las fotos de empleado (`Empleado::foto_url`, generada con `asset('storage/'.$path)`) daban 404 en el navegador por dos causas combinadas:
+1. `public/storage` no existía — nunca se corrió `php artisan storage:link` en esta máquina, así que los archivos guardados en `storage/app/public/empleados/fotos/` no eran alcanzables vía HTTP aunque la subida (`EmpleadoController::uploadFoto`) funcionaba bien y sí los guardaba en disco.
+2. `.env` tenía `APP_URL=http://localhost` (sin puerto), pero el backend que realmente consume el frontend corre con `php artisan serve` en el puerto 8000 (ver más abajo el fallback de `VITE_API_URL` en `rrhh_frontend`). Las URLs de foto apuntaban a `http://localhost/...` (puerto 80 / Apache) en vez de `http://localhost:8000/...`.
+
+Fix: se corrió `php artisan storage:link` (crea el symlink, no versionado — hay que repetirlo en cualquier otra máquina/clon) y se cambió `APP_URL` a `http://localhost:8000` en `.env` (tampoco versionado). Verificado con `curl` que la imagen responde 200. Si las fotos se rompen de nuevo en otra máquina, revisar estas dos cosas primero.
+
 ---
 
 ## Módulos y endpoints (`routes/api.php`)
