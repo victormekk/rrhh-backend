@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  @page { size: letter landscape; margin: 2.5cm 1.5cm; }
+  /* :not(html):not(body) evita un bug de dompdf: si <body> recibe margin:0
+     explicito y la pagina tiene una <table>, dompdf ignora el margen del
+     @page y dibuja los fondos de la tabla de borde a borde de la hoja. */
+  *:not(html):not(body) { margin: 0; padding: 0; box-sizing: border-box; }
+  @page { size: letter landscape; margin: 1.27cm; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 9px; color: #1e293b; }
   .page { padding: 0; }
   /* Marrón #3b2b16 y dorado #b9921a extraídos del logotipo oficial */
@@ -25,8 +28,10 @@
   tr:nth-child(even) td { background: #f8fafc; }
   .totals td { background: #b9921a !important; color: #3b2b16; font-weight: bold; }
   .footer { margin-top: 20px; }
-  .sigs { display: flex; justify-content: space-around; margin-top: 30px; }
-  .sig { text-align: center; width: 28%; }
+  /* Tabla en vez de flexbox: dompdf no soporta bien justify-content:space-around
+     en divs (apilaba las 3 firmas en una sola columna en vez de ponerlas lado a lado). */
+  table.sigs { width: 100%; border-collapse: collapse; margin-top: 30px; }
+  table.sigs td { text-align: center; width: 33.33%; }
   .sig-line { border-top: 1px solid #64748b; margin-bottom: 4px; }
   .num { text-align: right; }
 </style>
@@ -133,11 +138,13 @@
 @endif
 
 <div class="footer">
-  <div class="sigs">
-    <div class="sig"><div class="sig-line"></div><small>Gerente General</small></div>
-    <div class="sig"><div class="sig-line"></div><small>Recursos Humanos</small></div>
-    <div class="sig"><div class="sig-line"></div><small>Contabilidad</small></div>
-  </div>
+  <table class="sigs">
+    <tr>
+      <td><div class="sig-line"></div><small>Gerente General</small></td>
+      <td><div class="sig-line"></div><small>Recursos Humanos</small></td>
+      <td><div class="sig-line"></div><small>Contabilidad</small></td>
+    </tr>
+  </table>
 </div>
 
 </div>

@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: letter landscape; margin: 2.5cm 1.5cm; }
+  /* :not(html):not(body) evita un bug de dompdf: si <body> recibe margin:0
+     explicito y la pagina tiene una <table>, dompdf ignora el margen del
+     @page y dibuja los fondos de la tabla de borde a borde de la hoja. */
+  *:not(html):not(body) { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: letter landscape; margin: 1.27cm; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; }
   .page { padding: 0; }
 
@@ -14,7 +17,10 @@
   .header h2 { font-size: 17px; margin-top: 2px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; }
   .header p  { font-size: 8px; color: #8a6d10; margin-top: 3px; font-weight: 600; }
 
-  .meta { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 10px; font-size: 8px; padding: 6px 10px; background: #f8f2df; border-radius: 4px; border: 1px solid #e3c777; }
+  /* inline-block en vez de flex: dompdf no soporta bien flexbox aqui
+     (apilaba cada meta-item en su propia linea en vez de ponerlos en fila). */
+  .meta { margin-bottom: 10px; font-size: 8px; padding: 6px 10px; background: #f8f2df; border-radius: 4px; border: 1px solid #e3c777; }
+  .meta-item { display: inline-block; margin-right: 20px; }
   .meta-item span { color: #8a6d10; }
   .meta-item strong { color: #3b2b16; }
 
