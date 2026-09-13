@@ -135,7 +135,8 @@
     @endforeach
   </tbody>
   <tr class="totals-row">
-    <td colspan="2" style="text-align:left; padding-left:4px;">TOTAL GENERAL</td>
+    <td style="text-align:left; padding-left:4px;">TOTAL GENERAL</td>
+    <td class="num">{{ $totales['dias_trabajados'] }}</td>
     <td class="num">{{ number_format($totales['salario_base'], 2) }}</td>
     <td class="num">{{ number_format($totales['monto_horas_extras'], 2) }}</td>
     <td class="num">{{ number_format($totales['otros_ingresos'], 2) }}</td>

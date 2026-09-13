@@ -301,6 +301,7 @@ class PlanillaController extends Controller
     private function calcularTotales(CabeceraPlanilla $planilla): array
     {
         return $planilla->detalles->reduce(function (array $acc, DetallePlanilla $d) {
+            $acc['dias_trabajados']    += $d->dias_trabajados;
             $acc['salario_base']       += $d->salario_base;
             $acc['otros_ingresos']     += $d->otros_ingresos;
             $acc['horas_extras']       += $d->horas_extras;
@@ -319,7 +320,7 @@ class PlanillaController extends Controller
             $acc['salario_neto']       += $d->salario_neto;
             return $acc;
         }, array_fill_keys([
-            'salario_base','otros_ingresos','horas_extras','monto_horas_extras',
+            'dias_trabajados','salario_base','otros_ingresos','horas_extras','monto_horas_extras',
             'ihss','retencion_ahorro','isr','crefisa','transporte','radios',
             'uniforme','garden','i_vecinal','otras_deducciones',
             'deduccion_neta','salario_neto',
