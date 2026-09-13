@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: letter landscape; margin: 2.5cm 1.5cm; }
+  @page { size: letter landscape; margin: 3cm; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; }
   .page { padding: 0; }
 
