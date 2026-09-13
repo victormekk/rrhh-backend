@@ -29,9 +29,11 @@
   .totals td { background: #b9921a !important; color: #3b2b16; font-weight: bold; }
   .footer { margin-top: 20px; }
   /* Tabla en vez de flexbox: dompdf no soporta bien justify-content:space-around
-     en divs (apilaba las 3 firmas en una sola columna en vez de ponerlas lado a lado). */
-  table.sigs { width: 100%; border-collapse: collapse; margin-top: 30px; }
-  table.sigs td { text-align: center; width: 33.33%; }
+     en divs (apilaba las 3 firmas en una sola columna en vez de ponerlas lado a lado).
+     El padding horizontal en el td separa las 3 lineas (si no, se tocan y
+     forman una sola linea continua de borde a borde). */
+  table.sigs { width: 100%; border-collapse: collapse; margin-top: 1.8cm; }
+  table.sigs td { text-align: center; width: 33.33%; padding: 0 14px; border: none; }
   .sig-line { border-top: 1px solid #64748b; margin-bottom: 4px; }
   .num { text-align: right; }
 </style>

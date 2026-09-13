@@ -37,10 +37,12 @@
   .totals-row td.num { text-align: right; }
 
   /* Tabla en vez de flexbox: dompdf no soporta bien justify-content:space-between
-     en divs (apilaba las 3 firmas en una sola columna en vez de ponerlas lado a lado). */
-  table.footer { width: 100%; border-collapse: collapse; margin-top: 30px; }
-  table.footer td { text-align: center; width: 33.33%; }
-  table.footer td.linea { border-top: 1px solid #1e293b; padding-top: 4px; font-size: 8px; }
+     en divs (apilaba las 3 firmas en una sola columna en vez de ponerlas lado a lado).
+     La linea va en un div interno mas angosto que la celda (no directo en el td)
+     para que las 3 lineas queden separadas en vez de tocarse formando una sola. */
+  table.footer { width: 100%; border-collapse: collapse; margin-top: 1.8cm; }
+  table.footer td { text-align: center; width: 33.33%; padding: 0 14px; border: none; background: transparent; }
+  table.footer .linea { border-top: 1px solid #1e293b; padding-top: 4px; font-size: 8px; }
 
   .badge-activo  { background:#dcfce7; color:#166534; border-radius:3px; padding:1px 5px; }
   .badge-cerrado { background:#fee2e2; color:#991b1b; border-radius:3px; padding:1px 5px; }
@@ -155,9 +157,9 @@
 
 <table class="footer">
   <tr>
-    <td class="linea">Elaborado por</td>
-    <td class="linea">Revisado por</td>
-    <td class="linea">Autorizado por</td>
+    <td><div class="linea">Elaborado por</div></td>
+    <td><div class="linea">Revisado por</div></td>
+    <td><div class="linea">Autorizado por</div></td>
   </tr>
 </table>
 
