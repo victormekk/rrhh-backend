@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: letter landscape; margin: 25mm 30mm; }
+  @page { size: letter landscape; margin: 2.5cm 1.5cm; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; }
   .page { padding: 0; }
 
@@ -18,13 +18,13 @@
   .meta-item span { color: #8a6d10; }
   .meta-item strong { color: #3b2b16; }
 
-  table { width: 100%; border-collapse: collapse; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   thead tr { background-color: #3b2b16; color: white; }
-  thead th { padding: 5px 6px; text-align: left; font-size: 7.5px; font-weight: bold; white-space: nowrap; }
+  thead th { padding: 5px 6px; text-align: left; font-size: 7.5px; font-weight: bold; overflow-wrap: break-word; }
 
   tbody tr:nth-child(even) { background-color: #f8fafc; }
   tbody tr:nth-child(odd)  { background-color: #ffffff; }
-  tbody td { padding: 4px 6px; font-size: 7.5px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  tbody td { padding: 4px 6px; font-size: 7.5px; border-bottom: 1px solid #e2e8f0; vertical-align: top; overflow-wrap: break-word; word-break: break-word; }
   tbody td.fecha  { color: #64748b; white-space: nowrap; }
   tbody td.modulo { color: #3b2b16; font-weight: 600; }
   tbody td.usuario{ color: #64748b; }

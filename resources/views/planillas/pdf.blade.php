@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  @page { size: letter landscape; margin: 25mm 30mm; }
+  @page { size: letter landscape; margin: 2.5cm 1.5cm; }
   body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; }
   .page { padding: 0; }
 
@@ -18,16 +18,17 @@
   .meta span { color: #64748b; }
   .meta strong { color: #1e293b; }
 
-  table { width: 100%; border-collapse: collapse; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   thead tr { background-color: #3b2b16; color: white; }
-  thead th { padding: 4px 3px; text-align: center; font-size: 7px; font-weight: bold; }
+  thead th { padding: 4px 3px; text-align: center; font-size: 7px; font-weight: bold; overflow-wrap: break-word; }
   thead th:first-child { text-align: left; }
 
   tbody tr:nth-child(even) { background-color: #f8fafc; }
   tbody tr:nth-child(odd)  { background-color: #ffffff; }
-  tbody td { padding: 3px; font-size: 7.5px; border-bottom: 1px solid #e2e8f0; }
+  tbody td { padding: 3px; font-size: 7.5px; border-bottom: 1px solid #e2e8f0; overflow-wrap: break-word; word-break: break-word; }
   tbody td.num { text-align: right; }
   tbody td.emp { font-weight: 600; }
+  tbody td.cuenta { font-family: DejaVu Sans Mono, monospace; }
 
   .totals-row td { background-color: #b9921a; color: #3b2b16; font-weight: bold; font-size: 7.5px; padding: 4px 3px; }
   .totals-row td.num { text-align: right; }
@@ -101,7 +102,7 @@
       <td class="num">{{ number_format($d->otras_deducciones, 2) }}</td>
       <td class="num" style="color:#dc2626">{{ number_format($d->deduccion_neta, 2) }}</td>
       <td class="num" style="font-weight:bold">{{ number_format($d->salario_neto, 2) }}</td>
-      <td style="font-family:monospace">{{ $d->cuenta_banco ?? '—' }}</td>
+      <td class="cuenta">{{ $d->cuenta_banco ?? '—' }}</td>
     </tr>
     @endforeach
     <tr style="background-color:#eee3c3; font-weight:bold;">
