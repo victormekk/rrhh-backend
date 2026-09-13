@@ -23,7 +23,7 @@
 
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   thead tr { background-color: #3b2b16; color: white; }
-  thead th { padding: 4px 3px; text-align: center; font-size: 7px; font-weight: bold; overflow-wrap: break-word; }
+  thead th { padding: 4px 3px; text-align: center; font-size: 7px; font-weight: bold; white-space: nowrap; }
   thead th:first-child { text-align: left; }
 
   tbody tr:nth-child(even) { background-color: #f8fafc; }
@@ -77,7 +77,7 @@
       <th style="width:4%">Transp.</th>
       <th style="width:4%">Radios</th>
       <th style="width:5%">I. Vecinal</th>
-      <th style="width:4%">Uniforme</th>
+      <th style="width:6%">Uniforme</th>
       <th style="width:4%">Garden</th>
       <th style="width:5%">Otras Ded.</th>
       <th style="width:6%">Ded. Neta</th>
@@ -92,7 +92,7 @@
     </tr>
     @foreach($filas as $d)
     <tr>
-      <td class="emp">{{ $d->empleado->apellidos }}, {{ $d->empleado->nombres }}</td>
+      <td class="emp">{{ $d->empleado->nombres }} {{ $d->empleado->apellidos }}</td>
       <td class="num">{{ $d->dias_trabajados }}</td>
       <td class="num">{{ number_format($d->salario_base, 2) }}</td>
       <td class="num">{{ number_format($d->monto_horas_extras, 2) }}</td>

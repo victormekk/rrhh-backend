@@ -85,7 +85,7 @@ class PlanillaController extends Controller
 
             foreach ($empleados as $emp) {
                 $il              = $emp->informacionLaboral;
-                $diasTrabajados  = $request->tipo_planilla === 'Fijos' ? 15 : 0;
+                $diasTrabajados  = 0;
                 $salarioBase     = round($il->salario_diario * $diasTrabajados, 2);
 
                 $empIngresos   = $ingresosMap->get($emp->id, collect());
@@ -93,7 +93,8 @@ class PlanillaController extends Controller
                 $descIngresos  = $empIngresos->pluck('descripcion')->filter()->implode(', ');
                 $cuotasMonto   = (float) $cuotasMap->get($emp->id, collect())->sum('monto');
 
-                $ihss  = $ihssFijo; // valor fijo configurable desde Campos Variables
+                // El personal de contrato Extra no cotiza IHSS en esta planilla.
+                $ihss = $request->tipo_planilla === 'Extras' ? 0 : $ihssFijo;
 
                 // RAP e ISR se editan a mano por empleado (no calzan con una formula automatica
                 // en la practica real de nomina), arrancan en 0.
