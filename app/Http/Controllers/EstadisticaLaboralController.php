@@ -24,11 +24,13 @@ class EstadisticaLaboralController extends Controller
                 $q->where('detalle_planillas.fecha_generada', '>=', $request->fecha_inicio))
             ->when($request->fecha_fin, fn($q) =>
                 $q->where('detalle_planillas.fecha_generada', '<=', $request->fecha_fin))
-            ->when($request->search, function ($q) use ($request) {
+            ->when($request->id_empleado, fn($q, $id) => $q->where('empleados.id', $id))
+            ->when(!$request->id_empleado && $request->search, function ($q) use ($request) {
                 $s = $request->search;
                 $q->where(function ($sub) use ($s) {
                     $sub->where('empleados.nombres',   'like', "%{$s}%")
-                        ->orWhere('empleados.apellidos', 'like', "%{$s}%");
+                        ->orWhere('empleados.apellidos', 'like', "%{$s}%")
+                        ->orWhere('empleados.cedula',    'like', "%{$s}%");
                 });
             });
     }
