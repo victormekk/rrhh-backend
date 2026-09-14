@@ -16,21 +16,25 @@ class EmpleadoController extends Controller
     public function index(Request $request)
     {
         $query = Empleado::with(['informacionLaboral', 'cargo', 'departamento'])
+            ->join('departamentos', 'departamentos.id', '=', 'empleados.id_departamento')
+            ->select('empleados.*')
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($q) use ($search) {
-                    $q->where('nombres', 'like', "%{$search}%")
-                      ->orWhere('apellidos', 'like', "%{$search}%")
-                      ->orWhere('cedula', 'like', "%{$search}%");
+                    $q->where('empleados.nombres', 'like', "%{$search}%")
+                      ->orWhere('empleados.apellidos', 'like', "%{$search}%")
+                      ->orWhere('empleados.cedula', 'like', "%{$search}%");
                 });
             })
-            ->when($request->id_departamento, fn($q, $dep) => $q->where('id_departamento', $dep))
+            ->when($request->id_departamento, fn($q, $dep) => $q->where('empleados.id_departamento', $dep))
             ->when($request->tipo_contrato, fn($q, $tipo) =>
                 $q->whereHas('informacionLaboral', fn($q) => $q->where('tipo_contrato', $tipo))
             )
             ->when($request->estado, fn($q, $estado) =>
                 $q->whereHas('informacionLaboral', fn($q) => $q->where('estado', $estado))
             )
-            ->orderBy('apellidos');
+            // Orden alfabetico por departamento, y por apellidos dentro de cada uno.
+            ->orderBy('departamentos.nombre')
+            ->orderBy('empleados.apellidos');
 
         return response()->json($query->paginate(15));
     }
