@@ -171,7 +171,7 @@ class VacacionController extends Controller
 
         if ($saldo['saldo'] < $dias) {
             return response()->json([
-                'message' => "Saldo insuficiente. Disponibles: {$saldo['saldo']} día(s), solicitados: {$dias}.",
+                'message' => "No hay suficientes días disponibles. Disponibles: {$saldo['saldo']} día(s), solicitados: {$dias}.",
             ], 422);
         }
 
@@ -207,7 +207,7 @@ class VacacionController extends Controller
 
         if ($saldoEfectivo < $dias) {
             return response()->json([
-                'message' => "Saldo insuficiente. Disponibles: {$saldoEfectivo} día(s), solicitados: {$dias}.",
+                'message' => "No hay suficientes días disponibles. Disponibles: {$saldoEfectivo} día(s), solicitados: {$dias}.",
             ], 422);
         }
 
