@@ -15,7 +15,7 @@ class EmpleadoController extends Controller
     use LogsActividad;
     public function index(Request $request)
     {
-        $query = Empleado::with(['informacionLaboral', 'puesto', 'departamento'])
+        $query = Empleado::with(['informacionLaboral', 'cargo', 'departamento'])
             ->when($request->search, function ($q, $search) {
                 $q->where(function ($q) use ($search) {
                     $q->where('nombres', 'like', "%{$search}%")
@@ -34,7 +34,7 @@ class EmpleadoController extends Controller
 
     public function show($id)
     {
-        $empleado = Empleado::with(['informacionLaboral.banco', 'puesto', 'departamento'])
+        $empleado = Empleado::with(['informacionLaboral.banco', 'cargo', 'departamento'])
             ->findOrFail($id);
 
         return response()->json($empleado);
@@ -58,7 +58,7 @@ class EmpleadoController extends Controller
             'telefono_emergencia' => 'required|string|max:30',
             'correo'              => 'nullable|email|max:50',
             'tipo_sangre'         => 'required|string|max:10',
-            'id_puesto'           => 'required|exists:puestos,id',
+            'id_cargo'           => 'required|exists:cargos,id',
             'id_departamento'     => 'required|exists:departamentos,id',
             'tipo_contrato'       => 'required|string|max:20',
             'fecha_inicio'        => 'required|date',
@@ -98,7 +98,7 @@ class EmpleadoController extends Controller
                     'fecha_nacimiento', 'estado_civil', 'num_hijos',
                     'nacionalidad', 'residencia', 'telefono',
                     'contacto_emergencia', 'telefono_emergencia',
-                    'correo', 'tipo_sangre', 'id_puesto', 'id_departamento',
+                    'correo', 'tipo_sangre', 'id_cargo', 'id_departamento',
                 ]),
                 'edad'            => now()->diffInYears($request->fecha_nacimiento),
                 'id_info_laboral' => $infoLaboral->id,
@@ -108,7 +108,7 @@ class EmpleadoController extends Controller
             $this->logActividad('creado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} registrado.", $empleado->id);
 
             return response()->json(
-                $empleado->load(['informacionLaboral.banco', 'puesto', 'departamento']),
+                $empleado->load(['informacionLaboral.banco', 'cargo', 'departamento']),
                 201
             );
         });
@@ -134,7 +134,7 @@ class EmpleadoController extends Controller
             'telefono_emergencia' => 'required|string|max:30',
             'correo'              => 'nullable|email|max:50',
             'tipo_sangre'         => 'required|string|max:10',
-            'id_puesto'           => 'required|exists:puestos,id',
+            'id_cargo'           => 'required|exists:cargos,id',
             'id_departamento'     => 'required|exists:departamentos,id',
             'tipo_contrato'       => 'required|string|max:20',
             'fecha_inicio'        => 'required|date',
@@ -178,7 +178,7 @@ class EmpleadoController extends Controller
                     'fecha_nacimiento', 'estado_civil', 'num_hijos',
                     'nacionalidad', 'residencia', 'telefono',
                     'contacto_emergencia', 'telefono_emergencia',
-                    'correo', 'tipo_sangre', 'id_puesto', 'id_departamento',
+                    'correo', 'tipo_sangre', 'id_cargo', 'id_departamento',
                 ]),
                 'edad' => now()->diffInYears($request->fecha_nacimiento),
             ]);
@@ -186,7 +186,7 @@ class EmpleadoController extends Controller
             $this->logActividad('editado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} actualizado.", $empleado->id);
 
             return response()->json(
-                $empleado->fresh(['informacionLaboral.banco', 'puesto', 'departamento'])
+                $empleado->fresh(['informacionLaboral.banco', 'cargo', 'departamento'])
             );
         });
     }

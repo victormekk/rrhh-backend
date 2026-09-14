@@ -132,8 +132,8 @@ table.firmas td { text-align: center; padding: 0 30px; }
         <span class="val">{{ $emp->rtn ?? '—' }}</span>
       </td>
       <td width="32%">
-        <span class="lbl">Puesto</span>
-        <span class="val">{{ $emp->puesto?->nombre ?? '—' }}</span>
+        <span class="lbl">Cargo</span>
+        <span class="val">{{ $emp->cargo?->nombre ?? '—' }}</span>
         <span class="lbl">Departamento</span>
         <span class="val">{{ $emp->departamento?->nombre ?? '—' }}</span>
         <span class="lbl">Tipo de contrato</span>

@@ -18,7 +18,7 @@ class ConstanciaController extends Controller
 
     public function laboral($id)
     {
-        $emp = Empleado::with(['informacionLaboral', 'puesto', 'departamento'])->findOrFail($id);
+        $emp = Empleado::with(['informacionLaboral', 'cargo', 'departamento'])->findOrFail($id);
 
         $il = $emp->informacionLaboral;
         abort_if(!$il || !$il->fecha_inicio, 422, 'El empleado no tiene información laboral registrada.');

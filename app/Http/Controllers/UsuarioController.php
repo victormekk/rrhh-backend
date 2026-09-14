@@ -4,19 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Traits\LogsActividad;
+use App\Traits\SoloAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class UsuarioController extends Controller
 {
-    use LogsActividad;
-
-    private function soloAdmin(Request $request)
-    {
-        if ($request->user()->rol !== 'admin') {
-            abort(response()->json(['message' => 'Acción reservada para administradores.'], 403));
-        }
-    }
+    use LogsActividad, SoloAdmin;
 
     public function index(Request $request)
     {

@@ -17,7 +17,7 @@ class Empleado extends Model
         'nacionalidad', 'residencia', 'telefono',
         'contacto_emergencia', 'telefono_emergencia', 'correo',
         'tipo_sangre', 'foto_path',
-        'id_info_laboral', 'id_puesto', 'id_departamento', 'id_usuario',
+        'id_info_laboral', 'id_cargo', 'id_departamento', 'id_usuario',
     ];
 
     protected $appends = ['foto_url'];
@@ -38,9 +38,9 @@ class Empleado extends Model
         return $this->belongsTo(InformacionLaboral::class, 'id_info_laboral');
     }
 
-    public function puesto()
+    public function cargo()
     {
-        return $this->belongsTo(Puesto::class, 'id_puesto');
+        return $this->belongsTo(Cargo::class, 'id_cargo');
     }
 
     public function departamento()

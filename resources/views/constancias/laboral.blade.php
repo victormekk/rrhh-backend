@@ -48,7 +48,7 @@
       identificado(a) con número de identidad <strong>{{ $emp->cedula ?? '—' }}</strong>,
       labora en esta empresa desde el
       <strong>{{ $fechaInicio->format('d') }} de {{ $meses[$fechaInicio->month - 1] }} de {{ $fechaInicio->format('Y') }}</strong>,
-      desempeñando el puesto de <strong>{{ $emp->puesto?->nombre ?? '—' }}</strong>,
+      desempeñando el cargo de <strong>{{ $emp->cargo?->nombre ?? '—' }}</strong>,
       con un salario mensual de <strong>{{ $simboloMoneda }} {{ number_format($salarioMensual, 2) }}</strong>.
     </p>
     <p>

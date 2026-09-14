@@ -77,7 +77,7 @@
     <tr>
       <td class="left">{{ $f->nombres }} {{ $f->apellidos }}</td>
       <td>{{ $f->cuenta ?? '—' }}</td>
-      <td class="left">{{ $f->puesto ?? '—' }}</td>
+      <td class="left">{{ $f->cargo ?? '—' }}</td>
       <td>{{ $f->fecha_inicio ? $f->fecha_inicio->format('d/m/Y') : '—' }}</td>
       <td class="num">L {{ number_format($f->salario_base, 2) }}</td>
       <td>{{ $f->dias_trabajados }}</td>

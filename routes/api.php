@@ -13,7 +13,7 @@ use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\IncidenciaController;
 use App\Http\Controllers\LogSistemaController;
 use App\Http\Controllers\PlanillaController;
-use App\Http\Controllers\PuestoController;
+use App\Http\Controllers\CargoController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VacacionController;
 use Illuminate\Support\Facades\Route;
@@ -36,7 +36,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Catálogos
     Route::apiResource('departamentos', DepartamentoController::class);
-    Route::apiResource('puestos', PuestoController::class);
+    Route::delete('departamentos/{id}/eliminar', [DepartamentoController::class, 'eliminar']);
+    Route::apiResource('cargos', CargoController::class);
+    Route::delete('cargos/{id}/eliminar', [CargoController::class, 'eliminar']);
     Route::apiResource('bancos', BancoController::class);
 
     // Aguinaldo (rutas específicas antes de la wildcard {nombre})

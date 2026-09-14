@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Departamento;
+use App\Traits\SoloAdmin;
 use Illuminate\Http\Request;
 
 class DepartamentoController extends Controller
 {
+    use SoloAdmin;
+
     public function index(Request $request)
     {
         $query = Departamento::when(
@@ -57,5 +60,23 @@ class DepartamentoController extends Controller
         $departamento->update(['estado' => 'Inactivo']);
 
         return response()->json(['message' => 'Departamento desactivado.']);
+    }
+
+    // Borrado permanente: solo administradores.
+    public function eliminar(Request $request, $id)
+    {
+        $this->soloAdmin($request);
+
+        $departamento = Departamento::findOrFail($id);
+
+        abort_if(
+            $departamento->empleados()->exists(),
+            422,
+            'No se puede eliminar: hay empleados asignados a este departamento.'
+        );
+
+        $departamento->delete();
+
+        return response()->json(['message' => 'Departamento eliminado permanentemente.']);
     }
 }

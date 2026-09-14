@@ -128,7 +128,7 @@ class VacacionController extends Controller
 
     public function index(Request $request)
     {
-        $solicitudes = SolicitudVacacion::with('empleado:id,nombres,apellidos,id_puesto,id_departamento')
+        $solicitudes = SolicitudVacacion::with('empleado:id,nombres,apellidos,id_cargo,id_departamento')
             ->when($request->id_empleado, fn($q, $id) => $q->where('id_empleado', $id))
             ->when($request->search, fn($q, $s) =>
                 $q->whereHas('empleado', fn($eq) =>
@@ -144,7 +144,7 @@ class VacacionController extends Controller
 
     public function saldo($id)
     {
-        $empleado = Empleado::with(['informacionLaboral', 'puesto', 'departamento'])
+        $empleado = Empleado::with(['informacionLaboral', 'cargo', 'departamento'])
             ->findOrFail($id);
 
         return response()->json([
@@ -229,7 +229,7 @@ class VacacionController extends Controller
     {
         $solicitud = SolicitudVacacion::with([
             'empleado.informacionLaboral.banco',
-            'empleado.puesto',
+            'empleado.cargo',
             'empleado.departamento',
         ])->findOrFail($id);
 

@@ -90,7 +90,7 @@ class IncidenciaController extends Controller
     {
         $incidencia = Incidencia::with([
             'empleado.informacionLaboral',
-            'empleado.puesto',
+            'empleado.cargo',
             'empleado.departamento',
         ])->findOrFail($id);
 

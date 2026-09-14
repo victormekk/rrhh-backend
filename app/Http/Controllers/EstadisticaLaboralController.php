@@ -82,7 +82,7 @@ class EstadisticaLaboralController extends Controller
 
     public function show(Request $request, $empleadoId)
     {
-        $empleado = Empleado::with(['departamento:id,nombre', 'puesto:id,nombre'])
+        $empleado = Empleado::with(['departamento:id,nombre', 'cargo:id,nombre'])
             ->findOrFail($empleadoId);
 
         $detalles = DetallePlanilla::where('id_empleado', $empleadoId)
@@ -105,7 +105,7 @@ class EstadisticaLaboralController extends Controller
                 'nombres'     => $empleado->nombres,
                 'apellidos'   => $empleado->apellidos,
                 'departamento'=> $empleado->departamento?->nombre ?? '—',
-                'puesto'      => $empleado->puesto?->nombre ?? '—',
+                'cargo'       => $empleado->cargo?->nombre ?? '—',
             ],
             'detalles' => $detalles,
             'totales'  => [
