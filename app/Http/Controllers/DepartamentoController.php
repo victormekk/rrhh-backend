@@ -57,6 +57,18 @@ class DepartamentoController extends Controller
     public function destroy($id)
     {
         $departamento = Departamento::findOrFail($id);
+
+        $nombres = $departamento->empleados()
+            ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))
+            ->get(['nombres', 'apellidos'])
+            ->map(fn($e) => trim("{$e->nombres} {$e->apellidos}"));
+
+        abort_if(
+            $nombres->isNotEmpty(),
+            422,
+            'No se puede desactivar: hay empleados activos en este departamento (' . $nombres->implode(', ') . '). Muévelos a otro departamento primero.'
+        );
+
         $departamento->update(['estado' => 'Inactivo']);
 
         return response()->json(['message' => 'Departamento desactivado.']);

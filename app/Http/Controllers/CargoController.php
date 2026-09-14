@@ -57,6 +57,18 @@ class CargoController extends Controller
     public function destroy($id)
     {
         $cargo = Cargo::findOrFail($id);
+
+        $nombres = $cargo->empleados()
+            ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))
+            ->get(['nombres', 'apellidos'])
+            ->map(fn($e) => trim("{$e->nombres} {$e->apellidos}"));
+
+        abort_if(
+            $nombres->isNotEmpty(),
+            422,
+            'No se puede desactivar: hay empleados activos con este cargo (' . $nombres->implode(', ') . '). Muévelos a otro cargo primero.'
+        );
+
         $cargo->update(['estado' => 'Inactivo']);
 
         return response()->json(['message' => 'Cargo desactivado.']);
