@@ -253,7 +253,7 @@ class PlanillaController extends Controller
             ->header('Pragma', 'no-cache');
     }
 
-    public function exportExcel($id)
+    public function exportPago($id)
     {
         $planilla = CabeceraPlanilla::with([
             'detalles' => fn($q) => $q->with('empleado:id,nombres,apellidos')
@@ -287,6 +287,120 @@ class PlanillaController extends Controller
         (new Xlsx($spreadsheet))->save($tempFile);
 
         return response()->download($tempFile, now()->format('dmY') . '-' . $n . '-pago.xlsx')
+            ->deleteFileAfterSend(true);
+    }
+
+    public function exportExcel($id)
+    {
+        $planilla = CabeceraPlanilla::with([
+            'detalles' => fn($q) => $q->with('empleado:id,nombres,apellidos')
+                                      ->orderBy('departamento')
+                                      ->orderBy('id_empleado'),
+        ])->findOrFail($id);
+
+        $totales = $this->calcularTotales($planilla);
+
+        $columnas = [
+            'A' => 'Empleado',     'B' => 'Días',        'C' => 'Sal. Base',
+            'D' => 'H. Extra',     'E' => 'Otros Ing.',  'F' => 'IHSS',
+            'G' => 'RAP',          'H' => 'ISR',         'I' => 'Crefisa',
+            'J' => 'Transp.',      'K' => 'Radios',      'L' => 'I. Vecinal',
+            'M' => 'Uniforme',     'N' => 'Garden',      'O' => 'Otras Ded.',
+            'P' => 'Ded. Neta',    'Q' => 'Sal. Neto',
+        ];
+        $ultimaCol  = 'Q';
+        $camposNum  = ['salario_base', 'monto_horas_extras', 'otros_ingresos', 'ihss', 'retencion_ahorro',
+            'isr', 'crefisa', 'transporte', 'radios', 'i_vecinal', 'uniforme', 'garden',
+            'otras_deducciones', 'deduccion_neta', 'salario_neto'];
+
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Planilla');
+
+        $sheet->mergeCells("A1:{$ultimaCol}1");
+        $sheet->setCellValue('A1', 'INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells("A2:{$ultimaCol}2");
+        $sheet->setCellValue('A2', strtoupper($planilla->nombre_planilla));
+        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells("A3:{$ultimaCol}3");
+        $sheet->setCellValue('A3', sprintf(
+            'Tipo: %s   |   Fecha: %s   |   Estado: %s   |   Empleados: %d',
+            $planilla->tipo_planilla,
+            \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y'),
+            $planilla->estado,
+            $planilla->detalles->count()
+        ));
+        $sheet->getStyle('A3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $row = 5;
+        foreach ($columnas as $col => $titulo) {
+            $sheet->setCellValue("{$col}{$row}", $titulo);
+        }
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('3B2B16');
+        $row++;
+
+        foreach ($planilla->detalles->groupBy('departamento') as $departamento => $filas) {
+            $sheet->setCellValue("A{$row}", $departamento);
+            $sheet->mergeCells("A{$row}:{$ultimaCol}{$row}");
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true)->getColor()->setRGB('3B2B16');
+            $sheet->getStyle("A{$row}")->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('F8F2DF');
+            $row++;
+
+            foreach ($filas as $d) {
+                $sheet->setCellValue("A{$row}", trim("{$d->empleado->nombres} {$d->empleado->apellidos}"));
+                $sheet->setCellValueExplicit("B{$row}", (int) $d->dias_trabajados, DataType::TYPE_NUMERIC);
+                $col = 'C';
+                foreach ($camposNum as $campo) {
+                    $sheet->setCellValueExplicit("{$col}{$row}", round((float) $d->$campo, 2), DataType::TYPE_NUMERIC);
+                    $col++;
+                }
+                $row++;
+            }
+
+            $sheet->setCellValue("A{$row}", "SUBTOTAL: {$departamento}");
+            $sheet->setCellValueExplicit("B{$row}", (int) $filas->sum('dias_trabajados'), DataType::TYPE_NUMERIC);
+            $col = 'C';
+            foreach ($camposNum as $campo) {
+                $sheet->setCellValueExplicit("{$col}{$row}", round((float) $filas->sum($campo), 2), DataType::TYPE_NUMERIC);
+                $col++;
+            }
+            $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true);
+            $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('EEE3C3');
+            $row++;
+        }
+
+        $sheet->setCellValue("A{$row}", 'TOTAL GENERAL');
+        $sheet->setCellValueExplicit("B{$row}", (int) $totales['dias_trabajados'], DataType::TYPE_NUMERIC);
+        $col = 'C';
+        foreach ($camposNum as $campo) {
+            $sheet->setCellValueExplicit("{$col}{$row}", round((float) $totales[$campo], 2), DataType::TYPE_NUMERIC);
+            $col++;
+        }
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true);
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('B9921A');
+
+        $sheet->getStyle("C6:{$ultimaCol}{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+        foreach (array_keys($columnas) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $n = iconv('UTF-8', 'ASCII//TRANSLIT', $planilla->nombre_planilla) ?? $planilla->nombre_planilla;
+        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'planilla') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tempFile);
+
+        return response()->download($tempFile, now()->format('dmY') . '-' . $n . '-planilla.xlsx')
             ->deleteFileAfterSend(true);
     }
 
