@@ -132,7 +132,9 @@ class EstadisticaLaboralController extends Controller
         $pdf = Pdf::loadView('estadistica.pdf', compact('rows', 'totales', 'periodo'))
             ->setPaper('letter', 'landscape');
 
-        $label = $request->search ?: 'TodosEmpleados';
+        $label = $rows->count() === 1
+            ? "{$rows->first()->nombres} {$rows->first()->apellidos}"
+            : 'TodosEmpleados';
 
         return $pdf->download($this->nombreArchivo('EstadisticaLaboral', $label, 'pdf'));
     }
