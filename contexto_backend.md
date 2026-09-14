@@ -1,65 +1,50 @@
 # Contexto de Cambios — RRHH Backend (Laravel)
 
 > Proyecto: Sistema de Recursos Humanos — Hotel Palma Real y Villas
-> Fecha de última actualización: 2026-08-26
+> Fecha de última actualización: 2026-09-14
 
 ---
 
-## Stack tecnológico
+## Stack tecnológico — qué es cada cosa y para qué se usa
 
-| Componente | Versión / detalle |
-|---|---|
-| PHP | 8.1.10 (Laragon, Windows) |
-| Laravel | ^10.10 (framework 10.50.2) |
-| Auth | Laravel Sanctum ^3.3 (tokens Bearer, `guard: web` + fallback token) |
-| Base de datos | MySQL |
-| PDF | `barryvdh/laravel-dompdf` ^3.1 |
-| Excel | `maatwebsite/excel` ^3.1 |
-| Servidor local | Apache (Laragon), vhost `rrhh-backend.test` |
+| Tecnología | Versión | Qué hace en este proyecto |
+|---|---|---|
+| **PHP** | 8.1.10 (Laragon, Windows) | Runtime del backend. |
+| **Laravel** | ^10.10 (framework 10.50.2) | Framework principal: rutas (`routes/api.php`), Eloquent ORM, migraciones, validación, colas de eventos. Toda la API es JSON (`api.php`), no hay vistas Blade renderizadas al usuario salvo los PDFs. |
+| **Laravel Sanctum** | ^3.3 | Autenticación por **token Bearer** (no cookies de sesión) — el frontend SPA manda `Authorization: Bearer <token>` en cada request. |
+| **MySQL** | — | Base de datos relacional (`rrhh_hpr`). |
+| **barryvdh/laravel-dompdf** | ^3.1 | Genera todos los PDFs del sistema: renderiza una vista Blade a HTML y la convierte a PDF (motor DomPDF). Cada documento tiene su propio `.blade.php` en `resources/views/`. |
+| **maatwebsite/excel** (PhpSpreadsheet) | ^3.1 | Exportación a `.xlsx`. El código actual usa `PhpOffice\PhpSpreadsheet` directamente en el controlador (no las clases `Export` de Laravel Excel) para el archivo de pago del banco. |
+| **Servidor local** | Apache (Laragon) / `php artisan serve` | Ver notas de infraestructura abajo — históricamente hubo confusión entre dos copias del código sirviendo en paralelo. |
 
 ---
 
 ## Infraestructura / entorno local
 
-### OPcache (agregado 2026-08-26)
-El `php.ini` de Laragon (`C:\laragon\bin\php\php-8.1.10-Win32-vs16-x64\php.ini`) traía OPcache **completamente deshabilitado** (`;zend_extension=opcache` comentado). Esto obligaba a PHP a recompilar Laravel + vendor completo en cada request, lo cual explicaba la lentitud percibida navegando entre pantallas (aun con pocos registros en la base). Se activó:
+### OPcache
+El `php.ini` de Laragon traía OPcache deshabilitado, obligando a recompilar Laravel + vendor en cada request. Se activó (`opcache.enable=1`, `validate_timestamps=1`, `revalidate_freq=0` — detección instantánea de cambios, apto para desarrollo). Este cambio vive en el `php.ini` del entorno, **no en el repositorio** — hay que replicarlo en cualquier otra máquina.
 
-```ini
-zend_extension=opcache
-opcache.enable=1
-opcache.memory_consumption=128
-opcache.interned_strings_buffer=8
-opcache.max_accelerated_files=10000
-opcache.validate_timestamps=1
-opcache.revalidate_freq=0
-```
-
-`validate_timestamps=1` + `revalidate_freq=0` mantiene detección instantánea de cambios de código (apto para desarrollo). **Impacto medido:** primera request tras reiniciar Apache ~22s (compila y llena la caché), requests siguientes ~100-150ms.
-
-> Si el proyecto pasa a producción: cambiar a `opcache.validate_timestamps=0` y ejecutar `opcache_reset()` (o reiniciar PHP-FPM/Apache) en cada deploy para el máximo rendimiento.
-
-Este cambio vive en el `php.ini` del entorno (Laragon), **no en el repositorio** — hay que replicarlo manualmente en cualquier otra máquina/entorno de desarrollo.
+> Si el proyecto pasa a producción: `opcache.validate_timestamps=0` + `opcache_reset()` en cada deploy.
 
 ### Migraciones de rendimiento
-`database/migrations/2026_05_29_000001_add_performance_indexes.php` agrega índices a:
-- `solicitudes_vacaciones.fecha_inicio`
-- `log_sistema.created_at`, `log_sistema.objeto_actualizado`
-- `incidencias.fecha_incidencia`
-- `detalle_planillas.nombre_planilla`
+`database/migrations/2026_05_29_000001_add_performance_indexes.php` agrega índices a `solicitudes_vacaciones.fecha_inicio`, `log_sistema.created_at`/`objeto_actualizado`, `incidencias.fecha_incidencia`, `detalle_planillas.nombre_planilla`.
 
-Corregida el 2026-08-26: la migración original referenciaba una columna `modulo` inexistente en `log_sistema` (la columna real es `objeto_actualizado`, usada en `LogSistemaController::filtrar()`). Ya está corrida contra la base local.
+### ⚠️ Documento raíz del código servido
+El vhost de Laragon `rrhh-backend.test` tenía el `DocumentRoot` apuntando a una copia de git **separada y congelada** en `C:\laragon\www\rrhh-backend`. Se corrigió para apuntar a `C:/Users/victo/Desktop/rrhh-backend/public`. **Riesgo:** el `.conf` es `auto.*` — Laragon puede regenerarlo. Si `rrhh-backend.test` "no refleja los cambios", revisar esto primero. La copia vieja no se borró, sigue sin usarse.
 
-### ⚠️ Documento raíz del código servido (corregido 2026-08-27)
-El vhost de Laragon `rrhh-backend.test` (`C:\laragon\etc\apache2\sites-enabled\auto.rrhh-backend.test.conf`) tenía el `DocumentRoot` apuntando a **`C:\laragon\www\rrhh-backend\public`** — una copia de git **completamente separada** de este repo (`C:\Users\victo\Desktop\rrhh-backend`), congelada en el commit `75fc033` (mayo). Ambas copias comparten la misma base de datos MySQL (`rrhh_hpr`), pero el código PHP servido por Apache era el viejo: **ningún cambio de esta sesión (ni de sesiones previas) estuvo realmente corriendo en `rrhh-backend.test` hasta este fix**.
+### ⚠️ Fotos de empleado rotas
+Causa: faltaba `php artisan storage:link` y `APP_URL` no tenía el puerto correcto (`8000`, el de `php artisan serve`, que es el que consume el frontend). Corregido; ninguno de los dos cambios está versionado (hay que repetirlos en cualquier clon nuevo).
 
-Se corrigió el `DocumentRoot`/`Directory` del `.conf` para apuntar a `C:/Users/victo/Desktop/rrhh-backend/public` (requiere reiniciar Apache desde Laragon para tomar el cambio). **Riesgo:** el archivo se llama `auto.*.conf` — Laragon podría regenerarlo automáticamente a partir de las carpetas que encuentre en `www\` y revertir el fix. Si `rrhh-backend.test` vuelve a comportarse "raro" (cambios de código que no aparecen), lo primero a revisar es este `DocumentRoot`. La carpeta vieja `C:\laragon\www\rrhh-backend` no se borró — sigue ahí, sin usarse.
+---
 
-### ⚠️ Fotos de empleado rotas: falta `storage:link` + `APP_URL` sin puerto (corregido 2026-09-13)
-Las fotos de empleado (`Empleado::foto_url`, generada con `asset('storage/'.$path)`) daban 404 en el navegador por dos causas combinadas:
-1. `public/storage` no existía — nunca se corrió `php artisan storage:link` en esta máquina, así que los archivos guardados en `storage/app/public/empleados/fotos/` no eran alcanzables vía HTTP aunque la subida (`EmpleadoController::uploadFoto`) funcionaba bien y sí los guardaba en disco.
-2. `.env` tenía `APP_URL=http://localhost` (sin puerto), pero el backend que realmente consume el frontend corre con `php artisan serve` en el puerto 8000 (ver más abajo el fallback de `VITE_API_URL` en `rrhh_frontend`). Las URLs de foto apuntaban a `http://localhost/...` (puerto 80 / Apache) en vez de `http://localhost:8000/...`.
+## Traits reutilizables (`app/Traits/`)
 
-Fix: se corrió `php artisan storage:link` (crea el symlink, no versionado — hay que repetirlo en cualquier otra máquina/clon) y se cambió `APP_URL` a `http://localhost:8000` en `.env` (tampoco versionado). Verificado con `curl` que la imagen responde 200. Si las fotos se rompen de nuevo en otra máquina, revisar estas dos cosas primero.
+| Trait | Qué hace | Usado por |
+|---|---|---|
+| `LogsActividad` | `logActividad($accion, $modulo, $descripcion, $idObjeto)` — escribe en `log_sistema` usando `auth()->id()`. Envuelto en try/catch: un fallo de log nunca debe romper la operación principal. | Casi todos los controladores que generan documentos o hacen cambios sensibles. |
+| `NombraArchivos` | `nombreArchivo('Tipo', 'Nombre', 'ext')` → `Tipo_Nombre_ddmmaaaa.ext`; `sanitizarNombreArchivo()` quita acentos/caracteres inválidos conservando espacios (para archivos con nombre propio como Planilla o Aguinaldo). | Todo controlador que ofrece descarga de PDF/Excel. |
+| `SoloAdmin` | Gate de rol: aborta 403 JSON si el usuario autenticado no es admin. | Acciones de "eliminar" (hard delete) en Planillas, Departamentos, Cargos. |
+| `GeneraCorrelativo` (nuevo, 2026-09-14) | `siguienteCorrelativo('tipo', $referenciaId)` — devuelve el siguiente número de 5 dígitos (`00001`, `00002`...) para un tipo de documento, con `lockForUpdate()` para evitar duplicados en generación simultánea. Ver sección "Correlativo de documentos" abajo. | Todos los controladores que generan un PDF. |
 
 ---
 
@@ -67,8 +52,8 @@ Fix: se corrió `php artisan storage:link` (crea el symlink, no versionado — h
 
 ### Auth (`AuthController`)
 ```
-POST /api/login    — valida credenciales, responde 503 controlado si falla la conexión a BD,
-                      mensaje genérico "Correo o contraseña incorrectos" (no revela si el email existe)
+POST /api/login    — 503 controlado si falla la conexión a BD; mensaje genérico si las
+                      credenciales no son válidas (no revela si el email existe)
 POST /api/logout   (auth)
 GET  /api/me       (auth)
 ```
@@ -79,68 +64,72 @@ GET /api/dashboard/stats            — empleados_total, activos, fijos, extras,
 GET /api/dashboard/planillas-chart  — suma de salario_neto por mes (Fijos/Extras), últimos 12 meses
 ```
 
-### Cumpleaños (`CumpleanosController`)
-```
-GET /api/cumpleanos?mes=  — empleados activos que cumplen años ese mes, con dias_para/es_hoy
-```
-
 ### Empleados (`EmpleadoController`)
 ```
-apiResource /api/empleados   (index con search/id_departamento/estado, show, store, update, destroy=desactivar)
+apiResource /api/empleados   (index con search incluye cédula; filtros id_departamento/tipo_contrato/estado)
 POST /api/empleados/{id}/foto
 ```
-- `store`/`update` crean/actualizan `Empleado` + `InformacionLaboral` en una transacción DB.
-- Si `usa_salario_minimo` está marcado, el salario base se toma de `CampoVariable('salario_minimo')` en vez del valor enviado en el request (corregido 2026-08-26 — antes se ignoraba el flag).
-- Salarios derivados (quincenal, diario, por hora) se recalculan siempre a partir del salario base.
+- `index()` ordena por departamento (alfabético) y luego por apellidos del empleado.
+- `store`/`update`: si `usa_salario_minimo`, el salario base se toma de `CampoVariable('salario_minimo')`.
 - `destroy` no elimina: pone `informacion_laboral.estado = 'Inactivo'`.
 
-### Catálogos (`DepartamentoController`, `PuestoController`, `BancoController`)
+### Catálogos (`DepartamentoController`, `CargoController`, `BancoController`)
 ```
 apiResource /api/departamentos
-apiResource /api/puestos
+DELETE      /api/departamentos/{id}/eliminar   (solo admin, hard delete)
+apiResource /api/cargos                         (renombrado de "Puestos" — tabla, columnas, modelo, controlador y rutas)
+DELETE      /api/cargos/{id}/eliminar          (solo admin, hard delete)
 apiResource /api/bancos
 ```
+- **`destroy` (desactivar, cualquier rol)**: bloqueado si tiene empleados **activos** asignados (mensaje lista los nombres).
+- **`eliminar` (hard delete, solo admin, trait `SoloAdmin`)**: requiere `estado = 'Inactivo'` y **cero** empleados asignados (activos o no).
+- Migración `2026_09_14_011221_rename_puestos_to_cargos.php` usa `DB::statement('ALTER TABLE ... CHANGE ...')` en vez de `Schema::renameColumn()` porque `doctrine/dbal` no está instalado (requerido por Laravel 10 para ese método). MySQL actualiza las FK automáticamente al renombrar.
 
 ### Vacaciones (`VacacionController`)
 ```
-GET    /api/vacaciones                 — listado paginado (per_page configurable), filtros id_empleado/search
+GET    /api/vacaciones                 — listado paginado, filtros id_empleado/search
 GET    /api/vacaciones/saldo/{id}      — saldo calculado + datos del empleado
 POST   /api/vacaciones                 — crea solicitud (valida saldo disponible)
-PUT    /api/vacaciones/{id}            — actualiza (valida saldo efectivo = saldo + dias_tomados originales)
+PUT    /api/vacaciones/{id}            — actualiza (valida saldo efectivo)
 DELETE /api/vacaciones/{id}
-GET    /api/vacaciones/{id}/pdf        — constancia PDF
+GET    /api/vacaciones/{id}/pdf        — constancia PDF (correlativo propio)
 ```
-**Cálculo de saldo (`calcularSaldo`, corregido 2026-08-26):**
-- Los días ganados se **acumulan año por año** (1°, 2°, 3°, 4°+ según `Vacacion` config), no una tasa plana sobre el año actual.
-- Se calcula un período aniversario (`periodo_inicio`/`periodo_fin`) entre el último y próximo aniversario de `fecha_inicio` del empleado.
-- Una sola query con `SUM` condicional obtiene `dias_tomados` (histórico) y `dias_tomados_periodo` (dentro del período actual), en vez de 2 queries separadas.
-- `dias_previos` = días ganados antes del período actual menos lo tomado antes de ese período (con piso en 0 si agotó todo).
-- `saldo` = acumulado total − tomado total.
+Mensajes de error reformulados: "No hay suficientes días disponibles..." (antes "Saldo insuficiente"). Cálculo de saldo acumulado año por año, con período aniversario según `fecha_inicio` del empleado.
 
 ### Incidencias (`IncidenciaController`)
 ```
 apiResource /api/incidencias
-GET /api/incidencias/{id}/pdf   — constancia PDF (agregado 2026-08-26, vista: resources/views/incidencias/constancia.blade.php)
+GET /api/incidencias/{id}/pdf   — constancia PDF (correlativo propio, ya no usa el id interno)
 ```
+
+### Constancias (`ConstanciaController`) — Constancia Laboral + Voucher de Pago
+```
+GET /api/constancias/laboral/{id}/pdf                      — constancia laboral, con log de quién la solicitó
+GET /api/constancias/voucher/{empleado}/planillas          — planillas CERRADAS donde aparece ese empleado
+GET /api/constancias/voucher/{empleado}/{planilla}/pdf     — genera el voucher de esa quincena
+```
+El **Voucher de Pago** (agregado 2026-09-14) muestra los datos completos de esa planilla para ese empleado: días trabajados, salario base/diario, horas extra, otros ingresos, IHSS/RAP/ISR/Crefisa y demás deducciones, deducción neta, salario neto, espacio de firma (con 1cm extra de aire antes de la línea). Nombre de archivo: `NombrePlanilla_NombreEmpleado.pdf`.
 
 ### Planillas (`PlanillaController`)
 ```
 apiResource /api/planillas (except update)   — filtros tipo/estado, paginado
-GET  /api/planillas/{id}/pdf
-GET  /api/planillas/{id}/excel               — agregado 2026-08-27, ver abajo
-POST /api/planillas/{id}/cerrar              — incrementa cuotas_aplicadas de DeduccionCuota, marca Completado si llega al total
-PUT  /api/planillas/{id}/detalles/{detalle}
+GET    /api/planillas/{id}/pdf
+GET    /api/planillas/{id}/excel             — Empleado + Salario Neto, para el archivo de pago del banco
+GET    /api/planillas/{id}/pago              — Excel simple "Generar Pago"
+POST   /api/planillas/{id}/cerrar            — incrementa cuotas_aplicadas de DeduccionCuota
+PUT    /api/planillas/{id}/detalles/{detalle}
+DELETE /api/planillas/{id}/eliminar-cerrada  — solo admin, requiere reingresar contraseña (Hash::check)
 ```
-- **IHSS:** valor fijo tomado de Campos Variables (por defecto L 297.58). **RAP e ISR:** ya NO se calculan automático (corregido 2026-08-27) — arrancan en 0 y se editan a mano por empleado, porque en la nómina real de Hotel Palma Real y Villas se escriben a mano y no coinciden con una fórmula progresiva. `calcularIsr()` fue eliminado del controlador.
-- `store()` corregido 2026-08-26: precarga `OtroIngreso` y `DeduccionCuota` por planilla en 2 queries agrupadas (`groupBy('id_empleado')`) en vez de 2 queries por empleado dentro del loop (N+1).
-- **Columnas agregadas 2026-08-27** a `detalle_planillas` (migración `2026_08_27_055636_...`): `horas_extras` (cantidad), `monto_horas_extras` (siempre recalculado server-side en `updateDetalle()` como `salario_diario del empleado / 8 × horas_extras` — nunca se confía en un monto enviado por el cliente) e `i_vecinal`. `uniforme`/`garden` se mantienen aunque no aparezcan en el Excel real de Fijos (decisión explícita: "por si acaso").
-- **`GET /api/planillas/{id}/excel`** (agregado 2026-08-27): genera un `.xlsx` (PhpSpreadsheet, ya usado por `barryvdh/laravel-dompdf`/`maatwebsite/excel`) con 2 columnas — `Empleado` y `Salario Neto` (2 decimales) — pensado para armar el archivo de pago del banco. No usa las clases `Export` de Laravel Excel, construye el `Spreadsheet` directamente en el controlador (mismo patrón que `exportPdf`).
-- El PDF de planilla (`resources/views/planillas/pdf.blade.php`) agrupa por departamento con fila de subtotal por grupo (`->groupBy('departamento')`), igual que el Excel real de nómina.
+- `store()` filtra empleados por `tipo_contrato` correspondiente al `tipo_planilla` (Fijos→Fijo, Extras→Extra) — antes incluía a todos sin filtrar.
+- **IHSS:** valor fijo de Campos Variables. **RAP e ISR:** se editan a mano por empleado (no calzan con fórmula automática en la nómina real). Personal "Extras" no cotiza IHSS.
+- Todas las consultas de detalle (`show`, `exportPdf`, `exportPago`, `exportExcel`) usan `ordenarPorDeptoYNombre($query)`: ordena por `departamento` (alfabético) y luego por **nombres** del empleado (no apellidos — corregido para calzar con el formato "Nombres Apellidos" que se muestra en toda la app).
+- `calcularTotales()` incluye `dias_trabajados` (antes faltaba la fila TOTAL GENERAL de días en el PDF).
+- PDF (`resources/views/planillas/pdf.blade.php`): columnas reajustadas (nombre más angosto, columnas de deducción más anchas) para que montos de más dígitos no monten el layout; fuente más chica en filas de subtotal/total (suman muchos empleados, pueden dar cifras de 7 dígitos).
 
 ### Aguinaldo (`AguinaldoController`)
 ```
-GET    /api/aguinaldo                    — lotes agrupados por nombre_aguinaldo (tipo "Ambos" si existe en fijos y extras)
-POST   /api/aguinaldo                    — genera lote (Fijos/Extras/Ambos) para todos los empleados activos
+GET    /api/aguinaldo
+POST   /api/aguinaldo                    — genera lote (Fijos/Extras/Ambos)
 GET    /api/aguinaldo/{nombre}
 PUT    /api/aguinaldo/fijos/{id}
 PUT    /api/aguinaldo/extras/{id}
@@ -148,41 +137,58 @@ POST   /api/aguinaldo/{nombre}/cerrar
 DELETE /api/aguinaldo/{nombre}
 GET    /api/aguinaldo/{nombre}/pdf
 ```
-- Fijos: `(salario_base / 365) × dias_trabajados − anticipo`.
-- Extras: `diario × dias_promedio + antiguedad − anticipos` (dias_promedio = promedio histórico de días trabajados en planillas "Extras" del año, default 15).
-- Rutas con `{nombre}` usan `.where('nombre', '.*')` (nombres con espacios).
+- **Base de cálculo: 360 días (12×30)**, no 365 — decisión de negocio explícita ("nunca se cuentan los meses de 31 días"). Campo `fecha_corte` agregado, independiente de `fecha_generada` (permite usar un corte distinto, ej. para el "catorceavo").
+- `store()` clasifica correctamente Fijos/Extras/Ambos sin duplicar conteo.
+- Orden: `departamento` → **nombres** → apellidos (mismo criterio que Planillas).
+- PDF: tabla de Fijos reordenada para calzar con el Excel real de referencia (Nombre, Cuenta, Cargo, Fecha Inicio, Salario Mensual, Días Año, Anticipo, Aguinaldo a Pagar), agrupada por departamento; Extras agrupado igual, sin tocar su fórmula (es distinta a la de Fijos).
+- Columna `puesto` renombrada a `cargo` en `aguinaldo_fijos`.
 
 ### Campos Variables (`CamposVariablesController`, solo admin)
 ```
 GET /api/campos-variables   — { ihss, salario_minimo }
-PUT /api/campos-variables   — actualiza ambos; si cambia salario_minimo, recalcula salarios de todos los empleados activos con usa_salario_minimo=true y registra log
+PUT /api/campos-variables   — si cambia salario_minimo, recalcula salarios de empleados con usa_salario_minimo=true
 ```
 
 ### Estadística Laboral (`EstadisticaLaboralController`)
 ```
-GET /api/estadistica-laboral              — filas agregadas por empleado (dias/salario/deducciones), paginado, con totales globales
-GET /api/estadistica-laboral/{empleado}   — detalle quincena por quincena de un empleado
-GET /api/estadistica-laboral/pdf
+GET /api/estadistica-laboral              — filas agregadas por empleado, paginado, con totales
+GET /api/estadistica-laboral/{empleado}   — detalle quincena por quincena
+GET /api/estadistica-laboral/pdf          — correlativo propio
 ```
-Basado en `DetallePlanilla` con joins a `empleados`/`departamentos`, filtrable por rango de fecha y búsqueda por nombre.
+Filtro exacto por `id_empleado` agregado (para el buscador tipo typeahead del frontend) además de búsqueda parcial por nombre/cédula.
 
 ### Log del Sistema (`LogSistemaController`)
 ```
 GET /api/log-sistema      — paginado, filtros modulo(objeto_actualizado)/accion/search/fecha_desde/fecha_hasta
-GET /api/log-sistema/pdf  — agregado 2026-08-26, reusa el mismo filtro que index() vía método privado filtrar()
+GET /api/log-sistema/pdf  — correlativo propio
 ```
 
 ### Usuarios (`UsuarioController`, solo admin)
 ```
 apiResource /api/usuarios (except show)
 ```
-Contraseñas: el modelo `User` tiene `'password' => 'hashed'` cast, que hashea automáticamente al guardar (idempotente si ya viene hasheado). El controlador además llama `Hash::make()` explícitamente por claridad — no hay doble-hash porque el cast detecta si el valor ya está hasheado.
+
+---
+
+## Correlativo de documentos (agregado 2026-09-14)
+
+Todos los PDFs generados por el sistema muestran un número de documento de **5 dígitos** (`N° 00001`, `N° 00002`...), **independiente por tipo de documento** — cada tipo lleva su propia secuencia:
+
+`voucher`, `constancia_laboral`, `incidencia`, `vacacion`, `planilla`, `aguinaldo`, `estadistica_laboral`, `log_sistema`.
+
+**Por qué existe:** antes, algunos documentos (el Voucher de Pago) mostraban el `id` interno de `detalle_planillas` como número de documento — esa tabla acumula una fila por cada empleado de cada planilla generada, incluidas pruebas internas de rendimiento, así que el número llegaba a valores como `01065` sin ninguna relación con cuántos vouchers se habían emitido realmente. Otros documentos (Incidencias, Vacaciones) usaban el `id` de su propia tabla, que es razonable pero no seguía el mismo formato de 5 dígitos ni el mismo criterio entre módulos.
+
+**Cómo funciona:**
+- Tabla `documentos_generados`: `id`, `tipo`, `correlativo` (único por `tipo`), `referencia_id` (opcional, para auditoría), `created_at`.
+- Trait `GeneraCorrelativo::siguienteCorrelativo($tipo, $referenciaId)`: dentro de una transacción, bloquea (`lockForUpdate`) las filas de ese `tipo`, toma el máximo actual + 1, inserta el registro y devuelve el número ya formateado a 5 dígitos.
+- Cada controlador que genera un PDF llama a este método antes de renderizar la vista y pasa `$correlativo` al Blade.
+- **Cada generación de un mismo documento consume un número nuevo** (si se vuelve a descargar la misma constancia, se emite un correlativo distinto) — mismo criterio para los 8 tipos.
 
 ---
 
 ## Vistas PDF (Blade + DomPDF)
 
-Todas comparten identidad visual **Hotel Palma Real y Villas** (rebrand 2026-08-26): logo en `public/images/hpr_logo.png`, colores marrón `#3b2b16` y dorado `#b9921a` extraídos del logotipo (antes: azul genérico `#1d4ed8`).
+Todas comparten identidad visual Hotel Palma Real y Villas: logo en `public/images/hpr_logo.png`, colores marrón `#3b2b16` y dorado `#b9921a`. Todas muestran su correlativo de 5 dígitos.
 
 | Vista | Archivo | Papel |
 |---|---|---|
@@ -190,29 +196,60 @@ Todas comparten identidad visual **Hotel Palma Real y Villas** (rebrand 2026-08-
 | Planilla | `resources/views/planillas/pdf.blade.php` | Letter landscape |
 | Estadística laboral | `resources/views/estadistica/pdf.blade.php` | Letter landscape |
 | Constancia de vacaciones | `resources/views/vacaciones/solicitud.blade.php` | Letter portrait |
-| Constancia de incidencia | `resources/views/incidencias/constancia.blade.php` (nuevo) | Letter portrait |
-| Log del sistema | `resources/views/log-sistema/pdf.blade.php` (nuevo) | Letter landscape |
+| Constancia de incidencia | `resources/views/incidencias/constancia.blade.php` | Letter portrait |
+| Constancia laboral | `resources/views/constancias/laboral.blade.php` | Letter portrait |
+| Voucher de Pago | `resources/views/constancias/voucher.blade.php` (nuevo) | Letter portrait |
+| Log del sistema | `resources/views/log-sistema/pdf.blade.php` | Letter landscape |
+
+**Técnica de verificación visual usada en desarrollo** (no hay poppler-utils instalado para convertir PDF a imagen): renderizar la vista Blade a HTML crudo (`view(...)->render()`), servirla con `php -S 127.0.0.1:PUERTO -t public` (para que resuelvan las rutas de imágenes), abrir en Chrome y capturar pantalla.
+
+---
+
+## Datos de catálogo — fusiones de nombres duplicados (2026-09-14)
+
+Con el tiempo quedaron nombres de **departamento** y **cargo** duplicados conceptualmente (ej. "Ama de Llaves" vs "Pisos"/"Camarera" — mismo puesto, dos registros distintos). Se resolvió por **fusión**, no por borrado:
+1. Reasignar todos los empleados del registro obsoleto al registro que se mantiene (`Empleado.id_departamento` / `Empleado.id_cargo`).
+2. Actualizar el texto guardado en `detalle_planillas.departamento` (snapshot histórico) y en `aguinaldo_fijos`/`aguinaldo_extras` (`departamento`, `id_departamento`) donde aplique.
+3. Desactivar (no eliminar) el registro obsoleto — queda en `estado = 'Inactivo'`, sin empleados, para no perder el historial ni romper una FK.
+4. Registrar la fusión en `log_sistema` para auditoría.
+
+Este es el procedimiento a seguir si aparece otro caso similar.
 
 ---
 
 ## Historial de sesiones / cambios
 
+### 2026-09-14 — sesión larga (múltiples commits)
+Ver el detalle de negocio en `contexto_frontend.md` (la mayoría de los cambios son full-stack). Resumen específico de backend:
+- Filtro de `tipo_contrato` corregido en generación de Planillas y Aguinaldo.
+- Renombre completo `Puesto` → `Cargo` (tabla, columnas, modelo, controlador, rutas) vía migración con SQL crudo.
+- Permisos: `SoloAdmin` en endpoints de eliminación (hard delete) de Departamentos/Cargos/Planillas cerradas; validaciones para no desactivar/eliminar con empleados asignados.
+- `eliminar-cerrada` de Planillas: requiere reingresar contraseña (`Hash::check`).
+- Log de auditoría (`LogsActividad`) agregado a `ConstanciaController::laboral()`.
+- Nuevos endpoints de **Voucher de Pago** en `ConstanciaController`.
+- Orden de empleados dentro de cada departamento (Planillas/Aguinaldo) corregido de apellidos a nombres.
+- **Sistema de correlativo de 5 dígitos** para los 8 tipos de documento PDF (tabla `documentos_generados`, trait `GeneraCorrelativo`) — reemplaza el uso de ids internos (inflados por datos de prueba) como número de documento.
+- 1cm extra de espacio antes de la línea de firma en el Voucher de Pago.
+- 200 empleados sintéticos (`9999...`) y planillas/incidencias de prueba generadas para pruebas de rendimiento.
+- 10 planillas reales (Fijos + Extras, Junio 1ra/2da, Julio 1ra/2da, Agosto 1ra) generadas con empleados reales para completar el histórico.
+- Fusión de departamento "Ama de Llaves" → "Pisos" y cargo "Ama de Llaves" → "Camarera" (ver sección arriba).
+
+> **Nota de seguridad de datos:** durante las pruebas de esta sesión se detectó un caso donde una acción destructiva se probó por error contra un registro real (un departamento) en vez de un registro de prueba — se restauró de inmediato. Desde entonces, toda prueba de una acción destructiva usa registros creados específicamente para la prueba (ej. `TEST-ELIMINAR-CERRADA`), nunca datos reales existentes.
+
 ### 2026-08-27 — commit `0e4c2d3`
-- **Corregido el `DocumentRoot` del vhost de Apache** — `rrhh-backend.test` servía una copia de código vieja y separada (ver sección Infraestructura). Causa raíz de que los fixes de sesiones anteriores no se vieran reflejados en el sitio.
-- **Planilla Fijos rediseñada** para calzar con el Excel real de nómina: RAP e ISR dejan de calcularse automático (se editan a mano), se agregan `horas_extras`/`monto_horas_extras` e `i_vecinal` a `detalle_planillas`, y se elimina `calcularIsr()`.
-- Nuevo endpoint `GET /api/planillas/{id}/excel` — exporta Empleado + Salario Neto a `.xlsx` para el archivo de pago del banco.
-- El PDF de planilla ahora agrupa por departamento con subtotales, igual que el Excel real.
+- Corregido el `DocumentRoot` del vhost de Apache (servía código viejo).
+- Planilla Fijos rediseñada para calzar con el Excel real: RAP e ISR ya no se calculan automático, se agregan `horas_extras`/`monto_horas_extras`/`i_vecinal`.
+- Nuevo endpoint `GET /api/planillas/{id}/excel`.
+- PDF de planilla agrupado por departamento con subtotales.
 
 ### 2026-08-26 — commit `2b5469d`
-- **OPcache activado** en el entorno local (ver sección Infraestructura) — causa raíz de la lentitud percibida entre pantallas.
-- Corregido cálculo de saldo de vacaciones (acumulado por año, `dias_previos`, `dias_tomados_periodo`, validación de saldo también al editar).
+- OPcache activado en el entorno local.
+- Corregido cálculo de saldo de vacaciones (acumulado por año).
 - Eliminado N+1 en `PlanillaController::store()`.
-- Corregido `EmpleadoController` para respetar el flag `usa_salario_minimo`.
-- Agregada exportación a PDF de incidencias y del log del sistema.
-- Mejorado `AuthController` (error controlado de conexión a BD, mensaje genérico de credenciales).
+- Corregido `EmpleadoController` para respetar `usa_salario_minimo`.
+- Exportación a PDF de incidencias y log del sistema.
+- `AuthController` con error controlado de conexión a BD.
 - Rebrand de plantillas PDF a identidad Hotel Palma Real y Villas.
-- Migración `add_performance_indexes` corregida (columna real `objeto_actualizado`, no `modulo`) y corrida.
-- Revisado y confirmado que `UsuarioController` sigue hasheando contraseñas correctamente (`Hash::make` + cast `hashed` del modelo).
 
 ### Commits previos
 | Commit | Descripción |
