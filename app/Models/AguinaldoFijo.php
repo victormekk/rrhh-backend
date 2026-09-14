@@ -11,13 +11,14 @@ class AguinaldoFijo extends Model
     protected $fillable = [
         'nombre_aguinaldo', 'departamento', 'nombres', 'apellidos', 'cuenta',
         'fecha_inicio', 'salario_base', 'dias_trabajados', 'anticipo',
-        'total_aguinaldo', 'fecha_generada', 'estado', 'tipo_aguinaldo',
+        'total_aguinaldo', 'fecha_generada', 'fecha_corte', 'estado', 'tipo_aguinaldo',
         'id_empleado', 'id_info_laboral', 'id_departamento',
     ];
 
     protected $casts = [
         'fecha_inicio'    => 'date',
         'fecha_generada'  => 'date',
+        'fecha_corte'     => 'date',
         'salario_base'    => 'decimal:2',
         'anticipo'        => 'decimal:2',
         'total_aguinaldo' => 'decimal:2',

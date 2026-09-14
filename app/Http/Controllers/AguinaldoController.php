@@ -76,6 +76,7 @@ class AguinaldoController extends Controller
             'tipo_aguinaldo'   => $meta->tipo_aguinaldo,
             'estado'           => $meta->estado,
             'fecha_generada'   => $meta->fecha_generada,
+            'fecha_corte'      => $meta->fecha_corte,
             'fijos'            => $fijos,
             'extras'           => $extras,
             'totales_fijos'    => $this->totalesFijos($fijos),
@@ -90,11 +91,13 @@ class AguinaldoController extends Controller
             'nombre_aguinaldo' => 'required|string|max:50',
             'tipo_aguinaldo'   => 'required|in:Fijos,Extras,Ambos',
             'fecha_generada'   => 'required|date',
+            'fecha_corte'      => 'required|date',
         ]);
 
         $nombre = $request->nombre_aguinaldo;
         $tipo   = $request->tipo_aguinaldo;
         $fecha  = $request->fecha_generada;
+        $corte  = $request->fecha_corte;
 
         // Prevent duplicate batch names
         $exists = ($tipo !== 'Extras' && AguinaldoFijo::where('nombre_aguinaldo', $nombre)->exists())
@@ -102,20 +105,24 @@ class AguinaldoController extends Controller
 
         abort_if($exists, 422, 'Ya existe un aguinaldo con ese nombre.');
 
-        return DB::transaction(function () use ($nombre, $tipo, $fecha, $request) {
+        return DB::transaction(function () use ($nombre, $tipo, $fecha, $corte, $request) {
             $empleados = Empleado::with(['informacionLaboral.banco', 'departamento'])
                 ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))
                 ->get();
 
-            $hoy       = Carbon::parse($fecha);
-            $countFijo = 0;
-            $countExtr = 0;
+            $fechaCorte = Carbon::parse($corte);
+            $countFijo  = 0;
+            $countExtr  = 0;
 
             foreach ($empleados as $emp) {
                 $il = $emp->informacionLaboral;
 
+                // Base de 360 dias (12 meses de 30 dias), igual que el calculo
+                // manual en Excel: se toma el rango desde la fecha de inicio
+                // hasta la fecha de corte elegida (ej. 31/12/AAAA, o un corte
+                // distinto si se calcula un catorceavo).
                 $fechaInicio = Carbon::parse($il->fecha_inicio);
-                $diasBase    = (int) min(365, $fechaInicio->diffInDays($hoy));
+                $diasBase    = (int) min(360, $fechaInicio->diffInDays($fechaCorte));
 
                 if ($tipo === 'Fijos' || $tipo === 'Ambos') {
                     AguinaldoFijo::create([
@@ -128,8 +135,9 @@ class AguinaldoController extends Controller
                         'salario_base'     => $il->salario_base,
                         'dias_trabajados'  => $diasBase,
                         'anticipo'         => 0,
-                        'total_aguinaldo'  => round(($il->salario_base / 365) * $diasBase, 2),
+                        'total_aguinaldo'  => round(($il->salario_base / 360) * $diasBase, 2),
                         'fecha_generada'   => $fecha,
+                        'fecha_corte'      => $corte,
                         'estado'           => 'Activo',
                         'tipo_aguinaldo'   => $tipo,
                         'id_empleado'      => $emp->id,
@@ -140,7 +148,7 @@ class AguinaldoController extends Controller
                 }
 
                 if ($tipo === 'Extras' || $tipo === 'Ambos') {
-                    $anio        = $hoy->year;
+                    $anio        = $fechaCorte->year;
                     $diasProm    = (int) round(
                         DetallePlanilla::where('id_empleado', $emp->id)
                             ->where('tipo_planilla', 'Extras')
@@ -166,6 +174,7 @@ class AguinaldoController extends Controller
                         'anticipos'        => 0,
                         'total_aguinaldo'  => $subtotal,
                         'fecha_generada'   => $fecha,
+                        'fecha_corte'      => $corte,
                         'estado'           => 'Activo',
                         'tipo_aguinaldo'   => $tipo,
                         'id_empleado'      => $emp->id,
@@ -194,13 +203,13 @@ class AguinaldoController extends Controller
         abort_if($registro->estado === 'Cerrado', 422, 'No se puede editar un aguinaldo cerrado.');
 
         $request->validate([
-            'dias_trabajados' => 'sometimes|integer|min:0|max:365',
+            'dias_trabajados' => 'sometimes|integer|min:0|max:360',
             'anticipo'        => 'sometimes|numeric|min:0',
         ]);
 
         $dias  = $request->input('dias_trabajados', $registro->dias_trabajados);
         $antic = (float) $request->input('anticipo', $registro->anticipo);
-        $total = max(0, round(($registro->salario_base / 365) * $dias - $antic, 2));
+        $total = max(0, round(($registro->salario_base / 360) * $dias - $antic, 2));
 
         $registro->update([
             'dias_trabajados' => $dias,

@@ -12,13 +12,14 @@ class AguinaldoExtra extends Model
         'nombre_aguinaldo', 'departamento', 'nombres', 'apellidos', 'cuenta',
         'fecha_inicio', 'salario_base', 'diario', 'antiguedad', 'subtotal',
         'dias_promedio', 'anticipos', 'total_aguinaldo',
-        'fecha_generada', 'estado', 'tipo_aguinaldo',
+        'fecha_generada', 'fecha_corte', 'estado', 'tipo_aguinaldo',
         'id_empleado', 'id_info_laboral', 'id_departamento',
     ];
 
     protected $casts = [
         'fecha_inicio'    => 'date',
         'fecha_generada'  => 'date',
+        'fecha_corte'     => 'date',
         'salario_base'    => 'decimal:2',
         'diario'          => 'decimal:2',
         'antiguedad'      => 'decimal:2',
