@@ -69,10 +69,13 @@ class DepartamentoController extends Controller
 
         $departamento = Departamento::findOrFail($id);
 
+        $nombres = $departamento->empleados()->get(['nombres', 'apellidos'])
+            ->map(fn($e) => trim("{$e->nombres} {$e->apellidos}"));
+
         abort_if(
-            $departamento->empleados()->exists(),
+            $nombres->isNotEmpty(),
             422,
-            'No se puede eliminar: hay empleados asignados a este departamento.'
+            'No se puede eliminar: hay empleados asignados a este departamento (' . $nombres->implode(', ') . ').'
         );
 
         $departamento->delete();

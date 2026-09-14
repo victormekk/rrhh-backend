@@ -69,10 +69,13 @@ class CargoController extends Controller
 
         $cargo = Cargo::findOrFail($id);
 
+        $nombres = $cargo->empleados()->get(['nombres', 'apellidos'])
+            ->map(fn($e) => trim("{$e->nombres} {$e->apellidos}"));
+
         abort_if(
-            $cargo->empleados()->exists(),
+            $nombres->isNotEmpty(),
             422,
-            'No se puede eliminar: hay empleados asignados a este cargo.'
+            'No se puede eliminar: hay empleados asignados a este cargo (' . $nombres->implode(', ') . ').'
         );
 
         $cargo->delete();
