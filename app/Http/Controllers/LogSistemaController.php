@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\LogSistema;
+use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class LogSistemaController extends Controller
 {
+    use NombraArchivos;
+
     private function filtrar(Request $request)
     {
         return LogSistema::with('usuario:id,name')
@@ -39,6 +42,6 @@ class LogSistemaController extends Controller
         $pdf = Pdf::loadView('log-sistema.pdf', compact('logs', 'filtros'))
             ->setPaper('letter', 'landscape');
 
-        return $pdf->download(now()->format('dmY') . '-log-sistema.pdf');
+        return $pdf->download($this->nombreArchivo('LogSistema', '', 'pdf'));
     }
 }

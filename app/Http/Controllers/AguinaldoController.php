@@ -6,6 +6,7 @@ use App\Models\AguinaldoExtra;
 use App\Models\AguinaldoFijo;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
+use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class AguinaldoController extends Controller
 {
+    use NombraArchivos;
+
     // ─── List batches ────────────────────────────────────────────
     public function index()
     {
@@ -283,10 +286,7 @@ class AguinaldoController extends Controller
             'nombre', 'fijos', 'extras', 'meta', 'totalesFijos', 'totalesExtras'
         ))->setPaper('letter', 'landscape');
 
-        $n = iconv('UTF-8', 'ASCII//TRANSLIT', $nombre) ?? $nombre;
-        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
-
-        return $pdf->download(now()->format('dmY') . '-' . $n . '-aguinaldo.pdf');
+        return $pdf->download($this->sanitizarNombreArchivo($nombre) . '.pdf');
     }
 
     // ─── Helpers ─────────────────────────────────────────────────

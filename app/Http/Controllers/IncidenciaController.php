@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Incidencia;
 use App\Traits\LogsActividad;
+use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class IncidenciaController extends Controller
 {
-    use LogsActividad;
+    use LogsActividad, NombraArchivos;
     public function index(Request $request)
     {
         $incidencias = Incidencia::with('empleado:id,nombres,apellidos,id_departamento')
@@ -98,9 +99,7 @@ class IncidenciaController extends Controller
 
         $nombres   = $incidencia->empleado->nombres;
         $apellidos = $incidencia->empleado->apellidos;
-        $n = iconv('UTF-8', 'ASCII//TRANSLIT', "{$nombres}+{$apellidos}") ?? "{$nombres}+{$apellidos}";
-        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
 
-        return $pdf->download(now()->format('dmY') . '-' . $n . '-incidencia.pdf');
+        return $pdf->download($this->nombreArchivo('Incidencia', "{$nombres} {$apellidos}", 'pdf'));
     }
 }

@@ -6,13 +6,14 @@ use App\Models\Empleado;
 use App\Models\SolicitudVacacion;
 use App\Models\Vacacion;
 use App\Traits\LogsActividad;
+use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class VacacionController extends Controller
 {
-    use LogsActividad;
+    use LogsActividad, NombraArchivos;
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private function diasLaborables(Carbon $inicio, Carbon $fin): int
@@ -239,9 +240,7 @@ class VacacionController extends Controller
 
         $nombres   = $solicitud->empleado->nombres;
         $apellidos = $solicitud->empleado->apellidos;
-        $n = iconv('UTF-8', 'ASCII//TRANSLIT', "{$nombres}+{$apellidos}") ?? "{$nombres}+{$apellidos}";
-        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
 
-        return $pdf->download(now()->format('dmY') . '-' . $n . '-vacaciones.pdf');
+        return $pdf->download($this->nombreArchivo('Vacaciones', "{$nombres} {$apellidos}", 'pdf'));
     }
 }

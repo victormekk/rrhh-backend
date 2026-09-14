@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
+use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class EstadisticaLaboralController extends Controller
 {
+    use NombraArchivos;
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private function baseQuery(Request $request)
@@ -130,9 +133,7 @@ class EstadisticaLaboralController extends Controller
             ->setPaper('letter', 'landscape');
 
         $label = $request->search ?: 'TodosEmpleados';
-        $n = iconv('UTF-8', 'ASCII//TRANSLIT', $label) ?? $label;
-        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
 
-        return $pdf->download(now()->format('dmY') . '-' . $n . '-estadisticalaboral.pdf');
+        return $pdf->download($this->nombreArchivo('EstadisticaLaboral', $label, 'pdf'));
     }
 }

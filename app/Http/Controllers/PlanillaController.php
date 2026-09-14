@@ -8,6 +8,7 @@ use App\Models\DeduccionCuota;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
 use App\Models\OtroIngreso;
+use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanillaController extends Controller
 {
+    use NombraArchivos;
+
     public function index(Request $request)
     {
         $planillas = CabeceraPlanilla::withCount('detalles')
@@ -245,10 +248,7 @@ class PlanillaController extends Controller
         $pdf      = Pdf::loadView('planillas.pdf', compact('planilla', 'totales'))
             ->setPaper('letter', 'landscape');
 
-        $n = iconv('UTF-8', 'ASCII//TRANSLIT', $planilla->nombre_planilla) ?? $planilla->nombre_planilla;
-        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
-
-        return $pdf->download(now()->format('dmY') . '-' . $n . '-planilla.pdf')
+        return $pdf->download($this->sanitizarNombreArchivo($planilla->nombre_planilla) . '.pdf')
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache');
     }
@@ -280,13 +280,12 @@ class PlanillaController extends Controller
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $n = iconv('UTF-8', 'ASCII//TRANSLIT', $planilla->nombre_planilla) ?? $planilla->nombre_planilla;
-        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
-
         $tempFile = tempnam(sys_get_temp_dir(), 'planilla') . '.xlsx';
         (new Xlsx($spreadsheet))->save($tempFile);
 
-        return response()->download($tempFile, now()->format('dmY') . '-' . $n . '-pago.xlsx')
+        $nombre = $this->sanitizarNombreArchivo($planilla->nombre_planilla);
+
+        return response()->download($tempFile, "Pago ({$nombre}).xlsx")
             ->deleteFileAfterSend(true);
     }
 
@@ -394,13 +393,10 @@ class PlanillaController extends Controller
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $n = iconv('UTF-8', 'ASCII//TRANSLIT', $planilla->nombre_planilla) ?? $planilla->nombre_planilla;
-        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
-
         $tempFile = tempnam(sys_get_temp_dir(), 'planilla') . '.xlsx';
         (new Xlsx($spreadsheet))->save($tempFile);
 
-        return response()->download($tempFile, now()->format('dmY') . '-' . $n . '-planilla.xlsx')
+        return response()->download($tempFile, $this->sanitizarNombreArchivo($planilla->nombre_planilla) . '.xlsx')
             ->deleteFileAfterSend(true);
     }
 

@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Empleado;
+use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
 class ConstanciaController extends Controller
 {
+    use NombraArchivos;
+
     private const MESES = [
         'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
         'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
@@ -29,10 +32,9 @@ class ConstanciaController extends Controller
             'emp', 'fechaInicio', 'salarioMensual', 'simboloMoneda', 'meses'
         ))->setPaper('letter', 'portrait');
 
-        $n = iconv('UTF-8', 'ASCII//TRANSLIT', "{$emp->nombres}+{$emp->apellidos}") ?? "{$emp->nombres}+{$emp->apellidos}";
-        $n = preg_replace('/[^a-zA-Z0-9+\-]/', '', str_replace(' ', '', $n));
+        $archivo = $this->nombreArchivo('ConstanciaLaboral', "{$emp->nombres} {$emp->apellidos}", 'pdf');
 
-        return $pdf->download(now()->format('dmY') . '-' . $n . '-constancia-laboral.pdf')
+        return $pdf->download($archivo)
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache');
     }
