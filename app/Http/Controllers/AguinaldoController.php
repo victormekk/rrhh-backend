@@ -6,6 +6,7 @@ use App\Models\AguinaldoExtra;
 use App\Models\AguinaldoFijo;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
+use App\Traits\GeneraCorrelativo;
 use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class AguinaldoController extends Controller
 {
-    use NombraArchivos;
+    use NombraArchivos, GeneraCorrelativo;
 
     // ─── List batches ────────────────────────────────────────────
     public function index()
@@ -303,9 +304,10 @@ class AguinaldoController extends Controller
         $meta            = ($fijos->first() ?? $extras->first());
         $totalesFijos    = $this->totalesFijos($fijos);
         $totalesExtras   = $this->totalesExtras($extras);
+        $correlativo     = $this->siguienteCorrelativo('aguinaldo', $meta->id ?? null);
 
         $pdf = Pdf::loadView('aguinaldo.pdf', compact(
-            'nombre', 'fijos', 'extras', 'meta', 'totalesFijos', 'totalesExtras'
+            'nombre', 'fijos', 'extras', 'meta', 'totalesFijos', 'totalesExtras', 'correlativo'
         ))->setPaper('letter', 'landscape');
 
         return $pdf->download($this->sanitizarNombreArchivo($nombre) . '.pdf');

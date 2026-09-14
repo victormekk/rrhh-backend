@@ -59,6 +59,10 @@
 
   <div class="meta">
     <div class="meta-item">
+      <span>N° </span>
+      <strong>{{ $correlativo }}</strong>
+    </div>
+    <div class="meta-item">
       <span>Período: </span>
       <strong>
         @if($periodo['inicio'] || $periodo['fin'])

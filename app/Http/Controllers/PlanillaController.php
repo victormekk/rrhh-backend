@@ -8,6 +8,7 @@ use App\Models\DeduccionCuota;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
 use App\Models\OtroIngreso;
+use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
 use App\Traits\SoloAdmin;
@@ -21,7 +22,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanillaController extends Controller
 {
-    use LogsActividad, NombraArchivos, SoloAdmin;
+    use LogsActividad, NombraArchivos, SoloAdmin, GeneraCorrelativo;
 
     public function index(Request $request)
     {
@@ -281,8 +282,9 @@ class PlanillaController extends Controller
             ),
         ])->findOrFail($id);
 
-        $totales  = $this->calcularTotales($planilla);
-        $pdf      = Pdf::loadView('planillas.pdf', compact('planilla', 'totales'))
+        $totales     = $this->calcularTotales($planilla);
+        $correlativo = $this->siguienteCorrelativo('planilla', $planilla->id);
+        $pdf         = Pdf::loadView('planillas.pdf', compact('planilla', 'totales', 'correlativo'))
             ->setPaper('letter', 'landscape');
 
         return $pdf->download($this->sanitizarNombreArchivo($planilla->nombre_planilla) . '.pdf')

@@ -15,6 +15,8 @@
   .header h2 { font-size: 14px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; }
   .header p  { font-size: 8px; color: #8a6d10; margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
 
+  .doc-num { text-align: right; font-size: 8px; color: #8a7654; margin-bottom: 10px; }
+
   .titulo { text-align: center; font-size: 14px; font-weight: bold; color: #3b2b16;
             text-decoration: underline; letter-spacing: 0.5px; margin-bottom: 34px; }
 
@@ -38,6 +40,8 @@
     <h2>Departamento de Recursos Humanos</h2>
     <p>La Ceiba, Atlántida, Honduras</p>
   </div>
+
+  <div class="doc-num">N° {{ $correlativo }}</div>
 
   <div class="titulo">CONSTANCIA DE TRABAJO</div>
 

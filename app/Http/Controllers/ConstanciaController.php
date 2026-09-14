@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CabeceraPlanilla;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
+use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -12,7 +13,7 @@ use Carbon\Carbon;
 
 class ConstanciaController extends Controller
 {
-    use LogsActividad, NombraArchivos;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo;
 
     private const MESES = [
         'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -30,9 +31,10 @@ class ConstanciaController extends Controller
         $salarioMensual = (float) $il->salario_base;
         $simboloMoneda  = $il->moneda === 'Dólares' ? 'US$' : 'L.';
         $meses          = self::MESES;
+        $correlativo    = $this->siguienteCorrelativo('constancia_laboral', $emp->id);
 
         $pdf = Pdf::loadView('constancias.laboral', compact(
-            'emp', 'fechaInicio', 'salarioMensual', 'simboloMoneda', 'meses'
+            'emp', 'fechaInicio', 'salarioMensual', 'simboloMoneda', 'meses', 'correlativo'
         ))->setPaper('letter', 'portrait');
 
         $archivo = $this->nombreArchivo('ConstanciaLaboral', "{$emp->nombres} {$emp->apellidos}", 'pdf');
@@ -72,7 +74,9 @@ class ConstanciaController extends Controller
             ->with('empleado:id,nombres,apellidos,cedula,id_cargo,id_departamento')
             ->firstOrFail();
 
-        $pdf = Pdf::loadView('constancias.voucher', compact('detalle'))
+        $correlativo = $this->siguienteCorrelativo('voucher', $detalle->id);
+
+        $pdf = Pdf::loadView('constancias.voucher', compact('detalle', 'correlativo'))
             ->setPaper('letter', 'portrait');
 
         $nombrePlanilla = $this->sanitizarNombreArchivo($detalle->nombre_planilla);

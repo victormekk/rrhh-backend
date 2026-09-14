@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\LogSistema;
+use App\Traits\GeneraCorrelativo;
 use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class LogSistemaController extends Controller
 {
-    use NombraArchivos;
+    use NombraArchivos, GeneraCorrelativo;
 
     private function filtrar(Request $request)
     {
@@ -39,7 +40,9 @@ class LogSistemaController extends Controller
             'fecha_hasta'  => $request->fecha_hasta,
         ];
 
-        $pdf = Pdf::loadView('log-sistema.pdf', compact('logs', 'filtros'))
+        $correlativo = $this->siguienteCorrelativo('log_sistema');
+
+        $pdf = Pdf::loadView('log-sistema.pdf', compact('logs', 'filtros', 'correlativo'))
             ->setPaper('letter', 'landscape');
 
         return $pdf->download($this->nombreArchivo('LogSistema', '', 'pdf'));

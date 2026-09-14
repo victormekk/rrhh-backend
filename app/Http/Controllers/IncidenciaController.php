@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Incidencia;
+use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -10,7 +11,7 @@ use Illuminate\Http\Request;
 
 class IncidenciaController extends Controller
 {
-    use LogsActividad, NombraArchivos;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo;
     public function index(Request $request)
     {
         $incidencias = Incidencia::with('empleado:id,nombres,apellidos,id_departamento')
@@ -94,7 +95,9 @@ class IncidenciaController extends Controller
             'empleado.departamento',
         ])->findOrFail($id);
 
-        $pdf = Pdf::loadView('incidencias.constancia', compact('incidencia'))
+        $correlativo = $this->siguienteCorrelativo('incidencia', $incidencia->id);
+
+        $pdf = Pdf::loadView('incidencias.constancia', compact('incidencia', 'correlativo'))
             ->setPaper('letter', 'portrait');
 
         $nombres   = $incidencia->empleado->nombres;

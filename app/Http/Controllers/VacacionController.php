@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Empleado;
 use App\Models\SolicitudVacacion;
 use App\Models\Vacacion;
+use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -13,7 +14,7 @@ use Illuminate\Http\Request;
 
 class VacacionController extends Controller
 {
-    use LogsActividad, NombraArchivos;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo;
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private function diasLaborables(Carbon $inicio, Carbon $fin): int
@@ -234,8 +235,9 @@ class VacacionController extends Controller
         ])->findOrFail($id);
 
         $saldo = $this->calcularSaldo($solicitud->empleado);
+        $correlativo = $this->siguienteCorrelativo('vacacion', $solicitud->id);
 
-        $pdf = Pdf::loadView('vacaciones.solicitud', compact('solicitud', 'saldo'))
+        $pdf = Pdf::loadView('vacaciones.solicitud', compact('solicitud', 'saldo', 'correlativo'))
             ->setPaper('letter', 'portrait');
 
         $nombres   = $solicitud->empleado->nombres;

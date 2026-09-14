@@ -90,7 +90,7 @@ table.firmas td { text-align: center; padding: 0 30px; }
         <p>Departamento de Recursos Humanos &nbsp;·&nbsp; La Ceiba, Atlántida, Honduras</p>
       </td>
       <td class="hdr-doc">
-        <div class="num">N° {{ str_pad($incidencia->id, 5, '0', STR_PAD_LEFT) }}</div>
+        <div class="num">N° {{ $correlativo }}</div>
         <div class="fecha">Emitido: {{ now()->format('d/m/Y') }}</div>
       </td>
     </tr>
@@ -177,7 +177,7 @@ table.firmas td { text-align: center; padding: 0 30px; }
   {{-- ══ PIE ══ --}}
   <div class="footer">
     Emitido por el Depto. de Recursos Humanos · Hotel Palma Real &nbsp;·&nbsp;
-    N° {{ str_pad($incidencia->id, 5, '0', STR_PAD_LEFT) }} &nbsp;·&nbsp;
+    N° {{ $correlativo }} &nbsp;·&nbsp;
     {{ now()->format('d/m/Y H:i') }}
   </div>
 

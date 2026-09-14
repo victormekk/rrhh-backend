@@ -59,6 +59,7 @@
   <img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas">
   <h2>PLANILLA DE PAGO — {{ strtoupper($planilla->nombre_planilla) }}</h2>
   <p>
+    N° {{ $correlativo }} &nbsp;|&nbsp;
     Tipo: {{ $planilla->tipo_planilla }} &nbsp;|&nbsp;
     Fecha: {{ \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y') }} &nbsp;|&nbsp;
     Estado: <span class="{{ $planilla->estado === 'Activo' ? 'badge-activo' : 'badge-cerrado' }}">{{ $planilla->estado }}</span> &nbsp;|&nbsp;

@@ -55,7 +55,7 @@ table.resumen td:last-child { border-right: none; }
 .r-num.ded  { color: #dc2626; }
 
 /* ── Firma ── */
-.firma-wrap   { margin-top: 40px; text-align: center; }
+.firma-wrap   { margin-top: 2.06cm; text-align: center; }
 .firma-linea  { width: 220px; border-top: 1px solid #1e293b; margin: 0 auto 6px; }
 .f-cargo      { font-size: 7px; color: #64748b; margin-top: 1px; }
 
@@ -80,7 +80,7 @@ table.resumen td:last-child { border-right: none; }
         <p>Departamento de Recursos Humanos &nbsp;·&nbsp; La Ceiba, Atlántida, Honduras</p>
       </td>
       <td class="hdr-doc">
-        <div class="num">N° {{ str_pad($detalle->id, 5, '0', STR_PAD_LEFT) }}</div>
+        <div class="num">N° {{ $correlativo }}</div>
         <div class="fecha">Generado: {{ now()->format('d/m/Y') }}</div>
       </td>
     </tr>
@@ -168,7 +168,7 @@ table.resumen td:last-child { border-right: none; }
   {{-- ══ PIE ══ --}}
   <div class="footer">
     Documento informativo, no sustituye el comprobante oficial de pago · Hotel Palma Real &nbsp;·&nbsp;
-    N° {{ str_pad($detalle->id, 5, '0', STR_PAD_LEFT) }} &nbsp;·&nbsp;
+    N° {{ $correlativo }} &nbsp;·&nbsp;
     {{ now()->format('d/m/Y H:i') }}
   </div>
 

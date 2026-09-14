@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
+use App\Traits\GeneraCorrelativo;
 use App\Traits\NombraArchivos;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class EstadisticaLaboralController extends Controller
 {
-    use NombraArchivos;
+    use NombraArchivos, GeneraCorrelativo;
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
@@ -131,7 +132,9 @@ class EstadisticaLaboralController extends Controller
             'search' => $request->search,
         ];
 
-        $pdf = Pdf::loadView('estadistica.pdf', compact('rows', 'totales', 'periodo'))
+        $correlativo = $this->siguienteCorrelativo('estadistica_laboral');
+
+        $pdf = Pdf::loadView('estadistica.pdf', compact('rows', 'totales', 'periodo', 'correlativo'))
             ->setPaper('letter', 'landscape');
 
         $label = $rows->count() === 1
