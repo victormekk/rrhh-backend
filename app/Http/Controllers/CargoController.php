@@ -69,6 +69,12 @@ class CargoController extends Controller
 
         $cargo = Cargo::findOrFail($id);
 
+        abort_if(
+            $cargo->estado !== 'Inactivo',
+            422,
+            'Solo se pueden eliminar cargos inactivos. Desactívalo primero.'
+        );
+
         $nombres = $cargo->empleados()->get(['nombres', 'apellidos'])
             ->map(fn($e) => trim("{$e->nombres} {$e->apellidos}"));
 

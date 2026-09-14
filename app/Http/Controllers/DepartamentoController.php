@@ -69,6 +69,12 @@ class DepartamentoController extends Controller
 
         $departamento = Departamento::findOrFail($id);
 
+        abort_if(
+            $departamento->estado !== 'Inactivo',
+            422,
+            'Solo se pueden eliminar departamentos inactivos. Desactívalo primero.'
+        );
+
         $nombres = $departamento->empleados()->get(['nombres', 'apellidos'])
             ->map(fn($e) => trim("{$e->nombres} {$e->apellidos}"));
 
