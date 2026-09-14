@@ -29,11 +29,16 @@
   tbody tr:nth-child(even) { background-color: #f8fafc; }
   tbody tr:nth-child(odd)  { background-color: #ffffff; }
   tbody td { padding: 3px; font-size: 7.5px; border-bottom: 1px solid #e2e8f0; overflow-wrap: break-word; word-break: break-word; }
-  tbody td.num { text-align: right; }
+  tbody td.num { text-align: right; white-space: nowrap; }
   tbody td.emp { font-weight: 600; }
 
-  .totals-row td { background-color: #b9921a; color: #3b2b16; font-weight: bold; font-size: 7.5px; padding: 4px 3px; }
+  .totals-row td { background-color: #b9921a; color: #3b2b16; font-weight: bold; font-size: 6.5px; padding: 4px 3px; }
   .totals-row td.num { text-align: right; }
+
+  /* Los subtotales/totales suman muchos empleados y pueden dar cifras mucho
+     mas grandes que cualquier fila individual: letra mas chica para que no
+     se corten ni se monten con la columna vecina. */
+  .subtotal-row td { font-size: 6.5px; }
 
   /* Tabla en vez de flexbox: dompdf no soporta bien justify-content:space-between
      en divs (apilaba las 3 firmas en una sola columna en vez de ponerlas lado a lado).
@@ -64,22 +69,22 @@
 <table>
   <thead>
     <tr>
-      <th style="width:24%">Empleado</th>
+      <th style="width:16%">Empleado</th>
       <th style="width:3%">Días</th>
-      <th style="width:6%">Sal. Base</th>
+      <th style="width:7%">Sal. Base</th>
       <th style="width:5%">H. Extra</th>
       <th style="width:5%">Otros Ing.</th>
       <th style="width:5%">IHSS</th>
-      <th style="width:4%">RAP</th>
-      <th style="width:4%">ISR</th>
-      <th style="width:4%">Crefisa</th>
-      <th style="width:4%">Transp.</th>
-      <th style="width:4%">Radios</th>
+      <th style="width:5%">RAP</th>
+      <th style="width:5%">ISR</th>
+      <th style="width:5%">Crefisa</th>
+      <th style="width:5%">Transp.</th>
+      <th style="width:5%">Radios</th>
       <th style="width:5%">I. Vecinal</th>
       <th style="width:6%">Uniforme</th>
-      <th style="width:4%">Garden</th>
+      <th style="width:5%">Garden</th>
       <th style="width:5%">Otras Ded.</th>
-      <th style="width:6%">Ded. Neta</th>
+      <th style="width:7%">Ded. Neta</th>
       <th style="width:6%">Sal. Neto</th>
     </tr>
   </thead>
@@ -109,7 +114,7 @@
       <td class="num" style="font-weight:bold">{{ number_format($d->salario_neto, 2) }}</td>
     </tr>
     @endforeach
-    <tr style="background-color:#eee3c3; font-weight:bold;">
+    <tr class="subtotal-row" style="background-color:#eee3c3; font-weight:bold;">
       <td style="padding:3px;">SUBTOTAL: {{ $departamento }}</td>
       <td class="num">{{ $filas->sum('dias_trabajados') }}</td>
       <td class="num">{{ number_format($filas->sum('salario_base'), 2) }}</td>

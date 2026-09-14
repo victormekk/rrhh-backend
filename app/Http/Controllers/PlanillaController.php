@@ -35,9 +35,9 @@ class PlanillaController extends Controller
     public function show($id)
     {
         $planilla = CabeceraPlanilla::with([
-            'detalles' => fn($q) => $q->with('empleado:id,nombres,apellidos,foto_path')
-                                      ->orderBy('departamento')
-                                      ->orderBy('id_empleado'),
+            'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
+                $q->with('empleado:id,nombres,apellidos,foto_path')
+            ),
         ])->findOrFail($id);
 
         $planilla->totales = $this->calcularTotales($planilla);
@@ -240,8 +240,9 @@ class PlanillaController extends Controller
     public function exportPdf($id)
     {
         $planilla = CabeceraPlanilla::with([
-            'detalles' => fn($q) => $q->with('empleado:id,nombres,apellidos')
-                                      ->orderBy('departamento'),
+            'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
+                $q->with('empleado:id,nombres,apellidos')
+            ),
         ])->findOrFail($id);
 
         $totales  = $this->calcularTotales($planilla);
@@ -256,9 +257,9 @@ class PlanillaController extends Controller
     public function exportPago($id)
     {
         $planilla = CabeceraPlanilla::with([
-            'detalles' => fn($q) => $q->with('empleado:id,nombres,apellidos')
-                                      ->orderBy('departamento')
-                                      ->orderBy('id_empleado'),
+            'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
+                $q->with('empleado:id,nombres,apellidos')
+            ),
         ])->findOrFail($id);
 
         $spreadsheet = new Spreadsheet();
@@ -292,9 +293,9 @@ class PlanillaController extends Controller
     public function exportExcel($id)
     {
         $planilla = CabeceraPlanilla::with([
-            'detalles' => fn($q) => $q->with('empleado:id,nombres,apellidos')
-                                      ->orderBy('departamento')
-                                      ->orderBy('id_empleado'),
+            'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
+                $q->with('empleado:id,nombres,apellidos')
+            ),
         ])->findOrFail($id);
 
         $totales = $this->calcularTotales($planilla);
@@ -401,6 +402,17 @@ class PlanillaController extends Controller
     }
 
     // ─── Helpers ────────────────────────────────────────────────
+
+    // Ordena los detalles de una planilla por departamento (alfabetico) y,
+    // dentro de cada departamento, por apellido/nombre del empleado.
+    private function ordenarPorDeptoYNombre($query)
+    {
+        return $query->join('empleados', 'empleados.id', '=', 'detalle_planillas.id_empleado')
+            ->select('detalle_planillas.*')
+            ->orderBy('detalle_planillas.departamento')
+            ->orderBy('empleados.apellidos')
+            ->orderBy('empleados.nombres');
+    }
 
     private function calcularIhss(float $quincenal): float
     {
