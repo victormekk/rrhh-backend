@@ -109,7 +109,7 @@ class AguinaldoController extends Controller
             // Fijos/Extras solo trae empleados de ese tipo_contrato; Ambos trae
             // los dos pero cada empleado se clasifica por su propio contrato
             // (nunca genera fijo Y extra para la misma persona).
-            $empleados = Empleado::with(['informacionLaboral.banco', 'departamento'])
+            $empleados = Empleado::with(['informacionLaboral.banco', 'departamento', 'puesto'])
                 ->whereHas('informacionLaboral', function ($q) use ($tipo) {
                     $q->where('estado', 'Activo');
                     if ($tipo !== 'Ambos') {
@@ -142,6 +142,7 @@ class AguinaldoController extends Controller
                         'departamento'     => $emp->departamento?->nombre ?? '',
                         'nombres'          => $emp->nombres,
                         'apellidos'        => $emp->apellidos,
+                        'puesto'           => $emp->puesto?->nombre ?? '',
                         'cuenta'           => $il->num_cuenta,
                         'fecha_inicio'     => $il->fecha_inicio,
                         'salario_base'     => $il->salario_base,

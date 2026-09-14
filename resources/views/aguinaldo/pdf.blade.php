@@ -58,24 +58,26 @@
 <table>
   <thead>
     <tr>
-      <th>Departamento</th>
       <th>Nombre</th>
-      <th>Apellido</th>
       <th>Cuenta</th>
+      <th>Cargo</th>
       <th>Fecha Inicio</th>
-      <th>Salario Base</th>
-      <th>Días Trab.</th>
+      <th>Salario Mensual</th>
+      <th>Días Año</th>
       <th>Anticipo</th>
-      <th>Total Aguinaldo</th>
+      <th>Aguinaldo a Pagar</th>
     </tr>
   </thead>
   <tbody>
-    @foreach($fijos as $f)
+    @foreach($fijos->groupBy('departamento') as $departamento => $filas)
     <tr>
-      <td class="left">{{ $f->departamento }}</td>
-      <td class="left">{{ $f->nombres }}</td>
-      <td class="left">{{ $f->apellidos }}</td>
+      <td colspan="8" class="left" style="background:#f8f2df; color:#3b2b16; font-weight:bold;">{{ $departamento }}</td>
+    </tr>
+    @foreach($filas as $f)
+    <tr>
+      <td class="left">{{ $f->nombres }} {{ $f->apellidos }}</td>
       <td>{{ $f->cuenta ?? '—' }}</td>
+      <td class="left">{{ $f->puesto ?? '—' }}</td>
       <td>{{ $f->fecha_inicio ? $f->fecha_inicio->format('d/m/Y') : '—' }}</td>
       <td class="num">L {{ number_format($f->salario_base, 2) }}</td>
       <td>{{ $f->dias_trabajados }}</td>
@@ -83,8 +85,9 @@
       <td class="num"><strong>L {{ number_format($f->total_aguinaldo, 2) }}</strong></td>
     </tr>
     @endforeach
+    @endforeach
     <tr class="totals">
-      <td colspan="5" class="left"><strong>TOTALES</strong></td>
+      <td colspan="4" class="left"><strong>TOTALES</strong></td>
       <td class="num">L {{ number_format($totalesFijos['salario_base'], 2) }}</td>
       <td>{{ $totalesFijos['dias_trabajados'] }}</td>
       <td class="num">L {{ number_format($totalesFijos['anticipo'], 2) }}</td>
@@ -99,7 +102,6 @@
 <table>
   <thead>
     <tr>
-      <th>Departamento</th>
       <th>Nombre</th>
       <th>Apellido</th>
       <th>Cuenta</th>
@@ -113,9 +115,12 @@
     </tr>
   </thead>
   <tbody>
-    @foreach($extras as $e)
+    @foreach($extras->groupBy('departamento') as $departamento => $filas)
     <tr>
-      <td class="left">{{ $e->departamento }}</td>
+      <td colspan="10" class="left" style="background:#f8f2df; color:#3b2b16; font-weight:bold;">{{ $departamento }}</td>
+    </tr>
+    @foreach($filas as $e)
+    <tr>
       <td class="left">{{ $e->nombres }}</td>
       <td class="left">{{ $e->apellidos }}</td>
       <td>{{ $e->cuenta ?? '—' }}</td>
@@ -128,8 +133,9 @@
       <td class="num"><strong>L {{ number_format($e->total_aguinaldo, 2) }}</strong></td>
     </tr>
     @endforeach
+    @endforeach
     <tr class="totals">
-      <td colspan="7" class="left"><strong>TOTALES</strong></td>
+      <td colspan="6" class="left"><strong>TOTALES</strong></td>
       <td class="num">L {{ number_format($totalesExtras['antiguedad'], 2) }}</td>
       <td class="num">L {{ number_format($totalesExtras['subtotal'], 2) }}</td>
       <td class="num">L {{ number_format($totalesExtras['anticipos'], 2) }}</td>
