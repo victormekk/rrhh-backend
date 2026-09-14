@@ -106,7 +106,7 @@
     <tbody>
       @foreach($rows as $row)
       <tr>
-        <td class="emp">{{ $row->apellidos }}, {{ $row->nombres }}</td>
+        <td class="emp">{{ $row->nombres }} {{ $row->apellidos }}</td>
         <td class="dept">{{ $row->departamento }}</td>
         <td class="ctr">{{ $row->total_quincenas }}</td>
         <td class="ctr"><strong>{{ number_format($row->total_dias, 0) }}</strong></td>
