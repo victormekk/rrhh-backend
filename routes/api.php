@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('planillas/{planilla}/excel', [PlanillaController::class, 'exportExcel']);
     Route::get('planillas/{planilla}/pago', [PlanillaController::class, 'exportPago']);
     Route::post('planillas/{planilla}/cerrar', [PlanillaController::class, 'cerrar']);
+    Route::delete('planillas/{id}/eliminar-cerrada', [PlanillaController::class, 'eliminarCerrada']);
     Route::put('planillas/{planilla}/detalles/{detalle}', [PlanillaController::class, 'updateDetalle']);
     Route::apiResource('planillas', PlanillaController::class)->except(['update']);
 

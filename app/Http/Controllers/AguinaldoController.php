@@ -62,10 +62,10 @@ class AguinaldoController extends Controller
     public function show($nombre)
     {
         $fijos  = AguinaldoFijo::where('nombre_aguinaldo', $nombre)
-            ->orderBy('departamento')->orderBy('apellidos')->orderBy('nombres')->get();
+            ->orderBy('departamento')->orderBy('nombres')->orderBy('apellidos')->get();
 
         $extras = AguinaldoExtra::where('nombre_aguinaldo', $nombre)
-            ->orderBy('departamento')->orderBy('apellidos')->orderBy('nombres')->get();
+            ->orderBy('departamento')->orderBy('nombres')->orderBy('apellidos')->get();
 
         abort_if($fijos->isEmpty() && $extras->isEmpty(), 404, 'Aguinaldo no encontrado.');
 
@@ -294,9 +294,9 @@ class AguinaldoController extends Controller
     public function exportPdf($nombre)
     {
         $fijos  = AguinaldoFijo::where('nombre_aguinaldo', $nombre)
-            ->orderBy('departamento')->orderBy('apellidos')->orderBy('nombres')->get();
+            ->orderBy('departamento')->orderBy('nombres')->orderBy('apellidos')->get();
         $extras = AguinaldoExtra::where('nombre_aguinaldo', $nombre)
-            ->orderBy('departamento')->orderBy('apellidos')->orderBy('nombres')->get();
+            ->orderBy('departamento')->orderBy('nombres')->orderBy('apellidos')->get();
 
         abort_if($fijos->isEmpty() && $extras->isEmpty(), 404, 'Aguinaldo no encontrado.');
 

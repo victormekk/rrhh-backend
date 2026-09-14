@@ -8,17 +8,20 @@ use App\Models\DeduccionCuota;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
 use App\Models\OtroIngreso;
+use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
+use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanillaController extends Controller
 {
-    use NombraArchivos;
+    use LogsActividad, NombraArchivos, SoloAdmin;
 
     public function index(Request $request)
     {
@@ -237,6 +240,39 @@ class PlanillaController extends Controller
         return response()->json(['message' => 'Planilla eliminada.']);
     }
 
+    // Borrado de una planilla ya CERRADA: solo administradores, y solo
+    // confirmando con la contraseña de la sesion (accion mas sensible que
+    // anular una planilla activa, porque una cerrada ya aplico cuotas).
+    public function eliminarCerrada(Request $request, $id)
+    {
+        $this->soloAdmin($request);
+
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        abort_unless(
+            Hash::check($request->password, $request->user()->password),
+            422,
+            'Contraseña incorrecta.'
+        );
+
+        $planilla = CabeceraPlanilla::where('estado', 'Cerrado')->findOrFail($id);
+        $nombre   = $planilla->nombre_planilla;
+
+        $planilla->detalles()->delete();
+        $planilla->delete();
+
+        $this->logActividad(
+            'eliminado',
+            'Planillas',
+            "Planilla cerrada '{$nombre}' eliminada permanentemente.",
+            $id
+        );
+
+        return response()->json(['message' => 'Planilla eliminada.']);
+    }
+
     public function exportPdf($id)
     {
         $planilla = CabeceraPlanilla::with([
@@ -404,14 +440,15 @@ class PlanillaController extends Controller
     // ─── Helpers ────────────────────────────────────────────────
 
     // Ordena los detalles de una planilla por departamento (alfabetico) y,
-    // dentro de cada departamento, por apellido/nombre del empleado.
+    // dentro de cada departamento, por nombre del empleado (coincide con el
+    // orden "Nombres Apellidos" en que se muestra en pantalla/PDF/Excel).
     private function ordenarPorDeptoYNombre($query)
     {
         return $query->join('empleados', 'empleados.id', '=', 'detalle_planillas.id_empleado')
             ->select('detalle_planillas.*')
             ->orderBy('detalle_planillas.departamento')
-            ->orderBy('empleados.apellidos')
-            ->orderBy('empleados.nombres');
+            ->orderBy('empleados.nombres')
+            ->orderBy('empleados.apellidos');
     }
 
     private function calcularIhss(float $quincenal): float
