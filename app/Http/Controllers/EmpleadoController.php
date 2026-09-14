@@ -24,6 +24,9 @@ class EmpleadoController extends Controller
                 });
             })
             ->when($request->id_departamento, fn($q, $dep) => $q->where('id_departamento', $dep))
+            ->when($request->tipo_contrato, fn($q, $tipo) =>
+                $q->whereHas('informacionLaboral', fn($q) => $q->where('tipo_contrato', $tipo))
+            )
             ->when($request->estado, fn($q, $estado) =>
                 $q->whereHas('informacionLaboral', fn($q) => $q->where('estado', $estado))
             )
