@@ -106,8 +106,18 @@ class AguinaldoController extends Controller
         abort_if($exists, 422, 'Ya existe un aguinaldo con ese nombre.');
 
         return DB::transaction(function () use ($nombre, $tipo, $fecha, $corte, $request) {
+            // Fijos/Extras solo trae empleados de ese tipo_contrato; Ambos trae
+            // los dos pero cada empleado se clasifica por su propio contrato
+            // (nunca genera fijo Y extra para la misma persona).
             $empleados = Empleado::with(['informacionLaboral.banco', 'departamento'])
-                ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))
+                ->whereHas('informacionLaboral', function ($q) use ($tipo) {
+                    $q->where('estado', 'Activo');
+                    if ($tipo !== 'Ambos') {
+                        $q->where('tipo_contrato', $tipo === 'Fijos' ? 'Fijo' : 'Extra');
+                    } else {
+                        $q->whereIn('tipo_contrato', ['Fijo', 'Extra']);
+                    }
+                })
                 ->get();
 
             $fechaCorte = Carbon::parse($corte);
@@ -115,7 +125,9 @@ class AguinaldoController extends Controller
             $countExtr  = 0;
 
             foreach ($empleados as $emp) {
-                $il = $emp->informacionLaboral;
+                $il      = $emp->informacionLaboral;
+                $esFijo  = $il->tipo_contrato === 'Fijo';
+                $esExtra = $il->tipo_contrato === 'Extra';
 
                 // Base de 360 dias (12 meses de 30 dias), igual que el calculo
                 // manual en Excel: se toma el rango desde la fecha de inicio
@@ -124,7 +136,7 @@ class AguinaldoController extends Controller
                 $fechaInicio = Carbon::parse($il->fecha_inicio);
                 $diasBase    = (int) min(360, $fechaInicio->diffInDays($fechaCorte));
 
-                if ($tipo === 'Fijos' || $tipo === 'Ambos') {
+                if ($esFijo && ($tipo === 'Fijos' || $tipo === 'Ambos')) {
                     AguinaldoFijo::create([
                         'nombre_aguinaldo' => $nombre,
                         'departamento'     => $emp->departamento?->nombre ?? '',
@@ -147,7 +159,7 @@ class AguinaldoController extends Controller
                     $countFijo++;
                 }
 
-                if ($tipo === 'Extras' || $tipo === 'Ambos') {
+                if ($esExtra && ($tipo === 'Extras' || $tipo === 'Ambos')) {
                     $anio        = $fechaCorte->year;
                     $diasProm    = (int) round(
                         DetallePlanilla::where('id_empleado', $emp->id)
