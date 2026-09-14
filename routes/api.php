@@ -53,6 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Constancias
     Route::get('constancias/laboral/{id}/pdf', [ConstanciaController::class, 'laboral']);
+    Route::get('constancias/voucher/{empleado}/planillas', [ConstanciaController::class, 'vouchersDisponibles']);
+    Route::get('constancias/voucher/{empleado}/{planilla}/pdf', [ConstanciaController::class, 'voucher']);
 
     // Incidencias
     Route::get('incidencias/{id}/pdf', [IncidenciaController::class, 'pdf']);

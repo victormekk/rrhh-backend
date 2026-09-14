@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CabeceraPlanilla;
+use App\Models\DetallePlanilla;
 use App\Models\Empleado;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
@@ -40,6 +42,48 @@ class ConstanciaController extends Controller
             'Constancias',
             "Constancia laboral emitida para {$emp->nombres} {$emp->apellidos}.",
             $emp->id
+        );
+
+        return $pdf->download($archivo)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
+    }
+
+    // Planillas CERRADAS en las que aparece este empleado, para elegir de
+    // cual quincena se extiende el voucher de pago.
+    public function vouchersDisponibles($empleadoId)
+    {
+        Empleado::findOrFail($empleadoId);
+
+        $planillas = CabeceraPlanilla::where('estado', 'Cerrado')
+            ->whereHas('detalles', fn($q) => $q->where('id_empleado', $empleadoId))
+            ->orderByDesc('fecha_generada')
+            ->get(['id', 'nombre_planilla', 'tipo_planilla', 'fecha_generada']);
+
+        return response()->json($planillas);
+    }
+
+    public function voucher($empleadoId, $planillaId)
+    {
+        CabeceraPlanilla::where('estado', 'Cerrado')->findOrFail($planillaId);
+
+        $detalle = DetallePlanilla::where('id_empleado', $empleadoId)
+            ->where('id_cabecera_planilla', $planillaId)
+            ->with('empleado:id,nombres,apellidos,cedula,id_cargo,id_departamento')
+            ->firstOrFail();
+
+        $pdf = Pdf::loadView('constancias.voucher', compact('detalle'))
+            ->setPaper('letter', 'portrait');
+
+        $nombrePlanilla = $this->sanitizarNombreArchivo($detalle->nombre_planilla);
+        $nombreEmpleado = $this->sanitizarNombreArchivo("{$detalle->empleado->nombres} {$detalle->empleado->apellidos}");
+        $archivo = "{$nombrePlanilla}_{$nombreEmpleado}.pdf";
+
+        $this->logActividad(
+            'generado',
+            'Constancias',
+            "Voucher de pago emitido para {$detalle->empleado->nombres} {$detalle->empleado->apellidos} ({$detalle->nombre_planilla}).",
+            $empleadoId
         );
 
         return $pdf->download($archivo)
