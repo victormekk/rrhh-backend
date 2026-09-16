@@ -6,12 +6,13 @@ use App\Models\Incidencia;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
+use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class IncidenciaController extends Controller
 {
-    use LogsActividad, NombraArchivos, GeneraCorrelativo;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo, SoloAdmin;
     public function index(Request $request)
     {
         $incidencias = Incidencia::with('empleado:id,nombres,apellidos,id_departamento')
@@ -78,8 +79,10 @@ class IncidenciaController extends Controller
         );
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $this->soloAdmin($request);
+
         $inc = Incidencia::with('empleado:id,nombres,apellidos')->findOrFail($id);
         $inc->delete();
         $this->logActividad('eliminado', 'Incidencias', "Incidencia '{$inc->titulo}' de {$inc->empleado->nombres} {$inc->empleado->apellidos} eliminada.", $id);

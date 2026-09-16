@@ -232,8 +232,10 @@ class PlanillaController extends Controller
         return response()->json(['message' => 'Planilla cerrada y cuotas aplicadas correctamente.']);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $this->soloAdmin($request);
+
         $planilla = CabeceraPlanilla::where('estado', 'Activo')->findOrFail($id);
         $planilla->detalles()->delete();
         $planilla->delete();
