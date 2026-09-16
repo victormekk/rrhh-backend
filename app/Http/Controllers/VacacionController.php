@@ -8,13 +8,14 @@ use App\Models\Vacacion;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
+use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class VacacionController extends Controller
 {
-    use LogsActividad, NombraArchivos, GeneraCorrelativo;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo, SoloAdmin;
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private function diasLaborables(Carbon $inicio, Carbon $fin): int
@@ -106,11 +107,14 @@ class VacacionController extends Controller
         $diasTomados        = (float) ($tomados->total  ?? 0);
         $diasTomadosPeriodo = (float) ($tomados->periodo ?? 0);
 
-        // Días previos = lo ganado antes del período actual menos lo tomado antes del período actual.
-        // Si el empleado agotó todo antes de este período, previos = 0 (se reinicia).
+        // Días previos = lo ganado antes del período actual, menos lo tomado antes del período actual
+        // y menos el excedente de lo tomado en el período actual sobre la cuota del período actual
+        // (lo tomado se descuenta primero de la cuota del período actual; si se excede, el sobrante
+        // sale de los días previos).
         $diasGanadosAnteriores  = $diasAcumulados - $diasAnioActual;
         $diasTomadosAnteriores  = $diasTomados - $diasTomadosPeriodo;
-        $diasPrevios            = max(0, $diasGanadosAnteriores - $diasTomadosAnteriores);
+        $excedentePeriodo       = max(0, $diasTomadosPeriodo - $diasAnioActual);
+        $diasPrevios            = max(0, $diasGanadosAnteriores - $diasTomadosAnteriores - $excedentePeriodo);
 
         return [
             'anios_laborados'     => $anios,
@@ -217,8 +221,10 @@ class VacacionController extends Controller
         return response()->json($solicitud->fresh(['empleado:id,nombres,apellidos']));
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $this->soloAdmin($request);
+
         $sol = SolicitudVacacion::with('empleado:id,nombres,apellidos')->findOrFail($id);
         $sol->delete();
         $this->logActividad('eliminado', 'Vacaciones', "Solicitud de vacaciones de {$sol->empleado->nombres} {$sol->empleado->apellidos} eliminada.", $id);
@@ -237,7 +243,18 @@ class VacacionController extends Controller
         $saldo = $this->calcularSaldo($solicitud->empleado);
         $correlativo = $this->siguienteCorrelativo('vacacion', $solicitud->id);
 
-        $pdf = Pdf::loadView('vacaciones.solicitud', compact('solicitud', 'saldo', 'correlativo'))
+        $solicitudAnterior = SolicitudVacacion::where('id_empleado', $solicitud->id_empleado)
+            ->where(function ($q) use ($solicitud) {
+                $q->where('fecha_inicio', '<', $solicitud->fecha_inicio)
+                    ->orWhere(function ($q2) use ($solicitud) {
+                        $q2->where('fecha_inicio', $solicitud->fecha_inicio)->where('id', '<', $solicitud->id);
+                    });
+            })
+            ->orderByDesc('fecha_inicio')
+            ->orderByDesc('id')
+            ->first();
+
+        $pdf = Pdf::loadView('vacaciones.solicitud', compact('solicitud', 'saldo', 'correlativo', 'solicitudAnterior'))
             ->setPaper('letter', 'portrait');
 
         $nombres   = $solicitud->empleado->nombres;

@@ -88,8 +88,8 @@ table.firmas td { text-align: center; padding: 0 30px; }
   $retorno = $fSolFin->copy()->addDay();
   while ($retorno->dayOfWeek === \Carbon\Carbon::SUNDAY) $retorno->addDay();
 
-  $diasPrevios   = max(0, $saldo['dias_tomados'] - $solicitud->dias_tomados);
-  $saldoRestante = max(0, $saldo['saldo']);
+  $diasSolicitudAnterior = $solicitudAnterior->dias_tomados ?? 0;
+  $saldoRestante         = max(0, $saldo['saldo']);
 
   $meses = ['enero','febrero','marzo','abril','mayo','junio',
             'julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -167,9 +167,14 @@ table.firmas td { text-align: center; padding: 0 30px; }
         <div class="d-sub">según antigüedad</div>
       </td>
       <td>
-        <div class="d-lbl">Tomados previos</div>
-        <div class="d-num">{{ number_format($diasPrevios, 0) }}</div>
-        <div class="d-sub">este período</div>
+        <div class="d-lbl">Tomados este período</div>
+        <div class="d-num">{{ number_format($saldo['dias_tomados_periodo'], 0) }}</div>
+        <div class="d-sub">período actual</div>
+      </td>
+      <td>
+        <div class="d-lbl">Solicitud anterior</div>
+        <div class="d-num">{{ number_format($diasSolicitudAnterior, 0) }}</div>
+        <div class="d-sub">{{ $solicitudAnterior ? \Carbon\Carbon::parse($solicitudAnterior->fecha_inicio)->format('d/m/Y') : 'sin registro previo' }}</div>
       </td>
       <td class="hl">
         <div class="d-lbl">Esta solicitud</div>
@@ -177,9 +182,9 @@ table.firmas td { text-align: center; padding: 0 30px; }
         <div class="d-sub">días laborables</div>
       </td>
       <td>
-        <div class="d-lbl">Saldo restante</div>
+        <div class="d-lbl">Días disponibles</div>
         <div class="d-num">{{ number_format($saldoRestante, 0) }}</div>
-        <div class="d-sub">días disponibles</div>
+        <div class="d-sub">saldo restante</div>
       </td>
     </tr>
   </table>
