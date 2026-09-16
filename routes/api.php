@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Empleados
     Route::post('/empleados/{empleado}/foto', [EmpleadoController::class, 'uploadFoto']);
+    Route::get('/empleados-informacion-laboral/excel', [EmpleadoController::class, 'exportarInformacionLaboral']);
     Route::apiResource('empleados', EmpleadoController::class);
 
     // Catálogos
@@ -53,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Constancias
     Route::get('constancias/laboral/{id}/pdf', [ConstanciaController::class, 'laboral']);
+    Route::get('constancias/bancaria/{empleado}/{banco}/pdf', [ConstanciaController::class, 'bancaria']);
     Route::get('constancias/voucher/{empleado}/planillas', [ConstanciaController::class, 'vouchersDisponibles']);
     Route::get('constancias/voucher/{empleado}/{planilla}/pdf', [ConstanciaController::class, 'voucher']);
 
