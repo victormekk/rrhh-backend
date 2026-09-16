@@ -9,6 +9,11 @@ use App\Traits\LogsActividad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class EmpleadoController extends Controller
 {
@@ -25,7 +30,7 @@ class EmpleadoController extends Controller
                       ->orWhere('empleados.cedula', 'like', "%{$search}%");
                 });
             })
-            ->when($request->id_departamento, fn($q, $dep) => $q->where('empleados.id_departamento', $dep))
+            ->when($request->id_departamento, fn($q, $dep) => $q->whereIn('empleados.id_departamento', (array) $dep))
             ->when($request->tipo_contrato, fn($q, $tipo) =>
                 $q->whereHas('informacionLaboral', fn($q) => $q->where('tipo_contrato', $tipo))
             )
@@ -36,7 +41,7 @@ class EmpleadoController extends Controller
             ->orderBy('departamentos.nombre')
             ->orderBy('empleados.apellidos');
 
-        return response()->json($query->paginate(15));
+        return response()->json($query->paginate($request->input('per_page', 15)));
     }
 
     public function show($id)
@@ -215,6 +220,85 @@ class EmpleadoController extends Controller
             'foto_path' => $path,
             'foto_url'  => asset('storage/' . $path),
         ]);
+    }
+
+    // Exporta a Excel la información laboral básica (nombre, DNI, fecha de
+    // inicio, salario mensual, departamento y cargo) de uno o varios
+    // empleados seleccionados. Usado por "Información Laboral".
+    public function exportarInformacionLaboral(Request $request)
+    {
+        $ids = (array) $request->input('ids', []);
+        abort_if(empty($ids), 422, 'Selecciona al menos un empleado.');
+
+        $empleados = Empleado::with(['informacionLaboral', 'cargo', 'departamento'])
+            ->whereIn('id', $ids)
+            ->orderBy('apellidos')
+            ->orderBy('nombres')
+            ->get();
+
+        $columnas = [
+            'A' => 'Nombre completo', 'B' => 'DNI', 'C' => 'Fecha de inicio',
+            'D' => 'Departamento', 'E' => 'Cargo', 'F' => 'Salario mensual',
+        ];
+        $ultimaCol = 'F';
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Información Laboral');
+
+        $sheet->mergeCells("A1:{$ultimaCol}1");
+        $sheet->setCellValue('A1', 'INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells("A2:{$ultimaCol}2");
+        $sheet->setCellValue('A2', 'INFORMACIÓN LABORAL');
+        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells("A3:{$ultimaCol}3");
+        $sheet->setCellValue('A3', sprintf('Generado: %s   |   Empleados: %d', now()->format('d/m/Y'), $empleados->count()));
+        $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $row = 5;
+        foreach ($columnas as $col => $titulo) {
+            $sheet->setCellValue("{$col}{$row}", $titulo);
+        }
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
+            ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('3B2B16');
+        $row++;
+
+        foreach ($empleados as $emp) {
+            $il = $emp->informacionLaboral;
+            $sheet->setCellValue("A{$row}", trim("{$emp->nombres} {$emp->apellidos}"));
+            $sheet->setCellValue("B{$row}", $emp->cedula ?? '—');
+            $sheet->setCellValue("C{$row}", $il?->fecha_inicio
+                ? \Carbon\Carbon::parse($il->fecha_inicio)->format('d/m/Y')
+                : '—');
+            $sheet->setCellValue("D{$row}", $emp->departamento?->nombre ?? '—');
+            $sheet->setCellValue("E{$row}", $emp->cargo?->nombre ?? '—');
+            $sheet->setCellValueExplicit("F{$row}", round((float) ($il->salario_base ?? 0), 2), DataType::TYPE_NUMERIC);
+            $row++;
+        }
+
+        $sheet->getStyle("F6:F" . ($row - 1))->getNumberFormat()->setFormatCode('#,##0.00');
+        foreach (array_keys($columnas) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'infolaboral') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tempFile);
+
+        $this->logActividad(
+            'generado',
+            'Empleados',
+            "Exportó información laboral de {$empleados->count()} empleado(s) a Excel.",
+            null
+        );
+
+        return response()->download($tempFile, 'InformacionLaboral_' . now()->format('dmY') . '.xlsx')
+            ->deleteFileAfterSend(true);
     }
 
     public function destroy($id)
