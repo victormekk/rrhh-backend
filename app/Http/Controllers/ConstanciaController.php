@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Banco;
 use App\Models\CabeceraPlanilla;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
@@ -43,6 +44,38 @@ class ConstanciaController extends Controller
             'generado',
             'Constancias',
             "Constancia laboral emitida para {$emp->nombres} {$emp->apellidos}.",
+            $emp->id
+        );
+
+        return $pdf->download($archivo)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
+    }
+
+    public function bancaria($id, $bancoId)
+    {
+        $emp   = Empleado::with(['informacionLaboral', 'cargo', 'departamento'])->findOrFail($id);
+        $banco = Banco::findOrFail($bancoId);
+
+        $il = $emp->informacionLaboral;
+        abort_if(!$il || !$il->fecha_inicio, 422, 'El empleado no tiene información laboral registrada.');
+
+        $fechaInicio    = Carbon::parse($il->fecha_inicio);
+        $salarioMensual = (float) $il->salario_base;
+        $simboloMoneda  = $il->moneda === 'Dólares' ? 'US$' : 'L.';
+        $meses          = self::MESES;
+        $correlativo    = $this->siguienteCorrelativo('constancia_bancaria', $emp->id);
+
+        $pdf = Pdf::loadView('constancias.bancaria', compact(
+            'emp', 'banco', 'fechaInicio', 'salarioMensual', 'simboloMoneda', 'meses', 'correlativo'
+        ))->setPaper('letter', 'portrait');
+
+        $archivo = $this->nombreArchivo('ConstanciaBancaria', "{$emp->nombres} {$emp->apellidos}", 'pdf');
+
+        $this->logActividad(
+            'generado',
+            'Constancias',
+            "Constancia bancaria emitida para {$emp->nombres} {$emp->apellidos} ({$banco->nombre}).",
             $emp->id
         );
 
