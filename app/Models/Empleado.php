@@ -15,7 +15,7 @@ class Empleado extends Model
         'nombres', 'apellidos', 'cedula', 'rtn', 'genero',
         'fecha_nacimiento', 'edad', 'estado_civil', 'num_hijos',
         'nacionalidad', 'residencia', 'telefono',
-        'contacto_emergencia', 'telefono_emergencia', 'correo',
+        'contacto_emergencia', 'parentesco_emergencia', 'telefono_emergencia', 'correo',
         'tipo_sangre', 'foto_path',
         'id_info_laboral', 'id_cargo', 'id_departamento', 'id_usuario',
     ];

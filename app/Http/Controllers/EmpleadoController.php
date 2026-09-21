@@ -66,8 +66,9 @@ class EmpleadoController extends Controller
             'nacionalidad'        => 'required|string|max:50',
             'residencia'          => 'required|string|max:60',
             'telefono'            => 'required|string|max:20',
-            'contacto_emergencia' => 'required|string|max:50',
-            'telefono_emergencia' => 'required|string|max:30',
+            'contacto_emergencia'   => 'required|string|max:50',
+            'parentesco_emergencia' => 'required|string|max:30',
+            'telefono_emergencia'   => 'required|string|max:30',
             'correo'              => 'nullable|email|max:50',
             'tipo_sangre'         => 'required|string|max:10',
             'id_cargo'           => 'required|exists:cargos,id',
@@ -109,7 +110,7 @@ class EmpleadoController extends Controller
                     'nombres', 'apellidos', 'cedula', 'rtn', 'genero',
                     'fecha_nacimiento', 'estado_civil', 'num_hijos',
                     'nacionalidad', 'residencia', 'telefono',
-                    'contacto_emergencia', 'telefono_emergencia',
+                    'contacto_emergencia', 'parentesco_emergencia', 'telefono_emergencia',
                     'correo', 'tipo_sangre', 'id_cargo', 'id_departamento',
                 ]),
                 'edad'            => now()->diffInYears($request->fecha_nacimiento),
@@ -142,8 +143,9 @@ class EmpleadoController extends Controller
             'nacionalidad'        => 'required|string|max:50',
             'residencia'          => 'required|string|max:60',
             'telefono'            => 'required|string|max:20',
-            'contacto_emergencia' => 'required|string|max:50',
-            'telefono_emergencia' => 'required|string|max:30',
+            'contacto_emergencia'   => 'required|string|max:50',
+            'parentesco_emergencia' => 'required|string|max:30',
+            'telefono_emergencia'   => 'required|string|max:30',
             'correo'              => 'nullable|email|max:50',
             'tipo_sangre'         => 'required|string|max:10',
             'id_cargo'           => 'required|exists:cargos,id',
@@ -189,7 +191,7 @@ class EmpleadoController extends Controller
                     'nombres', 'apellidos', 'cedula', 'rtn', 'genero',
                     'fecha_nacimiento', 'estado_civil', 'num_hijos',
                     'nacionalidad', 'residencia', 'telefono',
-                    'contacto_emergencia', 'telefono_emergencia',
+                    'contacto_emergencia', 'parentesco_emergencia', 'telefono_emergencia',
                     'correo', 'tipo_sangre', 'id_cargo', 'id_departamento',
                 ]),
                 'edad' => now()->diffInYears($request->fecha_nacimiento),
@@ -220,6 +222,18 @@ class EmpleadoController extends Controller
             'foto_path' => $path,
             'foto_url'  => asset('storage/' . $path),
         ]);
+    }
+
+    public function deleteFoto($id)
+    {
+        $empleado = Empleado::findOrFail($id);
+
+        if ($empleado->foto_path) {
+            Storage::disk('public')->delete($empleado->foto_path);
+            $empleado->update(['foto_path' => null]);
+        }
+
+        return response()->json(['message' => 'Foto eliminada.']);
     }
 
     // Exporta a Excel la información laboral básica (nombre, DNI, fecha de
