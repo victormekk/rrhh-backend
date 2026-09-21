@@ -22,6 +22,10 @@ class DashboardController extends Controller
                 fn($q) => $q->where('estado', 'Activo')->where('tipo_contrato', 'Fijo'))->count(),
             'empleados_extras'  => Empleado::whereHas('informacionLaboral',
                 fn($q) => $q->where('estado', 'Activo')->where('tipo_contrato', 'Extra'))->count(),
+            'empleados_masculinos' => Empleado::where('genero', 'Masculino')
+                ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))->count(),
+            'empleados_femeninos'  => Empleado::where('genero', 'Femenino')
+                ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))->count(),
             'cumpleanos_mes'    => Empleado::whereNotNull('fecha_nacimiento')
                 ->whereRaw('MONTH(fecha_nacimiento) = ?', [$hoy->month])
                 ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))
