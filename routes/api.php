@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Empleados
     Route::post('/empleados/{empleado}/foto', [EmpleadoController::class, 'uploadFoto']);
+    Route::delete('/empleados/{empleado}/foto', [EmpleadoController::class, 'deleteFoto']);
     Route::get('/empleados-informacion-laboral/excel', [EmpleadoController::class, 'exportarInformacionLaboral']);
     Route::apiResource('empleados', EmpleadoController::class);
 
@@ -70,7 +71,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Planillas
     Route::get('planillas/{planilla}/pdf', [PlanillaController::class, 'exportPdf']);
     Route::get('planillas/{planilla}/excel', [PlanillaController::class, 'exportExcel']);
-    Route::get('planillas/{planilla}/pago', [PlanillaController::class, 'exportPago']);
+    Route::get('planillas/{planilla}/pago/excel', [PlanillaController::class, 'exportPagoGeneralExcel']);
+    Route::get('planillas/{planilla}/bancos/excel', [PlanillaController::class, 'exportBancosExcel']);
+    Route::get('planillas/{planilla}/bancos/pdf', [PlanillaController::class, 'exportBancosPdf']);
+    Route::get('planillas/{planilla}/cheques/excel', [PlanillaController::class, 'exportChequesExcel']);
+    Route::get('planillas/{planilla}/cheques/pdf', [PlanillaController::class, 'exportChequesPdf']);
     Route::post('planillas/{planilla}/cerrar', [PlanillaController::class, 'cerrar']);
     Route::delete('planillas/{id}/eliminar-cerrada', [PlanillaController::class, 'eliminarCerrada']);
     Route::put('planillas/{planilla}/detalles/{detalle}', [PlanillaController::class, 'updateDetalle']);

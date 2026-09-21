@@ -44,7 +44,7 @@ class PlanillaController extends Controller
             ),
         ])->findOrFail($id);
 
-        $planilla->totales = $this->calcularTotales($planilla);
+        $planilla->totales = $this->calcularTotales($planilla->detalles);
 
         return response()->json($planilla);
     }
@@ -284,7 +284,7 @@ class PlanillaController extends Controller
             ),
         ])->findOrFail($id);
 
-        $totales     = $this->calcularTotales($planilla);
+        $totales     = $this->calcularTotales($planilla->detalles);
         $correlativo = $this->siguienteCorrelativo('planilla', $planilla->id);
         $pdf         = Pdf::loadView('planillas.pdf', compact('planilla', 'totales', 'correlativo'))
             ->setPaper('letter', 'landscape');
@@ -294,7 +294,39 @@ class PlanillaController extends Controller
             ->header('Pragma', 'no-cache');
     }
 
-    public function exportPago($id)
+    public function exportBancosExcel($id)
+    {
+        return $this->exportPagoExcel($id, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA');
+    }
+
+    public function exportBancosPdf($id)
+    {
+        return $this->exportPagoPdf($id, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA', 'planilla_bancos');
+    }
+
+    public function exportChequesExcel($id)
+    {
+        return $this->exportPagoExcel($id, 'cheque', 'Cheques', 'PAGO POR CHEQUE');
+    }
+
+    public function exportChequesPdf($id)
+    {
+        return $this->exportPagoPdf($id, 'cheque', 'Cheques', 'PAGO POR CHEQUE', 'planilla_cheques');
+    }
+
+    // Detalles de una planilla que cobran por transferencia (tienen cuenta_banco
+    // guardada, capturada de la ficha del empleado al generar la planilla) o por
+    // cheque (sin cuenta_banco). Es la unica fuente de verdad para la division:
+    // no depende de "forma_de_pago", asi el admin controla el destino de cada
+    // quien con solo llenar o vaciar el numero de cuenta en la ficha del empleado.
+    private function detallesPorMetodoPago(CabeceraPlanilla $planilla, string $metodo)
+    {
+        return $planilla->detalles->filter(
+            fn($d) => $metodo === 'banco' ? filled($d->cuenta_banco) : blank($d->cuenta_banco)
+        )->values();
+    }
+
+    private function exportPagoExcel($id, string $metodo, string $sufijoArchivo, string $titulo)
     {
         $planilla = CabeceraPlanilla::with([
             'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
@@ -302,22 +334,90 @@ class PlanillaController extends Controller
             ),
         ])->findOrFail($id);
 
+        $detalles = $this->detallesPorMetodoPago($planilla, $metodo);
+        $totales  = $this->calcularTotales($detalles);
+
+        $columnas  = [
+            'A' => 'Empleado', 'B' => 'H. Extra', 'C' => 'Otros Ing.',
+            'D' => 'IHSS',     'E' => 'Otras Ded.', 'F' => 'Ded. Neta', 'G' => 'Sal. Neto',
+        ];
+        $ultimaCol = 'G';
+        $camposNum = ['monto_horas_extras', 'otros_ingresos', 'ihss', 'otras_deducciones', 'deduccion_neta', 'salario_neto'];
+
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Pago');
-        $sheet->setCellValue('A1', 'Empleado');
-        $sheet->setCellValue('B1', 'Salario Neto');
-        $sheet->getStyle('A1:B1')->getFont()->setBold(true);
+        $sheet->setTitle($sufijoArchivo);
 
-        $row = 2;
-        foreach ($planilla->detalles as $d) {
-            $sheet->setCellValue("A{$row}", trim("{$d->empleado->nombres} {$d->empleado->apellidos}"));
-            $sheet->setCellValueExplicit("B{$row}", round((float) $d->salario_neto, 2), DataType::TYPE_NUMERIC);
+        $sheet->mergeCells("A1:{$ultimaCol}1");
+        $sheet->setCellValue('A1', 'INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells("A2:{$ultimaCol}2");
+        $sheet->setCellValue('A2', strtoupper($planilla->nombre_planilla) . ' — ' . $titulo);
+        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells("A3:{$ultimaCol}3");
+        $sheet->setCellValue('A3', sprintf(
+            'Tipo: %s   |   Fecha: %s   |   Empleados: %d',
+            $planilla->tipo_planilla,
+            \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y'),
+            $detalles->count()
+        ));
+        $sheet->getStyle('A3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $row = 5;
+        foreach ($columnas as $col => $tituloCol) {
+            $sheet->setCellValue("{$col}{$row}", $tituloCol);
+        }
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('3B2B16');
+        $row++;
+
+        foreach ($detalles->groupBy('departamento') as $departamento => $filas) {
+            $sheet->setCellValue("A{$row}", $departamento);
+            $sheet->mergeCells("A{$row}:{$ultimaCol}{$row}");
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true)->getColor()->setRGB('3B2B16');
+            $sheet->getStyle("A{$row}")->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('F8F2DF');
+            $row++;
+
+            foreach ($filas as $d) {
+                $sheet->setCellValue("A{$row}", trim("{$d->empleado->nombres} {$d->empleado->apellidos}"));
+                $col = 'B';
+                foreach ($camposNum as $campo) {
+                    $sheet->setCellValueExplicit("{$col}{$row}", round((float) $d->$campo, 2), DataType::TYPE_NUMERIC);
+                    $col++;
+                }
+                $row++;
+            }
+
+            $sheet->setCellValue("A{$row}", "SUBTOTAL: {$departamento}");
+            $col = 'B';
+            foreach ($camposNum as $campo) {
+                $sheet->setCellValueExplicit("{$col}{$row}", round((float) $filas->sum($campo), 2), DataType::TYPE_NUMERIC);
+                $col++;
+            }
+            $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true);
+            $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
+                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('EEE3C3');
             $row++;
         }
 
-        $sheet->getStyle("B2:B" . ($row - 1))->getNumberFormat()->setFormatCode('#,##0.00');
-        foreach (['A', 'B'] as $col) {
+        $sheet->setCellValue("A{$row}", 'TOTAL GENERAL');
+        $col = 'B';
+        foreach ($camposNum as $campo) {
+            $sheet->setCellValueExplicit("{$col}{$row}", round((float) $totales[$campo], 2), DataType::TYPE_NUMERIC);
+            $col++;
+        }
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true);
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('B9921A');
+
+        $sheet->getStyle("B6:{$ultimaCol}{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+        foreach (array_keys($columnas) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -326,8 +426,30 @@ class PlanillaController extends Controller
 
         $nombre = $this->sanitizarNombreArchivo($planilla->nombre_planilla);
 
-        return response()->download($tempFile, "Pago ({$nombre}).xlsx")
+        return response()->download($tempFile, "{$sufijoArchivo} ({$nombre}).xlsx")
             ->deleteFileAfterSend(true);
+    }
+
+    private function exportPagoPdf($id, string $metodo, string $sufijoArchivo, string $titulo, string $tipoCorrelativo)
+    {
+        $planilla = CabeceraPlanilla::with([
+            'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
+                $q->with('empleado:id,nombres,apellidos')
+            ),
+        ])->findOrFail($id);
+
+        $detalles    = $this->detallesPorMetodoPago($planilla, $metodo);
+        $totales     = $this->calcularTotales($detalles);
+        $correlativo = $this->siguienteCorrelativo($tipoCorrelativo, $planilla->id);
+
+        $pdf = Pdf::loadView('planillas.pago-pdf', compact('planilla', 'detalles', 'totales', 'titulo', 'correlativo'))
+            ->setPaper('letter', 'portrait');
+
+        $nombre = $this->sanitizarNombreArchivo($planilla->nombre_planilla);
+
+        return $pdf->download("{$sufijoArchivo} ({$nombre}).pdf")
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     public function exportExcel($id)
@@ -338,7 +460,7 @@ class PlanillaController extends Controller
             ),
         ])->findOrFail($id);
 
-        $totales = $this->calcularTotales($planilla);
+        $totales = $this->calcularTotales($planilla->detalles);
 
         $columnas = [
             'A' => 'Empleado',     'B' => 'Días',        'C' => 'Sal. Base',
@@ -441,6 +563,76 @@ class PlanillaController extends Controller
             ->deleteFileAfterSend(true);
     }
 
+    // Excel simple para el archivo de pago: solo Empleado y Salario Neto, en
+    // orden alfabetico por nombre (no agrupado por departamento), unicamente
+    // los empleados que cobran por transferencia bancaria (tienen cuenta
+    // registrada) — los de cheque no van en este archivo.
+    public function exportPagoGeneralExcel($id)
+    {
+        $planilla = CabeceraPlanilla::with([
+            'detalles.empleado:id,nombres,apellidos',
+        ])->findOrFail($id);
+
+        $detalles = $this->detallesPorMetodoPago($planilla, 'banco')
+            ->sortBy(fn($d) => trim("{$d->empleado->nombres} {$d->empleado->apellidos}"), SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Pago');
+
+        $sheet->mergeCells('A1:B1');
+        $sheet->setCellValue('A1', 'INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells('A2:B2');
+        $sheet->setCellValue('A2', strtoupper($planilla->nombre_planilla) . ' — GENERAR PAGO');
+        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $sheet->mergeCells('A3:B3');
+        $sheet->setCellValue('A3', sprintf(
+            'Tipo: %s   |   Fecha: %s   |   Empleados: %d',
+            $planilla->tipo_planilla,
+            \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y'),
+            $detalles->count()
+        ));
+        $sheet->getStyle('A3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        $row = 5;
+        $sheet->setCellValue("A{$row}", 'Empleado');
+        $sheet->setCellValue("B{$row}", 'Sal. Neto');
+        $sheet->getStyle("A{$row}:B{$row}")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle("A{$row}:B{$row}")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('3B2B16');
+        $row++;
+
+        foreach ($detalles as $d) {
+            $sheet->setCellValue("A{$row}", trim("{$d->empleado->nombres} {$d->empleado->apellidos}"));
+            $sheet->setCellValueExplicit("B{$row}", round((float) $d->salario_neto, 2), DataType::TYPE_NUMERIC);
+            $row++;
+        }
+
+        $sheet->setCellValue("A{$row}", 'TOTAL GENERAL');
+        $sheet->setCellValueExplicit("B{$row}", round((float) $detalles->sum('salario_neto'), 2), DataType::TYPE_NUMERIC);
+        $sheet->getStyle("A{$row}:B{$row}")->getFont()->setBold(true);
+        $sheet->getStyle("A{$row}:B{$row}")->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('B9921A');
+
+        $sheet->getStyle("B6:B{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getColumnDimension('A')->setWidth(38);
+        $sheet->getColumnDimension('B')->setWidth(16);
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'pago') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tempFile);
+
+        $nombre = $this->sanitizarNombreArchivo($planilla->nombre_planilla);
+
+        return response()->download($tempFile, "Pago ({$nombre}).xlsx")
+            ->deleteFileAfterSend(true);
+    }
+
     // ─── Helpers ────────────────────────────────────────────────
 
     // Ordena los detalles de una planilla por departamento (alfabetico) y,
@@ -461,9 +653,9 @@ class PlanillaController extends Controller
         return round(min($quincenal, $techo) * 0.035, 2);
     }
 
-    private function calcularTotales(CabeceraPlanilla $planilla): array
+    private function calcularTotales($detalles): array
     {
-        return $planilla->detalles->reduce(function (array $acc, DetallePlanilla $d) {
+        return $detalles->reduce(function (array $acc, DetallePlanilla $d) {
             $acc['dias_trabajados']    += $d->dias_trabajados;
             $acc['salario_base']       += $d->salario_base;
             $acc['otros_ingresos']     += $d->otros_ingresos;
