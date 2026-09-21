@@ -22,6 +22,8 @@ class CargoController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge(['nombre' => strtoupper(trim((string) $request->nombre))]);
+
         $request->validate([
             'nombre' => 'required|string|max:50|unique:cargos',
         ]);
@@ -43,6 +45,8 @@ class CargoController extends Controller
     public function update(Request $request, $id)
     {
         $cargo = Cargo::findOrFail($id);
+
+        $request->merge(['nombre' => strtoupper(trim((string) $request->nombre))]);
 
         $request->validate([
             'nombre' => "required|string|max:50|unique:cargos,nombre,{$id}",

@@ -22,6 +22,8 @@ class DepartamentoController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge(['nombre' => strtoupper(trim((string) $request->nombre))]);
+
         $request->validate([
             'nombre' => 'required|string|max:50|unique:departamentos',
         ]);
@@ -43,6 +45,8 @@ class DepartamentoController extends Controller
     public function update(Request $request, $id)
     {
         $departamento = Departamento::findOrFail($id);
+
+        $request->merge(['nombre' => strtoupper(trim((string) $request->nombre))]);
 
         $request->validate([
             'nombre' => "required|string|max:50|unique:departamentos,nombre,{$id}",
