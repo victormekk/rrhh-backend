@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 trait GeneraCorrelativo
 {
-    // Correlativo de 5 digitos (00001, 00002...) para un tipo de documento.
+    // Correlativo de 6 digitos (000001, 000002...) para un tipo de documento.
     // Cada tipo lleva su propia secuencia, con bloqueo de fila para evitar
     // duplicados si dos PDFs del mismo tipo se generan al mismo tiempo.
     protected function siguienteCorrelativo(string $tipo, ?int $referenciaId = null): string
@@ -28,6 +28,6 @@ trait GeneraCorrelativo
             return $siguiente;
         });
 
-        return str_pad($numero, 5, '0', STR_PAD_LEFT);
+        return str_pad($numero, 6, '0', STR_PAD_LEFT);
     }
 }

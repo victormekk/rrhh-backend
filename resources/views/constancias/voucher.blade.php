@@ -9,7 +9,7 @@
    explicito y la pagina tiene una <table>, dompdf ignora el margen del
    @page y dibuja los fondos de la tabla de borde a borde de la hoja. */
 *:not(html):not(body) { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; line-height: 1.35; }
+body { font-family: DejaVu Sans, sans-serif; font-size: 9px; color: #1e293b; line-height: 1.35; }
 
 .page { padding: 0; }
 
@@ -18,49 +18,51 @@ body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; lin
 
 /* ── Header ── */
 table.hdr { width: 100%; border-collapse: collapse; border-bottom: 2px solid #3b2b16; padding-bottom: 9px; margin-bottom: 9px; }
-.hdr-logo { width: 130px; vertical-align: middle; }
-.hdr-logo img { width: 130px; height: auto; display: block; }
+.hdr-logo { width: 190px; vertical-align: middle; }
+.hdr-logo img { width: 190px; height: auto; display: block; }
 .hdr-info { vertical-align: middle; padding-left: 14px; }
-.hdr-info h2 { font-size: 19px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; line-height: 1.2; }
-.hdr-info p  { font-size: 7.5px; color: #b9921a; margin-top: 4px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
+.hdr-info h2 { font-size: 20px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; line-height: 1.2; margin-top: 8px; }
+.hdr-info p  { font-size: 8.5px; color: #b9921a; margin-top: 4px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
 .hdr-doc { text-align: right; vertical-align: middle; white-space: nowrap; }
-.hdr-doc .num   { font-size: 13px; font-weight: bold; color: #3b2b16; }
-.hdr-doc .fecha { font-size: 7px; color: #8a7654; margin-top: 3px; }
+.hdr-doc .num   { font-size: 14px; font-weight: bold; color: #3b2b16; }
+.hdr-doc .fecha { font-size: 8px; color: #8a7654; margin-top: 3px; }
 
 /* ── Título de sección ── */
-.sec { font-size: 6.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.9px; color: #fff; background: #3b2b16; padding: 3px 8px; margin-bottom: 5px; }
+.sec { font-size: 7.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.9px; color: #fff; background: #3b2b16; padding: 3px 8px; margin-bottom: 5px; }
 
 /* ── Campos de datos ── */
 table.fields { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
 table.fields td { vertical-align: top; padding-right: 10px; }
 table.fields td:last-child { padding-right: 0; }
-.lbl { display: block; font-size: 6px; color: #64748b; text-transform: uppercase; letter-spacing: 0.2px; margin-top: 3px; }
+.lbl { display: block; font-size: 7px; color: #64748b; text-transform: uppercase; letter-spacing: 0.2px; margin-top: 3px; }
 .lbl:first-child { margin-top: 0; }
-.val { display: block; font-size: 8px; font-weight: 600; color: #0f172a; border-bottom: 1px dotted #cbd5e1; padding-bottom: 1px; margin-bottom: 3px; }
+.val { display: block; font-size: 9px; font-weight: 600; color: #0f172a; border-bottom: 1px dotted #cbd5e1; padding-bottom: 1px; margin-bottom: 3px; }
 
 /* ── Detalle de pago (grilla 4 columnas) ── */
 table.pago { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
 table.pago td { width: 25%; padding: 5px 6px; border: 1px solid #e2e8f0; }
-.p-lbl { display: block; font-size: 6px; color: #64748b; text-transform: uppercase; letter-spacing: 0.2px; }
-.p-val { display: block; font-size: 9px; font-weight: 600; color: #0f172a; margin-top: 2px; }
+.p-lbl { display: block; font-size: 7px; color: #64748b; text-transform: uppercase; letter-spacing: 0.2px; }
+.p-val { display: block; font-size: 10px; font-weight: 600; color: #0f172a; margin-top: 2px; }
 .p-ded .p-val { color: #dc2626; }
 
 /* ── Resumen final ── */
 table.resumen { width: 100%; border-collapse: collapse; border: 1px solid #e3c777; margin-bottom: 10px; }
 table.resumen td { text-align: center; padding: 6px 2px; border-right: 1px solid #e3c777; }
 table.resumen td:last-child { border-right: none; }
-.r-lbl { font-size: 6px; color: #64748b; text-transform: uppercase; }
-.r-num { font-size: 13px; font-weight: bold; color: #3b2b16; line-height: 1.3; margin: 1px 0; }
+.r-lbl { font-size: 7px; color: #64748b; text-transform: uppercase; }
+.r-num { font-size: 14px; font-weight: bold; color: #3b2b16; line-height: 1.3; margin: 1px 0; }
 .r-num.neto { color: #166534; }
 .r-num.ded  { color: #dc2626; }
 
 /* ── Firma ── */
-.firma-wrap   { margin-top: 2.06cm; text-align: center; }
+.firma-wrap   { margin-top: 3.8cm; text-align: center; }
 .firma-linea  { width: 220px; border-top: 1px solid #1e293b; margin: 0 auto 6px; }
-.f-cargo      { font-size: 7px; color: #64748b; margin-top: 1px; }
+.f-cargo      { font-size: 8px; color: #64748b; margin-top: 1px; }
 
 /* ── Pie de página ── */
-.footer { margin-top: 12px; border-top: 1px solid #e2e8f0; padding-top: 4px; font-size: 6.5px; color: #94a3b8; text-align: center; }
+.footer { position: fixed; bottom: 0; left: 0; right: 0; padding-top: 4px; font-size: 9px; line-height: 1.05; color: #94a3b8; text-align: center; }
+.footer p { margin-bottom: 0; }
+.footer .footer-empresa { font-weight: bold; color: #64748b; }
 </style>
 </head>
 <body>
@@ -74,10 +76,9 @@ table.resumen td:last-child { border-right: none; }
   {{-- ══ ENCABEZADO ══ --}}
   <table class="hdr">
     <tr>
-      <td class="hdr-logo"><img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas"></td>
+      <td class="hdr-logo"><img src="{{ public_path('images/hpr_logo.png') }}" alt="Hotel y Villas Palma Real"></td>
       <td class="hdr-info">
         <h2>VOUCHER DE PAGO</h2>
-        <p>Departamento de Recursos Humanos &nbsp;·&nbsp; La Ceiba, Atlántida, Honduras</p>
       </td>
       <td class="hdr-doc">
         <div class="num">N° {{ $correlativo }}</div>
@@ -167,9 +168,11 @@ table.resumen td:last-child { border-right: none; }
 
   {{-- ══ PIE ══ --}}
   <div class="footer">
-    Documento informativo, no sustituye el comprobante oficial de pago · Hotel Palma Real &nbsp;·&nbsp;
-    N° {{ $correlativo }} &nbsp;·&nbsp;
-    {{ now()->format('d/m/Y H:i') }}
+    <p>Documento informativo, no sustituye el comprobante oficial de pago.</p>
+    <p class="footer-empresa">Inversiones y Servicios S.A - Hotel y Villas Palma Real</p>
+    <p>RTN: 08019995366300</p>
+    <p>Km. 20 Carretera La Ceiba - Trujillo, Roma, Atlántida. Tel: (504) 2407-0000</p>
+    <p>Correo: admon@grupopalmareal.com &nbsp;·&nbsp; www.grupopalmareal.com</p>
   </div>
 
 </div>{{-- /page --}}

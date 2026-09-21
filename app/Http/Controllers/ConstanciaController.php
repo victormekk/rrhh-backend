@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Banco;
 use App\Models\CabeceraPlanilla;
+use App\Models\CampoVariable;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
+use App\Traits\ConvierteMontoALetras;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
@@ -14,12 +16,27 @@ use Carbon\Carbon;
 
 class ConstanciaController extends Controller
 {
-    use LogsActividad, NombraArchivos, GeneraCorrelativo;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo, ConvierteMontoALetras;
 
     private const MESES = [
         'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
         'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
     ];
+
+    // IHSS fuera de una planilla: el resto de deducciones (RAP, ISR, Crefisa, etc.)
+    // se llenan a mano por quincena y no existen fuera de una planilla generada,
+    // así que solo se informa el IHSS. El monto configurado es quincenal, se
+    // duplica para expresarlo como deducción mensual. Contrato "Extra" no cotiza.
+    private function ihssMensual($il): float
+    {
+        if ($il->tipo_contrato === 'Extra') {
+            return 0.0;
+        }
+
+        $ihssQuincenal = (float) (CampoVariable::where('nombre_campo', 'ihss')->value('monto') ?? 297.58);
+
+        return round($ihssQuincenal * 2, 2);
+    }
 
     public function laboral($id)
     {
@@ -30,12 +47,15 @@ class ConstanciaController extends Controller
 
         $fechaInicio    = Carbon::parse($il->fecha_inicio);
         $salarioMensual = (float) $il->salario_base;
+        $ihssMensual    = $this->ihssMensual($il);
+        $nombreMoneda   = $il->moneda === 'Dólares' ? 'DÓLARES' : 'LEMPIRAS';
+        $montoEnLetras  = $this->montoEnLetras($salarioMensual, $nombreMoneda);
         $simboloMoneda  = $il->moneda === 'Dólares' ? 'US$' : 'L.';
         $meses          = self::MESES;
         $correlativo    = $this->siguienteCorrelativo('constancia_laboral', $emp->id);
 
         $pdf = Pdf::loadView('constancias.laboral', compact(
-            'emp', 'fechaInicio', 'salarioMensual', 'simboloMoneda', 'meses', 'correlativo'
+            'emp', 'fechaInicio', 'salarioMensual', 'ihssMensual', 'montoEnLetras', 'simboloMoneda', 'meses', 'correlativo'
         ))->setPaper('letter', 'portrait');
 
         $archivo = $this->nombreArchivo('ConstanciaLaboral', "{$emp->nombres} {$emp->apellidos}", 'pdf');
@@ -62,12 +82,15 @@ class ConstanciaController extends Controller
 
         $fechaInicio    = Carbon::parse($il->fecha_inicio);
         $salarioMensual = (float) $il->salario_base;
+        $ihssMensual    = $this->ihssMensual($il);
+        $nombreMoneda   = $il->moneda === 'Dólares' ? 'DÓLARES' : 'LEMPIRAS';
+        $montoEnLetras  = $this->montoEnLetras($salarioMensual, $nombreMoneda);
         $simboloMoneda  = $il->moneda === 'Dólares' ? 'US$' : 'L.';
         $meses          = self::MESES;
         $correlativo    = $this->siguienteCorrelativo('constancia_bancaria', $emp->id);
 
         $pdf = Pdf::loadView('constancias.bancaria', compact(
-            'emp', 'banco', 'fechaInicio', 'salarioMensual', 'simboloMoneda', 'meses', 'correlativo'
+            'emp', 'banco', 'fechaInicio', 'salarioMensual', 'ihssMensual', 'montoEnLetras', 'simboloMoneda', 'meses', 'correlativo'
         ))->setPaper('letter', 'portrait');
 
         $archivo = $this->nombreArchivo('ConstanciaBancaria', "{$emp->nombres} {$emp->apellidos}", 'pdf');
