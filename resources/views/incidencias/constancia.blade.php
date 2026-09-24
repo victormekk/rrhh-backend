@@ -9,7 +9,7 @@
    explicito y la pagina tiene una <table>, dompdf ignora el margen del
    @page y dibuja los fondos de la tabla de borde a borde de la hoja. */
 *:not(html):not(body) { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; line-height: 1.35; }
+body { font-family: DejaVu Sans, sans-serif; font-size: 10.5px; color: #1e293b; line-height: 1.45; }
 
 .page { padding: 0; }
 
@@ -17,56 +17,56 @@ body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; lin
 /* Marrón #3b2b16 y dorado #b9921a extraídos del logotipo oficial */
 
 /* ── Header ── */
-table.hdr { width: 100%; border-collapse: collapse; border-bottom: 2px solid #3b2b16; padding-bottom: 9px; margin-bottom: 9px; }
-.hdr-logo { width: 130px; vertical-align: middle; }
-.hdr-logo img { width: 130px; height: auto; display: block; }
-.hdr-info { vertical-align: middle; padding-left: 14px; }
-.hdr-info h2 { font-size: 19px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; line-height: 1.2; }
-.hdr-info p  { font-size: 7.5px; color: #b9921a; margin-top: 4px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
+table.hdr { width: 100%; border-collapse: collapse; border-bottom: 2px solid #3b2b16; padding-bottom: 12px; margin-bottom: 14px; }
+.hdr-logo { width: 148px; vertical-align: middle; }
+.hdr-logo img { width: 148px; height: auto; display: block; }
+.hdr-info { vertical-align: middle; padding-left: 16px; }
+.hdr-info h2 { font-size: 24px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; line-height: 1.2; }
+.hdr-info p  { font-size: 9.5px; color: #b9921a; margin-top: 5px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
 .hdr-doc { text-align: right; vertical-align: middle; white-space: nowrap; }
-.hdr-doc .num   { font-size: 13px; font-weight: bold; color: #3b2b16; }
-.hdr-doc .fecha { font-size: 7px; color: #8a7654; margin-top: 3px; }
+.hdr-doc .num   { font-size: 16px; font-weight: bold; color: #3b2b16; }
+.hdr-doc .fecha { font-size: 9px; color: #8a7654; margin-top: 4px; }
 
 /* ── Base legal ── */
-.legal { background: #f8f2df; border-left: 2.5px solid #b9921a; padding: 5px 9px; margin-bottom: 8px; font-size: 7px; color: #3b2b16; line-height: 1.55; }
+.legal { background: #f8f2df; border-left: 3px solid #b9921a; padding: 6px 8px; margin-bottom: 12px; font-size: 7.2px; color: #3b2b16; line-height: 1.4; white-space: nowrap; }
 .legal strong { color: #8a6d10; }
 
 /* ── Título de sección ── */
-.sec { font-size: 6.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.9px; color: #fff; background: #3b2b16; padding: 3px 8px; margin-bottom: 5px; }
+.sec { font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.9px; color: #3b2b16; border-bottom: 1px solid #3b2b16; padding-bottom: 4px; margin-bottom: 7px; }
 
 /* ── Campos de datos ── */
-table.fields { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-table.fields td { vertical-align: top; padding-right: 10px; }
+table.fields { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+table.fields td { vertical-align: top; padding-right: 16px; }
 table.fields td:last-child { padding-right: 0; }
-.lbl { display: block; font-size: 6px; color: #64748b; text-transform: uppercase; letter-spacing: 0.2px; margin-top: 3px; }
+.lbl { display: block; font-size: 8px; color: #64748b; text-transform: uppercase; letter-spacing: 0.2px; margin-top: 6px; }
 .lbl:first-child { margin-top: 0; }
-.val { display: block; font-size: 8px; font-weight: 600; color: #0f172a; border-bottom: 1px dotted #cbd5e1; padding-bottom: 1px; margin-bottom: 3px; }
+.val { display: block; font-size: 11px; font-weight: 600; color: #0f172a; border-bottom: 1px dotted #cbd5e1; padding-bottom: 2px; margin-bottom: 2px; }
 
 /* ── Cuadro de gravedad ── */
-table.grado { width: 100%; border-collapse: collapse; border: 1px solid #e3c777; margin-bottom: 8px; }
-table.grado td { text-align: center; padding: 5px 2px; border-right: 1px solid #e3c777; }
+table.grado { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+table.grado td { text-align: center; padding: 8px 4px; border-right: 1px solid #000; }
 table.grado td:last-child { border-right: none; }
-.g-lbl { font-size: 6px; color: #64748b; text-transform: uppercase; }
-.g-num { font-size: 13px; font-weight: bold; color: #3b2b16; line-height: 1.3; margin: 1px 0; }
-.g-sub { font-size: 6px; color: #94a3b8; }
+.g-lbl { font-size: 8px; color: #64748b; text-transform: uppercase; }
+.g-num { font-size: 17px; font-weight: bold; color: #3b2b16; line-height: 1.2; margin: 3px 0; }
+.g-sub { font-size: 7.5px; color: #94a3b8; }
 .hl { background: {{ ['Leve' => '#16a34a', 'Moderada' => '#d97706', 'Grave' => '#dc2626'][$incidencia->grado] ?? '#3b2b16' }}; }
 .hl .g-lbl { color: rgba(255,255,255,.75); }
 .hl .g-num { color: #fff; }
 .hl .g-sub { color: rgba(255,255,255,.85); }
 
 /* ── Descripción de los hechos ── */
-.obs { border: 1px solid #e2e8f0; border-radius: 2px; padding: 7px 9px; min-height: 60px; font-size: 7.5px; color: #334155; line-height: 1.6; margin-bottom: 10px; }
+.obs { border: 1px solid #e2e8f0; border-radius: 3px; padding: 9px 14px; min-height: 78px; font-size: 9.5px; color: #334155; line-height: 1.65; margin-bottom: 14px; }
 
 /* ── Firmas ── */
-table.firmas { width: 100%; border-collapse: collapse; margin-top: 18px; }
-table.firmas td { text-align: center; padding: 0 30px; }
-.f-espacio { height: 32px; border-bottom: 1px solid #334155; }
-.f-nombre  { font-size: 8px; font-weight: bold; color: #0f172a; margin-top: 4px; }
-.f-cargo   { font-size: 7px; color: #64748b; margin-top: 1px; }
-.f-dni     { font-size: 6.5px; color: #94a3b8; margin-top: 1px; }
+table.firmas { width: 100%; border-collapse: collapse; margin-top: 24px; }
+table.firmas td { width: 50%; text-align: center; vertical-align: top; padding: 0 42px; }
+.f-espacio { height: 36px; border-bottom: 1px solid #334155; }
+.f-nombre  { font-size: 10.5px; font-weight: bold; color: #0f172a; margin-top: 6px; }
+.f-cargo   { font-size: 9px; color: #64748b; margin-top: 2px; }
+.f-dni     { font-size: 8.5px; color: #94a3b8; margin-top: 2px; }
 
 /* ── Pie de página ── */
-.footer { margin-top: 12px; border-top: 1px solid #e2e8f0; padding-top: 4px; font-size: 6.5px; color: #94a3b8; text-align: center; }
+.footer { margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 5px; font-size: 8px; color: #64748b; text-align: center; }
 </style>
 </head>
 <body>
@@ -167,9 +167,7 @@ table.firmas td { text-align: center; padding: 0 30px; }
       </td>
       <td>
         <div class="f-espacio"></div>
-        <div class="f-nombre">&nbsp;</div>
-        <div class="f-cargo">Gerente de Recursos Humanos</div>
-        <div class="f-dni">Hotel Palma Real</div>
+        <div class="f-nombre">Hotel Palma Real</div>
       </td>
     </tr>
   </table>

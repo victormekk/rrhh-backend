@@ -9,7 +9,7 @@
    explicito y la pagina tiene una <table>, dompdf ignora el margen del
    @page y dibuja los fondos de la tabla de borde a borde de la hoja. */
 *:not(html):not(body) { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; line-height: 1.35; }
+body { font-family: DejaVu Sans, sans-serif; font-size: 10.5px; color: #1e293b; line-height: 1.45; }
 
 .page { padding: 0; }
 
@@ -17,63 +17,62 @@ body { font-family: DejaVu Sans, sans-serif; font-size: 8px; color: #1e293b; lin
 /* Marrón #3b2b16 y dorado #b9921a extraídos del logotipo oficial */
 
 /* ── Header ── */
-table.hdr { width: 100%; border-collapse: collapse; border-bottom: 2px solid #3b2b16; padding-bottom: 9px; margin-bottom: 9px; }
-.hdr-logo { width: 130px; vertical-align: middle; }
-.hdr-logo img { width: 130px; height: auto; display: block; }
-.hdr-info { vertical-align: middle; padding-left: 14px; }
-.hdr-info h2 { font-size: 19px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; line-height: 1.2; }
-.hdr-info p  { font-size: 7.5px; color: #b9921a; margin-top: 4px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
+table.hdr { width: 100%; border-collapse: collapse; border-bottom: 2px solid #3b2b16; padding-bottom: 12px; margin-bottom: 14px; }
+.hdr-logo { width: 148px; vertical-align: middle; }
+.hdr-logo img { width: 148px; height: auto; display: block; }
+.hdr-info { vertical-align: middle; padding-left: 16px; }
+.hdr-info h2 { font-size: 24px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; line-height: 1.2; }
+.hdr-info p  { font-size: 9.5px; color: #b9921a; margin-top: 5px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
 .hdr-doc { text-align: right; vertical-align: middle; white-space: nowrap; }
-.hdr-doc .num   { font-size: 13px; font-weight: bold; color: #3b2b16; }
-.hdr-doc .fecha { font-size: 7px; color: #8a7654; margin-top: 3px; }
+.hdr-doc .num   { font-size: 16px; font-weight: bold; color: #3b2b16; }
+.hdr-doc .fecha { font-size: 9px; color: #8a7654; margin-top: 4px; }
 
 /* ── Base legal ── */
-.legal { background: #f8f2df; border-left: 2.5px solid #b9921a; padding: 5px 9px; margin-bottom: 8px; font-size: 7px; color: #3b2b16; line-height: 1.55; }
+.legal { background: #f8f2df; border-left: 3px solid #b9921a; padding: 6px 8px; margin-bottom: 12px; font-size: 6.9px; color: #3b2b16; line-height: 1.4; white-space: nowrap; }
 .legal strong { color: #8a6d10; }
 
 /* ── Título de sección ── */
-.sec { font-size: 6.5px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.9px; color: #fff; background: #3b2b16; padding: 3px 8px; margin-bottom: 5px; }
+.sec { font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.9px; color: #3b2b16; border-bottom: 1px solid #3b2b16; padding-bottom: 4px; margin-bottom: 7px; }
 
 /* ── Campos de datos ── */
-table.fields { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-table.fields td { vertical-align: top; padding-right: 10px; }
+table.fields { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+table.fields td { vertical-align: top; padding-right: 16px; }
 table.fields td:last-child { padding-right: 0; }
-.lbl { display: block; font-size: 6px; color: #64748b; text-transform: uppercase; letter-spacing: 0.2px; margin-top: 3px; }
+.lbl { display: block; font-size: 8px; color: #64748b; text-transform: uppercase; letter-spacing: 0.2px; margin-top: 6px; }
 .lbl:first-child { margin-top: 0; }
-.val { display: block; font-size: 8px; font-weight: 600; color: #0f172a; border-bottom: 1px dotted #cbd5e1; padding-bottom: 1px; margin-bottom: 3px; }
+.val { display: block; font-size: 11px; font-weight: 600; color: #0f172a; border-bottom: 1px dotted #cbd5e1; padding-bottom: 2px; margin-bottom: 2px; }
 
 /* ── Cuadros de días ── */
-table.dias { width: 100%; border-collapse: collapse; border: 1px solid #e3c777; margin-bottom: 8px; }
-table.dias td { text-align: center; padding: 5px 2px; border-right: 1px solid #e3c777; }
+table.dias { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+table.dias td { text-align: center; padding: 8px 4px; border-right: 1px solid #000; }
 table.dias td:last-child { border-right: none; }
-.d-lbl { font-size: 6px; color: #64748b; text-transform: uppercase; }
-.d-num { font-size: 18px; font-weight: bold; color: #3b2b16; line-height: 1.1; margin: 1px 0; }
-.d-sub { font-size: 6px; color: #94a3b8; }
-.hl { background: #3b2b16; }
-.hl .d-lbl { color: #d9c78f; }
-.hl .d-num { color: #f3d42c; }
-.hl .d-sub { color: #b9921a; }
+.d-lbl { font-size: 8px; color: #64748b; text-transform: uppercase; }
+.d-num { font-size: 23px; font-weight: bold; color: #3b2b16; line-height: 1.15; margin: 3px 0; }
+.d-sub { font-size: 7.5px; color: #94a3b8; }
+.hl .d-lbl { color: #8a6d10; }
+.hl .d-num { color: #3b2b16; }
+.hl .d-sub { color: #64748b; }
 
 /* ── Período de ausencia ── */
-.periodo { background: #3b2b16; color: #fff; text-align: center; padding: 7px 14px; margin-bottom: 8px; border-radius: 3px; }
-.p-tit { font-size: 6.5px; opacity: .75; text-transform: uppercase; letter-spacing: .7px; }
-.p-rng { font-size: 11.5px; font-weight: bold; margin: 3px 0 2px; }
-.p-sub { font-size: 7px; opacity: .85; }
-.p-ret { font-size: 7px; margin-top: 3px; opacity: .9; }
+.periodo { color: #3b2b16; text-align: center; padding: 8px 0; margin-bottom: 12px; }
+.p-tit { font-size: 8.5px; color: #8a6d10; text-transform: uppercase; letter-spacing: .7px; }
+.p-rng { font-size: 18px; font-weight: bold; color: #3b2b16; margin: 6px 0 4px; }
+.p-sub { font-size: 9px; color: #64748b; }
+.p-ret { font-size: 11px; font-weight: 600; margin-top: 5px; color: #3b2b16; }
 
 /* ── Observaciones ── */
-.obs { border: 1px solid #e2e8f0; border-radius: 2px; padding: 5px 9px; min-height: 22px; font-size: 7.5px; color: #334155; line-height: 1.55; margin-bottom: 10px; }
+.obs { border: 1px solid #e2e8f0; border-radius: 3px; padding: 8px 14px; min-height: 30px; font-size: 9.5px; color: #334155; line-height: 1.6; margin-bottom: 14px; }
 
 /* ── Firmas ── */
-table.firmas { width: 100%; border-collapse: collapse; margin-top: 18px; }
-table.firmas td { text-align: center; padding: 0 30px; }
-.f-espacio { height: 32px; border-bottom: 1px solid #334155; }
-.f-nombre  { font-size: 8px; font-weight: bold; color: #0f172a; margin-top: 4px; }
-.f-cargo   { font-size: 7px; color: #64748b; margin-top: 1px; }
-.f-dni     { font-size: 6.5px; color: #94a3b8; margin-top: 1px; }
+table.firmas { width: 100%; border-collapse: collapse; margin-top: 24px; }
+table.firmas td { width: 50%; text-align: center; vertical-align: top; padding: 0 42px; }
+.f-espacio { height: 36px; border-bottom: 1px solid #334155; }
+.f-nombre  { font-size: 10.5px; font-weight: bold; color: #0f172a; margin-top: 6px; }
+.f-cargo   { font-size: 9px; color: #64748b; margin-top: 2px; }
+.f-dni     { font-size: 8.5px; color: #94a3b8; margin-top: 2px; }
 
 /* ── Pie de página ── */
-.footer { margin-top: 12px; border-top: 1px solid #e2e8f0; padding-top: 4px; font-size: 6.5px; color: #94a3b8; text-align: center; }
+.footer { margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 5px; font-size: 8px; color: #64748b; text-align: center; }
 </style>
 </head>
 <body>
@@ -84,9 +83,6 @@ table.firmas td { text-align: center; padding: 0 30px; }
   $fInicio = $il?->fecha_inicio ? \Carbon\Carbon::parse($il->fecha_inicio) : null;
   $fSolIni = \Carbon\Carbon::parse($solicitud->fecha_inicio);
   $fSolFin = \Carbon\Carbon::parse($solicitud->fecha_fin);
-
-  $retorno = $fSolFin->copy()->addDay();
-  while ($retorno->dayOfWeek === \Carbon\Carbon::SUNDAY) $retorno->addDay();
 
   $diasSolicitudAnterior = $solicitudAnterior->dias_tomados ?? 0;
   $saldoRestante         = max(0, $saldo['saldo']);
@@ -217,9 +213,7 @@ table.firmas td { text-align: center; padding: 0 30px; }
       </td>
       <td>
         <div class="f-espacio"></div>
-        <div class="f-nombre">&nbsp;</div>
-        <div class="f-cargo">Gerente de Recursos Humanos</div>
-        <div class="f-dni">Hotel Palma Real</div>
+        <div class="f-nombre">Hotel Palma Real</div>
       </td>
     </tr>
   </table>
