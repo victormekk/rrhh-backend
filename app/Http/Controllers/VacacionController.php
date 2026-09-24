@@ -9,29 +9,40 @@ use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
 use App\Traits\SoloAdmin;
+use App\Traits\TieneFeriados;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class VacacionController extends Controller
 {
-    use LogsActividad, NombraArchivos, GeneraCorrelativo, SoloAdmin;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo, SoloAdmin, TieneFeriados;
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private function diasLaborables(Carbon $inicio, Carbon $fin): int
+    // Días laborables entre dos fechas: no cuentan domingos ni feriados
+    // nacionales. Devuelve tambien el detalle de los feriados que cayeron
+    // entre semana (lunes-sabado) dentro del rango, para poder avisarle
+    // al usuario cuales fechas no se le estan contando.
+    private function diasLaborables(Carbon $inicio, Carbon $fin): array
     {
-        $dias    = 0;
-        $current = $inicio->copy()->startOfDay();
-        $fin     = $fin->copy()->startOfDay();
+        $dias     = 0;
+        $feriados = [];
+        $current  = $inicio->copy()->startOfDay();
+        $fin      = $fin->copy()->startOfDay();
 
         while ($current->lte($fin)) {
+            $nombreFeriado = $this->nombreFeriado($current);
             if ($current->dayOfWeek !== Carbon::SUNDAY) {
-                $dias++;
+                if ($nombreFeriado) {
+                    $feriados[] = ['fecha' => $current->format('Y-m-d'), 'nombre' => $nombreFeriado];
+                } else {
+                    $dias++;
+                }
             }
             $current->addDay();
         }
 
-        return $dias;
+        return ['dias' => $dias, 'feriados' => $feriados];
     }
 
     private function tasasDias(): array
@@ -167,9 +178,10 @@ class VacacionController extends Controller
             'observaciones'=> 'nullable|string|max:500',
         ]);
 
-        $inicio = Carbon::parse($data['fecha_inicio']);
-        $fin    = Carbon::parse($data['fecha_fin']);
-        $dias   = $this->diasLaborables($inicio, $fin);
+        $inicio  = Carbon::parse($data['fecha_inicio']);
+        $fin     = Carbon::parse($data['fecha_fin']);
+        $calculo = $this->diasLaborables($inicio, $fin);
+        $dias    = $calculo['dias'];
 
         $empleado = Empleado::with('informacionLaboral')->findOrFail($data['id_empleado']);
         $saldo    = $this->calcularSaldo($empleado);
@@ -189,6 +201,8 @@ class VacacionController extends Controller
         $solicitud->load('empleado:id,nombres,apellidos');
         $this->logActividad('creado', 'Vacaciones', "Solicitud de {$dias} día(s) para {$solicitud->empleado->nombres} {$solicitud->empleado->apellidos}.", $solicitud->id);
 
+        $solicitud->setAttribute('feriados_excluidos', $calculo['feriados']);
+
         return response()->json($solicitud, 201);
     }
 
@@ -202,9 +216,10 @@ class VacacionController extends Controller
             'observaciones' => 'nullable|string|max:500',
         ]);
 
-        $inicio = Carbon::parse($data['fecha_inicio']);
-        $fin    = Carbon::parse($data['fecha_fin']);
-        $dias   = $this->diasLaborables($inicio, $fin);
+        $inicio  = Carbon::parse($data['fecha_inicio']);
+        $fin     = Carbon::parse($data['fecha_fin']);
+        $calculo = $this->diasLaborables($inicio, $fin);
+        $dias    = $calculo['dias'];
 
         // Saldo efectivo: sumar de vuelta los días originales antes de comparar
         $saldo         = $this->calcularSaldo($solicitud->empleado);
@@ -218,7 +233,10 @@ class VacacionController extends Controller
 
         $solicitud->update([...$data, 'dias_tomados' => $dias]);
 
-        return response()->json($solicitud->fresh(['empleado:id,nombres,apellidos']));
+        $fresco = $solicitud->fresh(['empleado:id,nombres,apellidos']);
+        $fresco->setAttribute('feriados_excluidos', $calculo['feriados']);
+
+        return response()->json($fresco);
     }
 
     public function destroy(Request $request, $id)
@@ -254,7 +272,14 @@ class VacacionController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        $pdf = Pdf::loadView('vacaciones.solicitud', compact('solicitud', 'saldo', 'correlativo', 'solicitudAnterior'))
+        // Fecha de reintegro: el siguiente día hábil despues del ultimo dia de
+        // vacaciones, saltando domingos y feriados nacionales.
+        $retorno = Carbon::parse($solicitud->fecha_fin)->addDay();
+        while ($retorno->dayOfWeek === Carbon::SUNDAY || $this->nombreFeriado($retorno)) {
+            $retorno->addDay();
+        }
+
+        $pdf = Pdf::loadView('vacaciones.solicitud', compact('solicitud', 'saldo', 'correlativo', 'solicitudAnterior', 'retorno'))
             ->setPaper('letter', 'portrait');
 
         $nombres   = $solicitud->empleado->nombres;
