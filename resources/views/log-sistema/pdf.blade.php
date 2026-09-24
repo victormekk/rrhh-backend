@@ -44,7 +44,7 @@
 
   .empty { text-align: center; padding: 30px; color: #94a3b8; font-size: 9px; }
 
-  .footer { margin-top: 12px; font-size: 7px; color: #94a3b8; text-align: right; }
+  .footer { margin-top: 12px; font-size: 7px; color: #64748b; text-align: right; }
 </style>
 </head>
 <body>

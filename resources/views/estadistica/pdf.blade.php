@@ -45,7 +45,7 @@
   .totals-row td.num { text-align: right; }
   .totals-row td.ctr { text-align: center; }
 
-  .footer { margin-top: 12px; font-size: 7px; color: #94a3b8; text-align: right; }
+  .footer { margin-top: 12px; font-size: 7px; color: #64748b; text-align: right; }
 </style>
 </head>
 <body>
