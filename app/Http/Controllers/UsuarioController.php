@@ -16,7 +16,7 @@ class UsuarioController extends Controller
     {
         $this->soloAdmin($request);
 
-        return User::select('id', 'name', 'email', 'rol', 'created_at')
+        return User::select('id', 'name', 'email', 'rol', 'activo', 'created_at')
             ->when($request->search, fn($q, $s) =>
                 $q->where('name', 'like', "%$s%")
                   ->orWhere('email', 'like', "%$s%")
@@ -45,7 +45,7 @@ class UsuarioController extends Controller
 
         $this->logActividad('creado', 'Usuarios', "Usuario {$user->name} ({$user->email}) creado con rol {$user->rol}.", $user->id);
 
-        return response()->json($user->only(['id', 'name', 'email', 'rol', 'created_at']), 201);
+        return response()->json($user->only(['id', 'name', 'email', 'rol', 'activo', 'created_at']), 201);
     }
 
     public function update(Request $request, $id)
@@ -75,7 +75,28 @@ class UsuarioController extends Controller
 
         $this->logActividad('editado', 'Usuarios', "Usuario {$user->name} actualizado (rol: {$user->rol}).", $user->id);
 
-        return response()->json($user->fresh()->only(['id', 'name', 'email', 'rol', 'created_at']));
+        return response()->json($user->fresh()->only(['id', 'name', 'email', 'rol', 'activo', 'created_at']));
+    }
+
+    public function cambiarEstado(Request $request, $id)
+    {
+        $this->soloAdmin($request);
+
+        if ($request->user()->id == $id) {
+            return response()->json(['message' => 'No puedes deshabilitar tu propio usuario.'], 422);
+        }
+
+        $data = $request->validate(['activo' => 'required|boolean']);
+
+        $user = User::findOrFail($id);
+        $user->update(['activo' => $data['activo']]);
+
+        // Los tokens no se revocan aquí: en su siguiente acción VerificaUsuarioActivo
+        // los revoca y responde con el aviso de cuenta deshabilitada.
+        $estado = $user->activo ? 'habilitado' : 'deshabilitado';
+        $this->logActividad('editado', 'Usuarios', "Usuario {$user->name} {$estado}.", $user->id);
+
+        return response()->json($user->only(['id', 'name', 'email', 'rol', 'activo', 'created_at']));
     }
 
     public function destroy(Request $request, $id)
@@ -87,7 +108,14 @@ class UsuarioController extends Controller
         }
 
         $user = User::findOrFail($id);
+
+        if ($user->activo) {
+            return response()->json(['message' => 'Primero deshabilite al usuario para poder eliminarlo.'], 422);
+        }
+
         $nombre = $user->name;
+        // Borrado lógico (SoftDeletes): el usuario se conserva en la base de datos
+        // y su nombre sigue apareciendo en la bitácora.
         $user->delete();
 
         $this->logActividad('eliminado', 'Usuarios', "Usuario {$nombre} eliminado.", $id);

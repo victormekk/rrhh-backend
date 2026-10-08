@@ -12,7 +12,10 @@ class TrustProxies extends Middleware
      *
      * @var array<int, string>|string|null
      */
-    protected $proxies;
+    // En Railway la app corre detrás de su proxy: sin confiar en él, Laravel
+    // ve la IP del proxy en vez de la del usuario (rompe el límite de intentos
+    // del login) y no detecta que la petición original vino por HTTPS.
+    protected $proxies = '*';
 
     /**
      * The headers that should be used to detect proxies.

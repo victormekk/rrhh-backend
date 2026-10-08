@@ -19,7 +19,7 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VacacionController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('throttle:login')->post('/login', [AuthController::class, 'login']);
 
 // Recibe las marcaciones del agente local de reloj biometrico (zkteco-agente/).
 // Corre desatendido en una PC del hotel, sin sesion de usuario, por eso va
@@ -27,7 +27,7 @@ Route::post('/login', [AuthController::class, 'login']);
 // (ver App\Http\Middleware\VerificaTokenAsistencia y el .env ASISTENCIA_TOKEN).
 Route::middleware('asistencia.token')->post('/asistencias/importar', [AsistenciaController::class, 'importar']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::get('/asistencias/resumen', [AsistenciaController::class, 'resumen']);
 
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -105,4 +105,5 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Gestión de usuarios (solo admin)
     Route::apiResource('usuarios', UsuarioController::class)->except(['show']);
+    Route::patch('usuarios/{id}/estado', [UsuarioController::class, 'cambiarEstado']);
 });

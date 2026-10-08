@@ -26,9 +26,19 @@ class AuthController extends Controller
             ], 503);
         }
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        // Si el correo no existe se compara igual contra un hash ficticio, para
+        // que la respuesta tarde lo mismo y no revele qué correos están registrados.
+        $hash = $user?->password ?? '$2y$12$QPruo1.ebJtSMy10SAleq.B7EyEFaIbKPpj9wwRTrnB1NLGVnU7S6';
+
+        if (!Hash::check($request->password, $hash) || !$user) {
             throw ValidationException::withMessages([
                 'email' => ['Correo o contraseña incorrectos.'],
+            ]);
+        }
+
+        if (!$user->activo) {
+            throw ValidationException::withMessages([
+                'email' => ['Su cuenta está deshabilitada. Contacte al administrador.'],
             ]);
         }
 
@@ -50,7 +60,16 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        $user->currentAccessToken()->delete();
+
+        LogSistema::create([
+            'id_usuario'         => $user->id,
+            'accion'             => 'logout',
+            'descripcion'        => "Cierre de sesión: {$user->name}.",
+            'objeto_actualizado' => 'Sistema',
+            'fecha'              => now()->toDateString(),
+        ]);
 
         return response()->json(['message' => 'Sesión cerrada correctamente.']);
     }

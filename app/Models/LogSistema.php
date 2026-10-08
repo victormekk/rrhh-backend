@@ -19,6 +19,7 @@ class LogSistema extends Model
 
     public function usuario()
     {
-        return $this->belongsTo(User::class, 'id_usuario');
+        // withTrashed: los usuarios eliminados (borrado lógico) siguen apareciendo en la bitácora.
+        return $this->belongsTo(User::class, 'id_usuario')->withTrashed();
     }
 }

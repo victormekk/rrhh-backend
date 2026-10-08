@@ -28,6 +28,15 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Frena intentos de adivinar contraseñas: 5/min por correo+IP y
+        // 20/min por IP (depende de TrustProxies para ver la IP real en Railway).
+        RateLimiter::for('login', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by(mb_strtolower((string) $request->input('email')) . '|' . $request->ip()),
+                Limit::perMinute(20)->by($request->ip()),
+            ];
+        });
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')

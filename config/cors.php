@@ -19,7 +19,9 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    // Solo el dominio del frontend puede llamar a la API desde el navegador.
+    // En Railway: CORS_ALLOWED_ORIGINS=https://<frontend>.up.railway.app (varios separados por coma).
+    'allowed_origins' => array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')))),
 
     'allowed_origins_patterns' => [],
 

@@ -46,7 +46,12 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Tope absoluto de vida del token (minutos), aunque haya actividad.
+    'expiration' => env('SANCTUM_EXPIRATION', 720),
+
+    // Minutos sin actividad tras los cuales el token deja de valer
+    // (ver AppServiceProvider). Sin "recordarme", pensado para equipos compartidos.
+    'inactividad' => env('SANCTUM_INACTIVIDAD', 120),
 
     /*
     |--------------------------------------------------------------------------

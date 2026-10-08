@@ -5,11 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\CampoVariable;
 use App\Models\InformacionLaboral;
 use App\Traits\LogsActividad;
+use App\Traits\SoloAdmin;
 use Illuminate\Http\Request;
 
 class CamposVariablesController extends Controller
 {
-    use LogsActividad;
+    use LogsActividad, SoloAdmin;
 
     public function index()
     {
@@ -24,6 +25,8 @@ class CamposVariablesController extends Controller
 
     public function update(Request $request)
     {
+        $this->soloAdmin($request);
+
         $data = $request->validate([
             'ihss'          => 'required|numeric|min:0',
             'salario_minimo'=> 'required|numeric|min:0',
