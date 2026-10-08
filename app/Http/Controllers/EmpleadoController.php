@@ -58,6 +58,7 @@ class EmpleadoController extends Controller
             'nombres'             => 'required|string|max:30',
             'apellidos'           => 'required|string|max:30',
             'cedula'              => 'required|string|max:13|unique:empleados',
+            'codigo_biometrico'   => 'nullable|string|max:20|unique:empleados',
             'rtn'                 => 'nullable|string|max:14',
             'genero'              => 'required|string|max:10',
             'fecha_nacimiento'    => 'required|date',
@@ -107,7 +108,7 @@ class EmpleadoController extends Controller
 
             $empleado = Empleado::create([
                 ...$request->only([
-                    'nombres', 'apellidos', 'cedula', 'rtn', 'genero',
+                    'nombres', 'apellidos', 'cedula', 'codigo_biometrico', 'rtn', 'genero',
                     'fecha_nacimiento', 'estado_civil', 'num_hijos',
                     'nacionalidad', 'residencia', 'telefono',
                     'contacto_emergencia', 'parentesco_emergencia', 'telefono_emergencia',
@@ -135,6 +136,7 @@ class EmpleadoController extends Controller
             'nombres'             => 'required|string|max:30',
             'apellidos'           => 'required|string|max:30',
             'cedula'              => "required|string|max:13|unique:empleados,cedula,{$id}",
+            'codigo_biometrico'   => "nullable|string|max:20|unique:empleados,codigo_biometrico,{$id}",
             'rtn'                 => 'nullable|string|max:14',
             'genero'              => 'required|string|max:10',
             'fecha_nacimiento'    => 'required|date',
@@ -188,7 +190,7 @@ class EmpleadoController extends Controller
 
             $empleado->update([
                 ...$request->only([
-                    'nombres', 'apellidos', 'cedula', 'rtn', 'genero',
+                    'nombres', 'apellidos', 'cedula', 'codigo_biometrico', 'rtn', 'genero',
                     'fecha_nacimiento', 'estado_civil', 'num_hijos',
                     'nacionalidad', 'residencia', 'telefono',
                     'contacto_emergencia', 'parentesco_emergencia', 'telefono_emergencia',

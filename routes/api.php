@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AguinaldoController;
+use App\Http\Controllers\AsistenciaController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BancoController;
 use App\Http\Controllers\CamposVariablesController;
@@ -20,7 +21,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 
+// Recibe las marcaciones del agente local de reloj biometrico (zkteco-agente/).
+// Corre desatendido en una PC del hotel, sin sesion de usuario, por eso va
+// fuera del grupo auth:sanctum y se protege con un token compartido simple
+// (ver App\Http\Middleware\VerificaTokenAsistencia y el .env ASISTENCIA_TOKEN).
+Route::middleware('asistencia.token')->post('/asistencias/importar', [AsistenciaController::class, 'importar']);
+
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/asistencias/resumen', [AsistenciaController::class, 'resumen']);
+
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 

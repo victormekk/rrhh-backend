@@ -17,3 +17,10 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Agente local de reloj biometrico: dependencias y estado de ejecucion
+# (composer.lock SI se versiona, para instalaciones reproducibles)
+/zkteco-agente/vendor
+/zkteco-agente/sync.log
+/zkteco-agente/ultima_sincronizacion.txt
+/zkteco-agente/.env

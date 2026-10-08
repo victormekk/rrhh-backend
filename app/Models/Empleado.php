@@ -12,7 +12,7 @@ class Empleado extends Model
     protected $table = 'empleados';
 
     protected $fillable = [
-        'nombres', 'apellidos', 'cedula', 'rtn', 'genero',
+        'nombres', 'apellidos', 'cedula', 'codigo_biometrico', 'rtn', 'genero',
         'fecha_nacimiento', 'edad', 'estado_civil', 'num_hijos',
         'nacionalidad', 'residencia', 'telefono',
         'contacto_emergencia', 'parentesco_emergencia', 'telefono_emergencia', 'correo',
@@ -66,5 +66,10 @@ class Empleado extends Model
     public function deduccionesCuotas()
     {
         return $this->hasMany(DeduccionCuota::class, 'id_empleado');
+    }
+
+    public function marcaciones()
+    {
+        return $this->hasMany(Marcacion::class, 'id_empleado');
     }
 }

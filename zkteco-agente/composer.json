@@ -1,0 +1,13 @@
+{
+    "name": "hotel-palma-real/zkteco-agente",
+    "description": "Agente local: lee marcaciones de un reloj biometrico ZKTeco (K30) por la red local y las sube al sistema RRHH en la nube.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.0",
+        "coding-libs/zkteco-php": "dev-master",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

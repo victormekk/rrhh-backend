@@ -52,9 +52,12 @@ class PlanillaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre_planilla' => 'required|string|max:50',
-            'tipo_planilla'   => 'required|in:Fijos,Extras,Especial',
-            'fecha_generada'  => 'required|date',
+            'nombre_planilla'    => 'required|string|max:50',
+            'tipo_planilla'      => 'required|in:Fijos,Extras,Especial',
+            'fecha_generada'     => 'required|date',
+            'usar_marcaciones'   => 'boolean',
+            'periodo_desde'      => 'nullable|required_if:usar_marcaciones,true|date',
+            'periodo_hasta'      => 'nullable|required_if:usar_marcaciones,true|date|after_or_equal:periodo_desde',
         ]);
 
         return DB::transaction(function () use ($request) {
@@ -90,9 +93,13 @@ class PlanillaController extends Controller
                 ->where('estado', 'Activo')
                 ->get()->groupBy('id_empleado');
 
+            $usarMarcaciones = $request->boolean('usar_marcaciones');
+
             foreach ($empleados as $emp) {
                 $il              = $emp->informacionLaboral;
-                $diasTrabajados  = 0;
+                $diasTrabajados  = $usarMarcaciones
+                    ? $this->diasTrabajadosDesdeMarcaciones($emp->id, $request->periodo_desde, $request->periodo_hasta)
+                    : 0;
                 $salarioBase     = round($il->salario_diario * $diasTrabajados, 2);
 
                 $empIngresos   = $ingresosMap->get($emp->id, collect());
@@ -651,6 +658,20 @@ class PlanillaController extends Controller
     {
         $techo = 25500.00;
         return round(min($quincenal, $techo) * 0.035, 2);
+    }
+
+    // Cuenta, dentro del rango, los dias donde el empleado tiene 2 o mas
+    // marcaciones biometricas (entrada + salida) — ver App\Models\Marcacion,
+    // alimentado por el agente local de reloj biometrico (zkteco-agente/).
+    private function diasTrabajadosDesdeMarcaciones(int $idEmpleado, string $desde, string $hasta): int
+    {
+        return \App\Models\Marcacion::where('id_empleado', $idEmpleado)
+            ->whereBetween('fecha', [$desde, $hasta])
+            ->select('fecha')
+            ->groupBy('fecha')
+            ->havingRaw('COUNT(*) >= 2')
+            ->get()
+            ->count();
     }
 
     private function calcularTotales($detalles): array

@@ -31,4 +31,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Token compartido que el agente local de reloj biometrico (zkteco-agente/)
+    // envia en el header X-Asistencia-Token al importar marcaciones.
+    'asistencia' => [
+        'token' => env('ASISTENCIA_TOKEN'),
+    ],
+
 ];
