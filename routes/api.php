@@ -21,6 +21,13 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('throttle:login')->post('/login', [AuthController::class, 'login']);
 
+// Health check de Railway (railway.json): confirma que la app arrancó y llega a la base de datos.
+Route::get('/salud', function () {
+    \Illuminate\Support\Facades\DB::select('select 1');
+
+    return response()->json(['estado' => 'ok']);
+});
+
 // Recibe las marcaciones del agente local de reloj biometrico (zkteco-agente/).
 // Corre desatendido en una PC del hotel, sin sesion de usuario, por eso va
 // fuera del grupo auth:sanctum y se protege con un token compartido simple
