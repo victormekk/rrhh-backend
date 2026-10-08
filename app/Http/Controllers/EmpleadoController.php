@@ -6,6 +6,7 @@ use App\Models\CampoVariable;
 use App\Models\Empleado;
 use App\Models\InformacionLaboral;
 use App\Traits\LogsActividad;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -114,7 +115,7 @@ class EmpleadoController extends Controller
                     'contacto_emergencia', 'parentesco_emergencia', 'telefono_emergencia',
                     'correo', 'tipo_sangre', 'id_cargo', 'id_departamento',
                 ]),
-                'edad'            => now()->diffInYears($request->fecha_nacimiento),
+                'edad'            => (int) Carbon::parse($request->fecha_nacimiento)->diffInYears(now()),
                 'id_info_laboral' => $infoLaboral->id,
                 'id_usuario'      => $request->user()->id,
             ]);
@@ -196,7 +197,7 @@ class EmpleadoController extends Controller
                     'contacto_emergencia', 'parentesco_emergencia', 'telefono_emergencia',
                     'correo', 'tipo_sangre', 'id_cargo', 'id_departamento',
                 ]),
-                'edad' => now()->diffInYears($request->fecha_nacimiento),
+                'edad' => (int) Carbon::parse($request->fecha_nacimiento)->diffInYears(now()),
             ]);
 
             $this->logActividad('editado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} actualizado.", $empleado->id);

@@ -136,7 +136,9 @@ class AguinaldoController extends Controller
                 // hasta la fecha de corte elegida (ej. 31/12/AAAA, o un corte
                 // distinto si se calcula un catorceavo).
                 $fechaInicio = Carbon::parse($il->fecha_inicio);
-                $diasBase    = (int) min(360, $fechaInicio->diffInDays($fechaCorte));
+                // max(0): desde Carbon 3 diffInDays es negativo si el empleado inició
+                // después del corte; en ese caso no acumula días.
+                $diasBase    = (int) max(0, min(360, $fechaInicio->diffInDays($fechaCorte, false)));
 
                 if ($esFijo && ($tipo === 'Fijos' || $tipo === 'Ambos')) {
                     AguinaldoFijo::create([

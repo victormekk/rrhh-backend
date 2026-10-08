@@ -141,7 +141,7 @@ table.firmas td { width: 50%; text-align: center; vertical-align: top; padding: 
         <span class="lbl">Antigüedad</span>
         <span class="val">
           {{ $saldo['anios_laborados'] }} {{ $saldo['anios_laborados'] === 1 ? 'año' : 'años' }}
-          @if($fInicio) ({{ $fInicio->diffInMonths(now()) % 12 }} meses) @endif
+          @if($fInicio) ({{ ((int) $fInicio->diffInMonths(now())) % 12 }} meses) @endif
         </span>
         <span class="lbl">Período vacacional activo</span>
         <span class="val">
