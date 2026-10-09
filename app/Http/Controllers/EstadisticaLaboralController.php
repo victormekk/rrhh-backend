@@ -18,8 +18,12 @@ class EstadisticaLaboralController extends Controller
 
     private function baseQuery(Request $request)
     {
+        // Solo cuenta lo trabajado desde la fecha de inicio actual del empleado: si se le liquidó
+        // o reingresó, su período anterior no entra en la estadística.
         return DetallePlanilla::query()
             ->join('empleados',     'detalle_planillas.id_empleado',   '=', 'empleados.id')
+            ->join('informacion_laboral as il', 'il.id', '=', 'empleados.id_info_laboral')
+            ->whereColumn('detalle_planillas.fecha_generada', '>=', 'il.fecha_inicio')
             ->leftJoin('departamentos', 'empleados.id_departamento', '=', 'departamentos.id')
             ->when($request->fecha_inicio, fn($q) =>
                 $q->where('detalle_planillas.fecha_generada', '>=', $request->fecha_inicio))
@@ -56,6 +60,7 @@ class EstadisticaLaboralController extends Controller
             DB::raw('empleados.nombres   as nombres'),
             DB::raw('empleados.apellidos as apellidos'),
             DB::raw('COALESCE(departamentos.nombre, "—") as departamento'),
+            DB::raw('il.fecha_inicio as fecha_inicio'),
             DB::raw('SUM(detalle_planillas.dias_trabajados)  as total_dias'),
             DB::raw('SUM(detalle_planillas.salario_neto)     as total_salario_neto'),
             DB::raw('SUM(detalle_planillas.salario_base)     as total_salario_base'),
@@ -66,7 +71,8 @@ class EstadisticaLaboralController extends Controller
             'detalle_planillas.id_empleado',
             DB::raw('empleados.nombres'),
             DB::raw('empleados.apellidos'),
-            DB::raw('departamentos.nombre')
+            DB::raw('departamentos.nombre'),
+            DB::raw('il.fecha_inicio')
         )->orderBy('empleados.apellidos')->orderBy('empleados.nombres');
     }
 
@@ -85,10 +91,12 @@ class EstadisticaLaboralController extends Controller
 
     public function show(Request $request, $empleadoId)
     {
-        $empleado = Empleado::with(['departamento:id,nombre', 'cargo:id,nombre'])
+        $empleado = Empleado::with(['departamento:id,nombre', 'cargo:id,nombre', 'informacionLaboral:id,fecha_inicio'])
             ->findOrFail($empleadoId);
+        $fechaInicio = $empleado->informacionLaboral?->fecha_inicio;
 
         $detalles = DetallePlanilla::where('id_empleado', $empleadoId)
+            ->when($fechaInicio, fn($q) => $q->where('fecha_generada', '>=', $fechaInicio))
             ->when($request->fecha_inicio, fn($q) => $q->where('fecha_generada', '>=', $request->fecha_inicio))
             ->when($request->fecha_fin,    fn($q) => $q->where('fecha_generada', '<=', $request->fecha_fin))
             ->orderBy('fecha_generada')
@@ -109,6 +117,7 @@ class EstadisticaLaboralController extends Controller
                 'apellidos'   => $empleado->apellidos,
                 'departamento'=> $empleado->departamento?->nombre ?? '—',
                 'cargo'       => $empleado->cargo?->nombre ?? '—',
+                'fecha_inicio'=> $fechaInicio,
             ],
             'detalles' => $detalles,
             'totales'  => [

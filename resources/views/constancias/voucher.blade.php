@@ -119,7 +119,7 @@ table.resumen td:last-child { border-right: none; }
       <td><span class="p-lbl">Días Trabajados</span><span class="p-val">{{ $detalle->dias_trabajados }}</span></td>
       <td><span class="p-lbl">Salario por Día</span><span class="p-val">L {{ number_format($detalle->salario_diario, 2) }}</span></td>
       <td><span class="p-lbl">Salario Base</span><span class="p-val">L {{ number_format($detalle->salario_base, 2) }}</span></td>
-      <td><span class="p-lbl">Horas Extra ({{ $detalle->horas_extras }} h)</span><span class="p-val">L {{ number_format($detalle->monto_horas_extras, 2) }}</span></td>
+      <td><span class="p-lbl">Horas Extra ({{ $detalle->horas_extras }} h{{ $detalle->recargo_horas_extras ? ', +' . $detalle->recargo_horas_extras . '%' : '' }})</span><span class="p-val">L {{ number_format($detalle->monto_horas_extras, 2) }}</span></td>
     </tr>
     <tr>
       <td colspan="2">

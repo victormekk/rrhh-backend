@@ -42,9 +42,12 @@ class EmpleadoController extends Controller
             ->when($request->estado, fn($q, $estado) =>
                 $q->whereHas('informacionLaboral', fn($q) => $q->where('estado', $estado))
             )
-            // Orden alfabetico por departamento, y por apellidos dentro de cada uno.
+            // Orden alfabetico por departamento (Administración, Animación, Bares...) y,
+            // dentro de cada uno, por nombre; los que se llaman igual, por apellidos.
             ->orderBy('departamentos.nombre')
-            ->orderBy('empleados.apellidos');
+            ->orderBy('empleados.nombres')
+            ->orderBy('empleados.apellidos')
+            ->orderBy('empleados.id');
 
         return response()->json($query->paginate($request->input('per_page', 15)));
     }

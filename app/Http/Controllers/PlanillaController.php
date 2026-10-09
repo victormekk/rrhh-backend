@@ -17,6 +17,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -174,7 +175,8 @@ class PlanillaController extends Controller
             'otros_ingresos'         => 'sometimes|numeric|min:0',
             'desc_ingresos'          => 'nullable|string|max:100',
             'horas_extras'           => 'sometimes|numeric|min:0|max:200',
-            'ihss'                   => 'sometimes|numeric|min:0',
+            'recargo_horas_extras'   => ['sometimes', 'integer', Rule::in(DetallePlanilla::RECARGOS_HORAS_EXTRAS)],
+            'ihss'                 => 'sometimes|numeric|min:0',
             'retencion_ahorro'       => 'sometimes|numeric|min:0',
             'crefisa'                => 'sometimes|numeric|min:0',
             'isr'                    => 'sometimes|numeric|min:0',
@@ -194,8 +196,10 @@ class PlanillaController extends Controller
 
         // El monto de horas extra siempre se recalcula en el servidor a partir del salario
         // diario propio de este empleado — nunca se confia en un monto enviado por el cliente.
+        // El recargo (25/50/75 %) es opcional: sin marcar, la hora extra se paga a diario ÷ 8.
         $horasExtras       = $get('horas_extras');
-        $montoHorasExtras  = round($detalle->salario_diario / 8 * $horasExtras, 2);
+        $recargoHoras      = (int) $request->input('recargo_horas_extras', $detalle->recargo_horas_extras);
+        $montoHorasExtras  = DetallePlanilla::montoHorasExtras($detalle->salario_diario, $horasExtras, $recargoHoras);
 
         $deduccionNeta = $get('ihss') + $get('retencion_ahorro') + $get('crefisa')
             + $get('isr') + $get('transporte') + $get('radios')
@@ -210,8 +214,9 @@ class PlanillaController extends Controller
                 'transporte', 'radios', 'uniforme', 'garden', 'i_vecinal',
                 'otras_deducciones', 'desc_otras_deducciones',
             ]),
-            'horas_extras'       => $horasExtras,
-            'monto_horas_extras' => $montoHorasExtras,
+            'horas_extras'         => $horasExtras,
+            'recargo_horas_extras' => $recargoHoras,
+            'monto_horas_extras'   => $montoHorasExtras,
             'salario_base'       => $salarioBase,
             'deduccion_neta'     => $deduccionNeta,
             'salario_neto'       => $salarioNeto,

@@ -93,7 +93,7 @@
       <tr>
         <th style="width:20%">Empleado</th>
         <th style="width:12%">Departamento</th>
-        <th class="ctr" style="width:7%">Quincenas</th>
+        <th class="ctr" style="width:9%">Fecha de inicio</th>
         <th class="ctr" style="width:7%">Días trab.</th>
         <th class="num" style="width:13%">Salario base</th>
         <th class="num" style="width:10%">Otros ing.</th>
@@ -106,7 +106,7 @@
       <tr>
         <td class="emp">{{ $row->nombres }} {{ $row->apellidos }}</td>
         <td class="dept">{{ $row->departamento }}</td>
-        <td class="ctr">{{ $row->total_quincenas }}</td>
+        <td class="ctr">{{ $row->fecha_inicio ? \Illuminate\Support\Carbon::parse($row->fecha_inicio)->format('d/m/Y') : '—' }}</td>
         <td class="ctr"><strong>{{ number_format($row->total_dias, 0) }}</strong></td>
         <td class="num">L. {{ number_format($row->total_salario_base, 2) }}</td>
         <td class="num">{{ $row->total_otros_ingresos > 0 ? 'L. '.number_format($row->total_otros_ingresos, 2) : '—' }}</td>

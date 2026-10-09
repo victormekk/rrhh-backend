@@ -39,6 +39,13 @@ class Empleado extends Model
             ->when($excluirId, fn ($q) => $q->where('id', '!=', $excluirId));
     }
 
+    // La edad guardada solo se calculaba al crear/editar y quedaba vieja: siempre se calcula al día
+    // con la fecha de nacimiento (cumple años el día de su cumpleaños, no al cambiar de año).
+    public function getEdadAttribute($guardada): ?int
+    {
+        return $this->fecha_nacimiento ? (int) $this->fecha_nacimiento->diffInYears(now()) : $guardada;
+    }
+
     public function getFotoUrlAttribute(): ?string
     {
         return $this->foto_path
