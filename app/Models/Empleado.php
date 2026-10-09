@@ -26,6 +26,19 @@ class Empleado extends Model
         'fecha_nacimiento' => 'date',
     ];
 
+    // El DNI puede venir con o sin guiones ("0801-1990-12345" / "0801199012345"):
+    // se compara solo por sus dígitos para que la misma persona no se registre dos veces.
+    public static function normalizarCedula(?string $cedula): string
+    {
+        return preg_replace('/\D/', '', (string) $cedula);
+    }
+
+    public function scopeConCedula($query, ?string $cedula, $excluirId = null)
+    {
+        return $query->whereRaw("REPLACE(cedula, '-', '') = ?", [self::normalizarCedula($cedula)])
+            ->when($excluirId, fn ($q) => $q->where('id', '!=', $excluirId));
+    }
+
     public function getFotoUrlAttribute(): ?string
     {
         return $this->foto_path
@@ -66,6 +79,11 @@ class Empleado extends Model
     public function deduccionesCuotas()
     {
         return $this->hasMany(DeduccionCuota::class, 'id_empleado');
+    }
+
+    public function historialLaboral()
+    {
+        return $this->hasMany(HistorialLaboral::class, 'id_empleado')->orderBy('fecha')->orderBy('id');
     }
 
     public function marcaciones()

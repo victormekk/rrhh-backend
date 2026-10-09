@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\CampoVariable;
 use App\Models\Empleado;
+use App\Models\HistorialLaboral;
 use App\Models\InformacionLaboral;
+use App\Traits\EncabezadoExcel;
 use App\Traits\LogsActividad;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use App\Rules\NoEs29Febrero;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -18,7 +22,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class EmpleadoController extends Controller
 {
-    use LogsActividad;
+    use LogsActividad, EncabezadoExcel;
     public function index(Request $request)
     {
         $query = Empleado::with(['informacionLaboral', 'cargo', 'departamento'])
@@ -55,6 +59,10 @@ class EmpleadoController extends Controller
 
     public function store(Request $request)
     {
+        if ($resp = $this->rechazarDniDuplicado($request->cedula)) {
+            return $resp;
+        }
+
         $request->validate([
             'nombres'             => 'required|string|max:30',
             'apellidos'           => 'required|string|max:30',
@@ -76,7 +84,7 @@ class EmpleadoController extends Controller
             'id_cargo'           => 'required|exists:cargos,id',
             'id_departamento'     => 'required|exists:departamentos,id',
             'tipo_contrato'       => 'required|string|max:20',
-            'fecha_inicio'        => 'required|date',
+            'fecha_inicio'        => ['required', 'date', new NoEs29Febrero],
             'forma_de_pago'       => 'required|string|max:50',
             'moneda'              => 'required|string|max:20',
             'salario_base'        => 'required|numeric|min:0',
@@ -122,6 +130,15 @@ class EmpleadoController extends Controller
                 'id_usuario'      => $request->user()->id,
             ]);
 
+            HistorialLaboral::create([
+                'id_empleado'         => $empleado->id,
+                'tipo_evento'         => HistorialLaboral::INGRESO,
+                'fecha'               => $request->fecha_inicio,
+                'tipo_contrato_nuevo' => $request->tipo_contrato,
+                'fecha_inicio_nueva'  => $request->fecha_inicio,
+                'id_usuario'          => $request->user()->id,
+            ]);
+
             $this->logActividad('creado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} registrado.", $empleado->id);
 
             return response()->json(
@@ -134,6 +151,25 @@ class EmpleadoController extends Controller
     public function update(Request $request, $id)
     {
         $empleado = Empleado::with('informacionLaboral')->findOrFail($id);
+        $il = $empleado->informacionLaboral;
+
+        if ($resp = $this->rechazarDniDuplicado($request->cedula, $empleado->id)) {
+            return $resp;
+        }
+
+        // El paso a Inactivo y el regreso a Activo solo se hacen con "Dar de baja" y
+        // "Reintegrar", para que siempre quede el motivo en el historial laboral.
+        $estadosPermitidos = $il->estado === 'Inactivo' ? ['Inactivo'] : ['Activo', 'Suspendido'];
+
+        $cambiaContrato = $request->tipo_contrato !== $il->tipo_contrato;
+        $conNuevaFecha  = $cambiaContrato && $request->input('cambio_contrato.modo') === 'nueva_fecha';
+
+        // Cambio de la fecha de inicio desde "Editar" (sin un cambio de contrato con nueva
+        // fecha, que ya queda en el historial): exige motivo y queda en el historial laboral.
+        $fechaActual = $il->fecha_inicio?->format('Y-m-d');
+        $cambiaFecha = !$conNuevaFecha && $request->filled('fecha_inicio')
+            && strtotime($request->fecha_inicio) !== false
+            && date('Y-m-d', strtotime($request->fecha_inicio)) !== $fechaActual;
 
         $request->validate([
             'nombres'             => 'required|string|max:30',
@@ -155,11 +191,17 @@ class EmpleadoController extends Controller
             'tipo_sangre'         => 'required|string|max:10',
             'id_cargo'           => 'required|exists:cargos,id',
             'id_departamento'     => 'required|exists:departamentos,id',
-            'tipo_contrato'       => 'required|string|max:20',
-            'fecha_inicio'        => 'required|date',
-            'fecha_cese'          => 'nullable|date',
-            'motivo_cese'         => 'nullable|string|max:300',
-            'estado'              => 'required|string|max:20',
+            'tipo_contrato'       => ['required', Rule::in(['Fijo', 'Extra'])],
+            'fecha_inicio'        => ['required', 'date', new NoEs29Febrero],
+            'estado'              => ['required', Rule::in($estadosPermitidos)],
+            // Cambio de tipo de contrato sin que el empleado se vaya: se respeta su fecha
+            // de inicio, o se le liquida y se le da una nueva.
+            'cambio_contrato'               => [Rule::requiredIf($cambiaContrato), 'nullable', 'array'],
+            'cambio_contrato.modo'          => [Rule::requiredIf($cambiaContrato), 'nullable', Rule::in(['respetar', 'nueva_fecha'])],
+            'cambio_contrato.fecha_inicio'  => [Rule::requiredIf($conNuevaFecha), 'nullable', 'date', new NoEs29Febrero],
+            'cambio_contrato.liquidacion'   => [Rule::requiredIf($conNuevaFecha), 'nullable', Rule::in(HistorialLaboral::LIQUIDACION)],
+            'cambio_contrato.observaciones' => 'nullable|string|max:500',
+            'motivo_cambio_fecha'           => [Rule::requiredIf($cambiaFecha), 'nullable', 'string', 'min:5', 'max:500'],
             'forma_de_pago'       => 'required|string|max:50',
             'moneda'              => 'required|string|max:20',
             'salario_base'        => 'required|numeric|min:0',
@@ -167,19 +209,57 @@ class EmpleadoController extends Controller
             'sin_promedio_dias'   => 'boolean',
             'num_cuenta'          => 'nullable|string|max:25',
             'id_banco'            => 'nullable|exists:bancos,id',
+        ], [
+            'estado.in' => $il->estado === 'Inactivo'
+                ? 'Para reactivar al empleado usa "Reintegrar" en su ficha.'
+                : 'Para pasar al empleado a inactivo usa "Dar de baja".',
+            'cambio_contrato.required'      => 'Indica cómo se maneja el cambio de tipo de contrato.',
+            'cambio_contrato.modo.required' => 'Indica cómo se maneja el cambio de tipo de contrato.',
+            'motivo_cambio_fecha.required'  => 'Indica por qué se cambia la fecha de inicio.',
+            'motivo_cambio_fecha.min'       => 'Describe un poco más por qué se cambia la fecha de inicio.',
         ]);
 
-        return DB::transaction(function () use ($request, $empleado) {
+        $fechaInicio = $conNuevaFecha ? $request->input('cambio_contrato.fecha_inicio') : $request->fecha_inicio;
+
+        return DB::transaction(function () use ($request, $empleado, $il, $cambiaContrato, $conNuevaFecha, $fechaInicio, $cambiaFecha, $fechaActual) {
+            if ($cambiaFecha) {
+                HistorialLaboral::create([
+                    'id_empleado'           => $empleado->id,
+                    'tipo_evento'           => HistorialLaboral::CAMBIO_FECHA,
+                    'fecha'                 => now()->toDateString(),
+                    'fecha_inicio_anterior' => $fechaActual,
+                    'fecha_inicio_nueva'    => $fechaInicio,
+                    'observaciones'         => $request->motivo_cambio_fecha,
+                    'id_usuario'            => $request->user()->id,
+                ]);
+            }
+
+            if ($cambiaContrato) {
+                $liquidacion = $conNuevaFecha ? $request->input('cambio_contrato.liquidacion') : null;
+                HistorialLaboral::create([
+                    'id_empleado'            => $empleado->id,
+                    'tipo_evento'            => HistorialLaboral::CAMBIO_CONTRATO,
+                    'fecha'                  => $conNuevaFecha ? $fechaInicio : now()->toDateString(),
+                    'tipo_contrato_anterior' => $il->tipo_contrato,
+                    'tipo_contrato_nuevo'    => $request->tipo_contrato,
+                    'fecha_inicio_anterior'  => $il->fecha_inicio,
+                    'fecha_inicio_nueva'     => $conNuevaFecha ? $fechaInicio : null,
+                    'liquidacion'            => $liquidacion,
+                    'fecha_liquidacion'      => $liquidacion === 'Sí' ? now()->toDateString() : null,
+                    'observaciones'          => $request->input('cambio_contrato.observaciones')
+                        ?: ($conNuevaFecha ? 'Se liquida y se asigna nueva fecha de inicio.' : 'Se respeta la fecha de inicio.'),
+                    'id_usuario'             => $request->user()->id,
+                ]);
+            }
+
             $usaMinimo   = $request->boolean('usa_salario_minimo');
             $salarioBase = $usaMinimo
                 ? (float) (CampoVariable::where('nombre_campo', 'salario_minimo')->value('monto') ?? 16317.60)
                 : (float) $request->salario_base;
 
-            $empleado->informacionLaboral->update([
+            $il->update([
                 'tipo_contrato'      => $request->tipo_contrato,
-                'fecha_inicio'       => $request->fecha_inicio,
-                'fecha_cese'         => $request->fecha_cese,
-                'motivo_cese'        => $request->motivo_cese,
+                'fecha_inicio'       => $fechaInicio,
                 'estado'             => $request->estado,
                 'moneda'             => $request->moneda,
                 'forma_de_pago'      => $request->forma_de_pago,
@@ -267,19 +347,12 @@ class EmpleadoController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Información Laboral');
 
-        $sheet->mergeCells("A1:{$ultimaCol}1");
-        $sheet->setCellValue('A1', 'INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells("A2:{$ultimaCol}2");
-        $sheet->setCellValue('A2', 'INFORMACIÓN LABORAL');
-        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells("A3:{$ultimaCol}3");
-        $sheet->setCellValue('A3', sprintf('Generado: %s   |   Empleados: %d', now()->format('d/m/Y'), $empleados->count()));
-        $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        // Logo a la izquierda y los títulos a su derecha (ver App\Traits\EncabezadoExcel)
+        $this->encabezadoExcel($sheet, $ultimaCol, [
+            ['INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL', 14],
+            ['INFORMACIÓN LABORAL', 12],
+            [sprintf('Generado: %s   |   Empleados: %d', now()->format('d/m/Y'), $empleados->count()), null],
+        ]);
 
         $row = 5;
         foreach ($columnas as $col => $titulo) {
@@ -309,6 +382,7 @@ class EmpleadoController extends Controller
         }
 
         $tempFile = tempnam(sys_get_temp_dir(), 'infolaboral') . '.xlsx';
+        $this->anchoColumnaLogo($sheet);
         (new Xlsx($spreadsheet))->save($tempFile);
 
         $this->logActividad(
@@ -322,14 +396,57 @@ class EmpleadoController extends Controller
             ->deleteFileAfterSend(true);
     }
 
-    public function destroy($id)
+    // Nunca se borra: dar de baja exige fecha, motivo y liquidación (ver HistorialLaboralController).
+    public function destroy(Request $request, $id)
     {
-        $empleado = Empleado::with('informacionLaboral')->findOrFail($id);
-        $empleado->informacionLaboral->update(['estado' => 'Inactivo']);
+        return app(HistorialLaboralController::class)->cese($request, $id);
+    }
 
-        $this->logActividad('eliminado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} desactivado.", $id);
+    // ─── DNI duplicado ─────────────────────────────────────────────
+    // Para el formulario: avisa al escribir el DNI si ya pertenece a otro empleado.
+    public function verificarDni(Request $request)
+    {
+        $existente = $request->cedula ? $this->buscarPorCedula($request->cedula, $request->excluir) : null;
 
-        return response()->json(['message' => 'Empleado desactivado correctamente.']);
+        return response()->json([
+            'existe'   => (bool) $existente,
+            'empleado' => $existente ? $this->resumenEmpleado($existente) : null,
+        ]);
+    }
+
+    private function buscarPorCedula(string $cedula, $excluirId = null): ?Empleado
+    {
+        return Empleado::with('informacionLaboral:id,estado,fecha_cese')
+            ->conCedula($cedula, $excluirId)
+            ->first(['id', 'nombres', 'apellidos', 'cedula', 'id_info_laboral']);
+    }
+
+    private function rechazarDniDuplicado(?string $cedula, $excluirId = null)
+    {
+        $existente = $cedula ? $this->buscarPorCedula($cedula, $excluirId) : null;
+        if (!$existente) return null;
+
+        $nombre = trim("{$existente->nombres} {$existente->apellidos}");
+        $msg = $existente->informacionLaboral?->estado === 'Inactivo'
+            ? "El DNI ya pertenece a {$nombre}, que está inactivo. Reintégralo desde su ficha en lugar de registrarlo de nuevo."
+            : "El DNI ya pertenece a {$nombre}.";
+
+        return response()->json([
+            'message'            => $msg,
+            'errors'             => ['cedula' => [$msg]],
+            'empleado_existente' => $this->resumenEmpleado($existente),
+        ], 422);
+    }
+
+    private function resumenEmpleado(Empleado $e): array
+    {
+        return [
+            'id'         => $e->id,
+            'nombre'     => trim("{$e->nombres} {$e->apellidos}"),
+            'cedula'     => $e->cedula,
+            'estado'     => $e->informacionLaboral?->estado,
+            'fecha_cese' => $e->informacionLaboral?->fecha_cese?->format('Y-m-d'),
+        ];
     }
 
     // ─── Cuentas bancarias (módulo Bancos) ────────────────────────

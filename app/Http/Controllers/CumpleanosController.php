@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Calculos\Fechas;
 use App\Models\Empleado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -20,15 +21,17 @@ class CumpleanosController extends Controller
             ->orderByRaw('DAY(fecha_nacimiento)')
             ->get()
             ->map(function ($emp) use ($hoy) {
-                $nac   = $emp->fecha_nacimiento;
-                $esHoy = $nac->format('m-d') === $hoy->format('m-d');
+                $nac = $emp->fecha_nacimiento;
+                // Quien nació un 29 de febrero celebra el 28 en años no bisiestos.
+                $cumpleEsteAnio = Fechas::aniversarioEn($nac, $hoy->year);
+                $esHoy = $cumpleEsteAnio->isSameDay($hoy);
                 $edad  = $hoy->year - $nac->year;
 
-                $proxCumple = Carbon::create($hoy->year, $nac->month, $nac->day);
-                if ($proxCumple->lt($hoy) && !$esHoy) {
-                    $proxCumple->addYear();
+                $proxCumple = $cumpleEsteAnio->copy();
+                if ($proxCumple->lt($hoy->copy()->startOfDay()) && !$esHoy) {
+                    $proxCumple = Fechas::aniversarioEn($nac, $hoy->year + 1);
                 }
-                $diasPara = $esHoy ? 0 : (int) $hoy->diffInDays($proxCumple);
+                $diasPara = $esHoy ? 0 : (int) $hoy->copy()->startOfDay()->diffInDays($proxCumple);
 
                 return [
                     'id'               => $emp->id,
@@ -38,6 +41,7 @@ class CumpleanosController extends Controller
                     'foto_url'         => $emp->foto_url,
                     'departamento'     => $emp->departamento?->nombre ?? '—',
                     'fecha_nacimiento' => $nac->format('Y-m-d'),
+                    'fecha_celebracion' => $cumpleEsteAnio->format('Y-m-d'),
                     'dia'              => $nac->day,
                     'edad_cumple'      => $edad,
                     'es_hoy'           => $esHoy,

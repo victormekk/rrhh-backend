@@ -11,6 +11,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EstadisticaLaboralController;
 use App\Http\Controllers\DepartamentoController;
 use App\Http\Controllers\EmpleadoController;
+use App\Http\Controllers\HistorialLaboralController;
 use App\Http\Controllers\IncidenciaController;
 use App\Http\Controllers\LogSistemaController;
 use App\Http\Controllers\PlanillaController;
@@ -52,7 +53,17 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::get('/empleados-informacion-laboral/excel', [EmpleadoController::class, 'exportarInformacionLaboral']);
     Route::get('/empleados-sin-cuenta', [EmpleadoController::class, 'sinCuenta']);
     Route::post('/empleados/{empleado}/cuenta', [EmpleadoController::class, 'asignarCuenta']);
+    Route::get('/empleados-verificar-dni', [EmpleadoController::class, 'verificarDni']);
     Route::apiResource('empleados', EmpleadoController::class);
+
+    // Historial laboral: ceses, reintegros y cambios de contrato
+    Route::get('/empleados/{empleado}/historial',  [HistorialLaboralController::class, 'porEmpleado']);
+    Route::post('/empleados/{empleado}/cese',      [HistorialLaboralController::class, 'cese']);
+    Route::post('/empleados/{empleado}/reintegro', [HistorialLaboralController::class, 'reintegro']);
+    Route::get('/historial-laboral',               [HistorialLaboralController::class, 'index']);
+    Route::get('/historial-laboral/catalogos',     [HistorialLaboralController::class, 'catalogos']);
+    Route::get('/historial-laboral/excel',         [HistorialLaboralController::class, 'exportarExcel']);
+    Route::patch('/historial-laboral/{id}/liquidacion', [HistorialLaboralController::class, 'liquidacion']);
 
     // Catálogos
     Route::apiResource('departamentos', DepartamentoController::class);
