@@ -15,13 +15,14 @@ class InformacionLaboral extends Model
         'tipo_contrato', 'fecha_inicio', 'fecha_cese', 'motivo_cese',
         'estado', 'moneda', 'forma_de_pago', 'num_cuenta',
         'salario_base', 'salario_quincenal', 'salario_diario', 'salario_por_hora',
-        'usa_salario_minimo', 'id_banco', 'id_usuario',
+        'usa_salario_minimo', 'sin_promedio_dias', 'id_banco', 'id_usuario',
     ];
 
     protected $casts = [
         'fecha_inicio'      => 'date',
         'fecha_cese'        => 'date',
         'usa_salario_minimo' => 'boolean',
+        'sin_promedio_dias'  => 'boolean',
         'salario_base'       => 'decimal:2',
         'salario_quincenal'  => 'decimal:2',
         'salario_diario'     => 'decimal:2',

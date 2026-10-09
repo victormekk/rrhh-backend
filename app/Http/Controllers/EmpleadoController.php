@@ -81,6 +81,7 @@ class EmpleadoController extends Controller
             'moneda'              => 'required|string|max:20',
             'salario_base'        => 'required|numeric|min:0',
             'usa_salario_minimo'  => 'boolean',
+            'sin_promedio_dias'   => 'boolean',
             'num_cuenta'          => 'nullable|string|max:25',
             'id_banco'            => 'nullable|exists:bancos,id',
         ]);
@@ -103,6 +104,7 @@ class EmpleadoController extends Controller
                 'salario_diario'     => round($salarioBase / 30, 2),
                 'salario_por_hora'   => round($salarioBase / 30 / 8, 2),
                 'usa_salario_minimo' => $usaMinimo,
+                'sin_promedio_dias'  => $request->tipo_contrato === 'Extra' && $request->boolean('sin_promedio_dias'),
                 'id_banco'           => $request->id_banco,
                 'id_usuario'         => $request->user()->id,
             ]);
@@ -162,6 +164,7 @@ class EmpleadoController extends Controller
             'moneda'              => 'required|string|max:20',
             'salario_base'        => 'required|numeric|min:0',
             'usa_salario_minimo'  => 'boolean',
+            'sin_promedio_dias'   => 'boolean',
             'num_cuenta'          => 'nullable|string|max:25',
             'id_banco'            => 'nullable|exists:bancos,id',
         ]);
@@ -186,6 +189,7 @@ class EmpleadoController extends Controller
                 'salario_diario'     => round($salarioBase / 30, 2),
                 'salario_por_hora'   => round($salarioBase / 30 / 8, 2),
                 'usa_salario_minimo' => $usaMinimo,
+                'sin_promedio_dias'  => $request->tipo_contrato === 'Extra' && $request->boolean('sin_promedio_dias'),
                 'id_banco'           => $request->id_banco,
             ]);
 
@@ -327,4 +331,5 @@ class EmpleadoController extends Controller
 
         return response()->json(['message' => 'Empleado desactivado correctamente.']);
     }
+
 }

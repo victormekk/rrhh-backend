@@ -48,7 +48,7 @@
       <h1>{{ $nombre }}</h1>
       <p>N° {{ $correlativo }}
          &mdash; Generado el {{ now()->format('d/m/Y') }}
-         &mdash; Tipo: {{ $meta->tipo_aguinaldo }}
+         &mdash; {{ $meta->concepto }} {{ $meta->tipo_aguinaldo }}
          &mdash; Estado: {{ $meta->estado }}</p>
     </td>
   </tr>
@@ -66,7 +66,7 @@
       <th>Salario Mensual</th>
       <th>Días Año</th>
       <th>Anticipo</th>
-      <th>Aguinaldo a Pagar</th>
+      <th>{{ $meta->concepto === 'Catorceavo' ? 'Catorceavo a Pagar' : 'Aguinaldo a Pagar' }}</th>
     </tr>
   </thead>
   <tbody>
@@ -100,6 +100,14 @@
 
 @if($extras->isNotEmpty())
 <div class="section-title">Empleados Extras</div>
+@php $pe = $extras->first(); @endphp
+@if($pe->periodo_desde)
+<p style="font-size:8px; color:#555; margin:0 0 4px;">
+  Días promedio: planillas de extras del {{ $pe->periodo_desde->format('d/m/Y') }} al {{ $pe->periodo_hasta->format('d/m/Y') }}
+  ({{ rtrim(rtrim(number_format($pe->meses_promedio, 1), '0'), '.') }} meses, máx. 15 días por quincena).
+  Total = días prom. ÷ 30 × diario × antigüedad − anticipos. N/A: trabaja todos los días.
+</p>
+@endif
 <table>
   <thead>
     <tr>
@@ -108,11 +116,11 @@
       <th>Cuenta</th>
       <th>Fecha Inicio</th>
       <th>Diario</th>
-      <th>Días Prom.</th>
       <th>Antigüedad</th>
       <th>Subtotal</th>
+      <th>Días Prom.</th>
       <th>Anticipos</th>
-      <th>Total Aguinaldo</th>
+      <th>Total a Pagar</th>
     </tr>
   </thead>
   <tbody>
@@ -127,9 +135,9 @@
       <td>{{ $e->cuenta ?? '—' }}</td>
       <td>{{ $e->fecha_inicio ? $e->fecha_inicio->format('d/m/Y') : '—' }}</td>
       <td class="num">L {{ number_format($e->diario, 2) }}</td>
-      <td>{{ $e->dias_promedio }}</td>
-      <td class="num">L {{ number_format($e->antiguedad, 2) }}</td>
+      <td>{{ number_format($e->antiguedad, 2) }}</td>
       <td class="num">L {{ number_format($e->subtotal, 2) }}</td>
+      <td>{{ $e->sin_promedio ? 'N/A' : $e->dias_promedio }}</td>
       <td class="num">L {{ number_format($e->anticipos, 2) }}</td>
       <td class="num"><strong>L {{ number_format($e->total_aguinaldo, 2) }}</strong></td>
     </tr>
@@ -137,8 +145,8 @@
     @endforeach
     <tr class="totals">
       <td colspan="6" class="left"><strong>TOTALES</strong></td>
-      <td class="num">L {{ number_format($totalesExtras['antiguedad'], 2) }}</td>
       <td class="num">L {{ number_format($totalesExtras['subtotal'], 2) }}</td>
+      <td></td>
       <td class="num">L {{ number_format($totalesExtras['anticipos'], 2) }}</td>
       <td class="num">L {{ number_format($totalesExtras['total_aguinaldo'], 2) }}</td>
     </tr>

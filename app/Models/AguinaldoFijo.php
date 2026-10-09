@@ -11,7 +11,7 @@ class AguinaldoFijo extends Model
     protected $fillable = [
         'nombre_aguinaldo', 'departamento', 'nombres', 'apellidos', 'cargo', 'cuenta',
         'fecha_inicio', 'salario_base', 'dias_trabajados', 'anticipo',
-        'total_aguinaldo', 'fecha_generada', 'fecha_corte', 'estado', 'tipo_aguinaldo',
+        'total_aguinaldo', 'fecha_generada', 'fecha_corte', 'estado', 'tipo_aguinaldo', 'concepto',
         'id_empleado', 'id_info_laboral', 'id_departamento',
     ];
 

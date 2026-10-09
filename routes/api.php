@@ -64,7 +64,15 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::post('aguinaldo',               [AguinaldoController::class, 'store']);
     Route::put('aguinaldo/fijos/{id}',     [AguinaldoController::class, 'updateFijo']);
     Route::put('aguinaldo/extras/{id}',    [AguinaldoController::class, 'updateExtra']);
+    Route::get('aguinaldo/extras/{id}/quincenas', [AguinaldoController::class, 'quincenasExtra'])->whereNumber('id');
+    // {nombre} acepta "/" (where .*): las rutas más específicas van primero.
+    Route::get('aguinaldo/{nombre}/pago/excel',    [AguinaldoController::class, 'exportPagoGeneralExcel'])->where('nombre', '.*');
+    Route::get('aguinaldo/{nombre}/bancos/excel',  [AguinaldoController::class, 'exportBancosExcel'])->where('nombre', '.*');
+    Route::get('aguinaldo/{nombre}/bancos/pdf',    [AguinaldoController::class, 'exportBancosPdf'])->where('nombre', '.*');
+    Route::get('aguinaldo/{nombre}/cheques/excel', [AguinaldoController::class, 'exportChequesExcel'])->where('nombre', '.*');
+    Route::get('aguinaldo/{nombre}/cheques/pdf',   [AguinaldoController::class, 'exportChequesPdf'])->where('nombre', '.*');
     Route::get('aguinaldo/{nombre}/pdf',   [AguinaldoController::class, 'exportPdf'])->where('nombre', '.*');
+    Route::get('aguinaldo/{nombre}/excel', [AguinaldoController::class, 'exportExcel'])->where('nombre', '.*');
     Route::post('aguinaldo/{nombre}/cerrar',[AguinaldoController::class, 'cerrar'])->where('nombre', '.*');
     Route::get('aguinaldo/{nombre}',       [AguinaldoController::class, 'show'])->where('nombre', '.*');
     Route::delete('aguinaldo/{nombre}',    [AguinaldoController::class, 'destroy'])->where('nombre', '.*');

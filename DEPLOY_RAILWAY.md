@@ -18,6 +18,8 @@ con el health check y la política de reinicio. Al arrancar, el backend corre so
 
 1. En el proyecto de Railway: **+ New → Database → MySQL**.
 2. **Pasar los datos actuales** (antes de desplegar el backend):
+   0. **Borrar los datos de prueba** en local: `php artisan pruebas:extras --borrar`
+      (20 extras con cédula `PRUEBA-…` y planillas "PRUEBA Extras …").
    1. En HeidiSQL (local): clic derecho en `rrhh_hpr` → **Exportar base de datos como SQL**.
       Marcar *Crear tablas* (con *DROP*) e *Insertar datos*. Guardar el `.sql`.
    2. En Railway, servicio MySQL → **Variables**: copiar `MYSQL_PUBLIC_URL`
