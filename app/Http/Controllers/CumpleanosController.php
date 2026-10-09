@@ -34,6 +34,7 @@ class CumpleanosController extends Controller
                     'id'               => $emp->id,
                     'nombres'          => $emp->nombres,
                     'apellidos'        => $emp->apellidos,
+                    'genero'           => $emp->genero,
                     'foto_url'         => $emp->foto_url,
                     'departamento'     => $emp->departamento?->nombre ?? '—',
                     'fecha_nacimiento' => $nac->format('Y-m-d'),
