@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Calculos\CalculoVacaciones;
+use App\Calculos\Feriados;
 use App\Models\Empleado;
 use App\Models\SolicitudVacacion;
 use App\Models\Vacacion;
@@ -19,30 +21,11 @@ class VacacionController extends Controller
     use LogsActividad, NombraArchivos, GeneraCorrelativo, SoloAdmin, TieneFeriados;
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    // Días laborables entre dos fechas: no cuentan domingos ni feriados
-    // nacionales. Devuelve tambien el detalle de los feriados que cayeron
-    // entre semana (lunes-sabado) dentro del rango, para poder avisarle
-    // al usuario cuales fechas no se le estan contando.
+    // La lógica de días laborables y saldo vive en App\Calculos\CalculoVacaciones
+    // (probada en tests/Unit/CalculoVacacionesTest.php); aquí solo se consulta la BD.
     private function diasLaborables(Carbon $inicio, Carbon $fin): array
     {
-        $dias     = 0;
-        $feriados = [];
-        $current  = $inicio->copy()->startOfDay();
-        $fin      = $fin->copy()->startOfDay();
-
-        while ($current->lte($fin)) {
-            $nombreFeriado = $this->nombreFeriado($current);
-            if ($current->dayOfWeek !== Carbon::SUNDAY) {
-                if ($nombreFeriado) {
-                    $feriados[] = ['fecha' => $current->format('Y-m-d'), 'nombre' => $nombreFeriado];
-                } else {
-                    $dias++;
-                }
-            }
-            $current->addDay();
-        }
-
-        return ['dias' => $dias, 'feriados' => $feriados];
+        return CalculoVacaciones::diasLaborables($inicio, $fin);
     }
 
     private function tasasDias(): array
@@ -79,34 +62,8 @@ class VacacionController extends Controller
             return $zeroBase;
         }
 
-        $anios = (int) floor($inicio->diffInDays($hoy) / 365);
-        $tasas = $this->tasasDias();
-
-        // Días ganados por cada año laboral completado (acumulados)
-        $diasAcumulados = 0;
-        for ($i = 1; $i <= $anios; $i++) {
-            $diasAcumulados += match(true) {
-                $i >= 4  => $tasas[4],
-                $i === 3 => $tasas[3],
-                $i === 2 => $tasas[2],
-                default  => $tasas[1],
-            };
-        }
-
-        // Entitlement del año aniversario actual
-        $diasAnioActual = match(true) {
-            $anios >= 4  => $tasas[4],
-            $anios === 3 => $tasas[3],
-            $anios === 2 => $tasas[2],
-            $anios >= 1  => $tasas[1],
-            default      => 0,
-        };
-
-        // Período: último aniversario → siguiente aniversario
-        $aniversario = $inicio->copy()->year($hoy->year);
-        if ($aniversario->isAfter($hoy)) $aniversario->subYear();
-        $periodoInicio = $aniversario->copy();
-        $periodoFin    = $aniversario->copy()->addYear()->subDay();
+        $calculo = new CalculoVacaciones($this->tasasDias());
+        [$periodoInicio] = $calculo->periodo($inicio, $hoy);
 
         // Una sola query con SUM condicional en lugar de dos queries separadas
         $tomados = SolicitudVacacion::where('id_empleado', $empleado->id)
@@ -115,29 +72,7 @@ class VacacionController extends Controller
                 [$periodoInicio->format('Y-m-d')]
             )->first();
 
-        $diasTomados        = (float) ($tomados->total  ?? 0);
-        $diasTomadosPeriodo = (float) ($tomados->periodo ?? 0);
-
-        // Días previos = lo ganado antes del período actual, menos lo tomado antes del período actual
-        // y menos el excedente de lo tomado en el período actual sobre la cuota del período actual
-        // (lo tomado se descuenta primero de la cuota del período actual; si se excede, el sobrante
-        // sale de los días previos).
-        $diasGanadosAnteriores  = $diasAcumulados - $diasAnioActual;
-        $diasTomadosAnteriores  = $diasTomados - $diasTomadosPeriodo;
-        $excedentePeriodo       = max(0, $diasTomadosPeriodo - $diasAnioActual);
-        $diasPrevios            = max(0, $diasGanadosAnteriores - $diasTomadosAnteriores - $excedentePeriodo);
-
-        return [
-            'anios_laborados'     => $anios,
-            'dias_por_ley'        => $diasAcumulados,
-            'dias_anio_actual'    => $diasAnioActual,
-            'dias_previos'        => $diasPrevios,
-            'dias_tomados'        => $diasTomados,
-            'dias_tomados_periodo'=> $diasTomadosPeriodo,
-            'saldo'               => max(0, $diasAcumulados - $diasTomados),
-            'periodo_inicio'      => $periodoInicio->format('Y-m-d'),
-            'periodo_fin'         => $periodoFin->format('Y-m-d'),
-        ];
+        return $calculo->saldo($inicio, $hoy, (float) ($tomados->total ?? 0), (float) ($tomados->periodo ?? 0));
     }
 
     // ── Endpoints ─────────────────────────────────────────────────────────────
@@ -274,10 +209,7 @@ class VacacionController extends Controller
 
         // Fecha de reintegro: el siguiente día hábil despues del ultimo dia de
         // vacaciones, saltando domingos y feriados nacionales.
-        $retorno = Carbon::parse($solicitud->fecha_fin)->addDay();
-        while ($retorno->dayOfWeek === Carbon::SUNDAY || $this->nombreFeriado($retorno)) {
-            $retorno->addDay();
-        }
+        $retorno = Feriados::siguienteDiaHabil(Carbon::parse($solicitud->fecha_fin));
 
         $pdf = Pdf::loadView('vacaciones.solicitud', compact('solicitud', 'saldo', 'correlativo', 'solicitudAnterior', 'retorno'))
             ->setPaper('letter', 'portrait');

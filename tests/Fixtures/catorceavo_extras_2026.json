@@ -1,0 +1,506 @@
+{
+ "origen": "Planilla General Catorceavo Extras 2026.xls (sin nombres)",
+ "corte": "2026-06-30",
+ "filas": [
+  {
+   "fila": 8,
+   "inicio": "2026-02-24",
+   "diario": 543.92,
+   "antiguedad": 10.5,
+   "subtotal": 5711.16,
+   "dias_prom": null,
+   "anticipos": 0,
+   "total": 5711.16
+  },
+  {
+   "fila": 9,
+   "inicio": "2026-03-23",
+   "diario": 543.92,
+   "antiguedad": 8.25,
+   "subtotal": 4487.34,
+   "dias_prom": null,
+   "anticipos": 0,
+   "total": 4487.34
+  },
+  {
+   "fila": 10,
+   "inicio": "2026-04-01",
+   "diario": 543.92,
+   "antiguedad": 7.5,
+   "subtotal": 4079.4,
+   "dias_prom": null,
+   "anticipos": 0,
+   "total": 4079.4
+  },
+  {
+   "fila": 11,
+   "inicio": "2026-04-01",
+   "diario": 543.92,
+   "antiguedad": 7.5,
+   "subtotal": 4079.4,
+   "dias_prom": null,
+   "anticipos": 0,
+   "total": 4079.4
+  },
+  {
+   "fila": 15,
+   "inicio": "2024-12-30",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 17,
+   "anticipos": 0,
+   "total": 9246.64
+  },
+  {
+   "fila": 16,
+   "inicio": "2025-07-04",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 14,
+   "anticipos": 0,
+   "total": 7614.88
+  },
+  {
+   "fila": 20,
+   "inicio": "2023-02-25",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 26,
+   "anticipos": 0,
+   "total": 14141.92
+  },
+  {
+   "fila": 21,
+   "inicio": "2022-01-20",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 23,
+   "anticipos": 0,
+   "total": 12510.16
+  },
+  {
+   "fila": 22,
+   "inicio": "2019-06-03",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 18,
+   "anticipos": 0,
+   "total": 9790.56
+  },
+  {
+   "fila": 23,
+   "inicio": "2022-04-25",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 18,
+   "anticipos": 0,
+   "total": 9790.56
+  },
+  {
+   "fila": 24,
+   "inicio": "2025-05-10",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 20,
+   "anticipos": 0,
+   "total": 10878.4
+  },
+  {
+   "fila": 25,
+   "inicio": "2025-05-01",
+   "diario": 543.8866666666667,
+   "antiguedad": 30.0,
+   "subtotal": 16316.6,
+   "dias_prom": 12,
+   "anticipos": 0,
+   "total": 6526.64
+  },
+  {
+   "fila": 26,
+   "inicio": "2023-03-18",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 22,
+   "anticipos": 0,
+   "total": 11966.24
+  },
+  {
+   "fila": 27,
+   "inicio": "2024-05-03",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 20,
+   "anticipos": 0,
+   "total": 10878.4
+  },
+  {
+   "fila": 28,
+   "inicio": "2023-04-03",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 24,
+   "anticipos": 0,
+   "total": 13054.08
+  },
+  {
+   "fila": 29,
+   "inicio": "2023-03-28",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 22,
+   "anticipos": 0,
+   "total": 11966.24
+  },
+  {
+   "fila": 30,
+   "inicio": "2023-01-13",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 19,
+   "anticipos": 0,
+   "total": 10334.48
+  },
+  {
+   "fila": 31,
+   "inicio": "2024-03-19",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 23,
+   "anticipos": 0,
+   "total": 12510.16
+  },
+  {
+   "fila": 32,
+   "inicio": "2023-04-03",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 24,
+   "anticipos": 0,
+   "total": 13054.08
+  },
+  {
+   "fila": 33,
+   "inicio": "2020-02-23",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 19,
+   "anticipos": 0,
+   "total": 10334.48
+  },
+  {
+   "fila": 37,
+   "inicio": "2024-06-17",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 30,
+   "anticipos": 0,
+   "total": 16317.6
+  },
+  {
+   "fila": 38,
+   "inicio": "2024-07-20",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 30,
+   "anticipos": 0,
+   "total": 16317.6
+  },
+  {
+   "fila": 42,
+   "inicio": "2022-08-20",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 22,
+   "anticipos": 0,
+   "total": 11966.24
+  },
+  {
+   "fila": 43,
+   "inicio": "2023-12-16",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 24,
+   "anticipos": 0,
+   "total": 13054.08
+  },
+  {
+   "fila": 44,
+   "inicio": "2025-04-01",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 24,
+   "anticipos": 0,
+   "total": 13054.08
+  },
+  {
+   "fila": 45,
+   "inicio": "2023-10-04",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 22,
+   "anticipos": 5000.0,
+   "total": 6966.24
+  },
+  {
+   "fila": 46,
+   "inicio": "2023-12-05",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 24,
+   "anticipos": 0,
+   "total": 13054.08
+  },
+  {
+   "fila": 50,
+   "inicio": "2023-01-10",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 12,
+   "anticipos": 0,
+   "total": 6527.04
+  },
+  {
+   "fila": 51,
+   "inicio": "2024-03-25",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 16,
+   "anticipos": 0,
+   "total": 8702.72
+  },
+  {
+   "fila": 52,
+   "inicio": "2021-07-15",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 20,
+   "anticipos": 0,
+   "total": 10878.4
+  },
+  {
+   "fila": 53,
+   "inicio": "2024-03-25",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 17,
+   "anticipos": 0,
+   "total": 9246.64
+  },
+  {
+   "fila": 54,
+   "inicio": "2024-04-30",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 14,
+   "anticipos": 0,
+   "total": 7614.88
+  },
+  {
+   "fila": 55,
+   "inicio": "2021-07-15",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 19,
+   "anticipos": 0,
+   "total": 10334.48
+  },
+  {
+   "fila": 56,
+   "inicio": "2024-04-17",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 14,
+   "anticipos": 0,
+   "total": 7614.88
+  },
+  {
+   "fila": 57,
+   "inicio": "2024-03-25",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 14,
+   "anticipos": 0,
+   "total": 7614.88
+  },
+  {
+   "fila": 61,
+   "inicio": "2025-05-22",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 17,
+   "anticipos": 0,
+   "total": 9246.64
+  },
+  {
+   "fila": 62,
+   "inicio": "2021-09-10",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 17,
+   "anticipos": 0,
+   "total": 9246.64
+  },
+  {
+   "fila": 63,
+   "inicio": "2021-12-20",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 24,
+   "anticipos": 0,
+   "total": 13054.08
+  },
+  {
+   "fila": 64,
+   "inicio": "2023-08-04",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 19,
+   "anticipos": 0,
+   "total": 10334.48
+  },
+  {
+   "fila": 65,
+   "inicio": "2025-09-26",
+   "diario": 543.92,
+   "antiguedad": 23.083333333333336,
+   "subtotal": 12555.49,
+   "dias_prom": 13,
+   "anticipos": 0,
+   "total": 5440.71
+  },
+  {
+   "fila": 66,
+   "inicio": "2026-02-13",
+   "diario": 543.92,
+   "antiguedad": 11.416666666666666,
+   "subtotal": 6209.75,
+   "dias_prom": 5,
+   "anticipos": 0,
+   "total": 1034.96
+  },
+  {
+   "fila": 67,
+   "inicio": "2024-03-13",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 19,
+   "anticipos": 0,
+   "total": 10334.48
+  },
+  {
+   "fila": 68,
+   "inicio": "2022-07-28",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 24,
+   "anticipos": 0,
+   "total": 13054.08
+  },
+  {
+   "fila": 69,
+   "inicio": "2023-08-25",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 17,
+   "anticipos": 0,
+   "total": 9246.64
+  },
+  {
+   "fila": 73,
+   "inicio": "2018-12-12",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 15,
+   "anticipos": 0,
+   "total": 8158.8
+  },
+  {
+   "fila": 74,
+   "inicio": "2019-03-31",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 19,
+   "anticipos": 0,
+   "total": 10334.48
+  },
+  {
+   "fila": 75,
+   "inicio": "2023-03-14",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 17,
+   "anticipos": 0,
+   "total": 9246.64
+  },
+  {
+   "fila": 76,
+   "inicio": "2023-03-23",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 18,
+   "anticipos": 0,
+   "total": 9790.56
+  },
+  {
+   "fila": 77,
+   "inicio": "2019-12-07",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 20,
+   "anticipos": 0,
+   "total": 10878.4
+  },
+  {
+   "fila": 78,
+   "inicio": "2024-01-13",
+   "diario": 543.92,
+   "antiguedad": 30.0,
+   "subtotal": 16317.6,
+   "dias_prom": 21,
+   "anticipos": 0,
+   "total": 11422.32
+  }
+ ]
+}

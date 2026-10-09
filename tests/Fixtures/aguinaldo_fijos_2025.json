@@ -1,0 +1,942 @@
+{
+ "origen": "Planilla General Aguinaldo Fijos 2025.xlsx (sin nombres)",
+ "corte": "2025-12-31",
+ "filas": [
+  {
+   "fila": 8,
+   "inicio": "2013-05-07",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 9,
+   "inicio": "2007-10-01",
+   "salario": 15750.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750.2
+  },
+  {
+   "fila": 10,
+   "inicio": "2025-02-27",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 307,
+   "total": 13431.25
+  },
+  {
+   "fila": 11,
+   "inicio": "2024-01-22",
+   "salario": 15750.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750.2
+  },
+  {
+   "fila": 12,
+   "inicio": "2005-01-04",
+   "salario": 23400,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 23400
+  },
+  {
+   "fila": 13,
+   "inicio": "2021-11-03",
+   "salario": 15250,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.0
+  },
+  {
+   "fila": 14,
+   "inicio": "2023-01-03",
+   "salario": 26400,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 26400
+  },
+  {
+   "fila": 15,
+   "inicio": "2023-02-27",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 16,
+   "inicio": "2023-11-13",
+   "salario": 15750,
+   "anticipo": 15750,
+   "dias": 360,
+   "total": 0
+  },
+  {
+   "fila": 17,
+   "inicio": "2023-08-09",
+   "salario": 15250.2,
+   "anticipo": 15250,
+   "dias": 360,
+   "total": 0.2
+  },
+  {
+   "fila": 18,
+   "inicio": "2023-06-12",
+   "salario": 18900,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 18900
+  },
+  {
+   "fila": 19,
+   "inicio": "2013-01-02",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 20,
+   "inicio": "2025-07-21",
+   "salario": 16500,
+   "anticipo": 0,
+   "dias": 163,
+   "total": 7470.83
+  },
+  {
+   "fila": 24,
+   "inicio": "2024-03-20",
+   "salario": 15250.2,
+   "anticipo": 7625,
+   "dias": 360,
+   "total": 7625.2
+  },
+  {
+   "fila": 25,
+   "inicio": "2024-03-20",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 26,
+   "inicio": "2023-07-19",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 27,
+   "inicio": "2023-12-30",
+   "salario": 15250.2,
+   "anticipo": 7625,
+   "dias": 360,
+   "total": 7625.2
+  },
+  {
+   "fila": 28,
+   "inicio": "2025-09-05",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 117,
+   "total": 4956.32
+  },
+  {
+   "fila": 29,
+   "inicio": "2023-03-01",
+   "salario": 17850,
+   "anticipo": 17850,
+   "dias": 360,
+   "total": 0
+  },
+  {
+   "fila": 30,
+   "inicio": "2023-06-12",
+   "salario": 15250.2,
+   "anticipo": 15250,
+   "dias": 360,
+   "total": 0.2
+  },
+  {
+   "fila": 31,
+   "inicio": "2017-12-12",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 32,
+   "inicio": "2024-01-24",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 36,
+   "inicio": "2022-09-22",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 37,
+   "inicio": "2022-09-22",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 38,
+   "inicio": "2013-12-23",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 42,
+   "inicio": "2005-08-19",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 43,
+   "inicio": "2022-09-22",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 44,
+   "inicio": "2007-08-08",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 45,
+   "inicio": "2022-05-24",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 46,
+   "inicio": "2022-05-24",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 47,
+   "inicio": "2007-05-05",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 48,
+   "inicio": "2003-12-20",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 49,
+   "inicio": "2022-09-22",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 50,
+   "inicio": "2015-03-24",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 51,
+   "inicio": "2007-06-13",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 52,
+   "inicio": "2022-05-24",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 53,
+   "inicio": "2022-05-24",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 54,
+   "inicio": "2004-08-20",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 55,
+   "inicio": "2022-05-24",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 59,
+   "inicio": "2008-09-21",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 60,
+   "inicio": "2009-09-22",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 61,
+   "inicio": "2023-07-03",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 62,
+   "inicio": "2008-04-03",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 63,
+   "inicio": "2008-06-11",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 64,
+   "inicio": "2009-10-01",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 65,
+   "inicio": "2012-01-13",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 66,
+   "inicio": "2008-05-14",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 67,
+   "inicio": "2023-07-03",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 68,
+   "inicio": "2007-12-30",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 69,
+   "inicio": "2023-10-23",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 70,
+   "inicio": "2008-01-17",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 71,
+   "inicio": "2007-06-20",
+   "salario": 15250.2,
+   "anticipo": 5000,
+   "dias": 360,
+   "total": 10250.2
+  },
+  {
+   "fila": 72,
+   "inicio": "2007-09-22",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 73,
+   "inicio": "2008-04-14",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 74,
+   "inicio": "2005-06-01",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 75,
+   "inicio": "2007-06-20",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 76,
+   "inicio": "2003-12-18",
+   "salario": 15250.2,
+   "anticipo": 15250.2,
+   "dias": 360,
+   "total": 0
+  },
+  {
+   "fila": 77,
+   "inicio": "2006-09-01",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 81,
+   "inicio": "2002-03-02",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 82,
+   "inicio": "2022-05-24",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 83,
+   "inicio": "2007-01-07",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 84,
+   "inicio": "2007-01-07",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 88,
+   "inicio": "2016-08-27",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 89,
+   "inicio": "2017-05-01",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 90,
+   "inicio": "2023-05-01",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 91,
+   "inicio": "2024-03-01",
+   "salario": 18600,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 18600
+  },
+  {
+   "fila": 92,
+   "inicio": "2005-11-25",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 93,
+   "inicio": "2022-01-23",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 94,
+   "inicio": "2023-03-08",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 95,
+   "inicio": "2023-05-01",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 96,
+   "inicio": "2014-03-11",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 100,
+   "inicio": "2004-05-30",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 101,
+   "inicio": "2003-05-29",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 105,
+   "inicio": "2003-08-25",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 106,
+   "inicio": "2023-05-01",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 107,
+   "inicio": "2005-11-19",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 108,
+   "inicio": "2012-10-28",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 109,
+   "inicio": "2019-01-19",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 110,
+   "inicio": "2011-08-15",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 111,
+   "inicio": "2022-03-15",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 112,
+   "inicio": "2023-05-01",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 113,
+   "inicio": "2004-07-16",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 114,
+   "inicio": "2023-05-01",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 118,
+   "inicio": "2022-09-27",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 119,
+   "inicio": "2003-06-25",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 120,
+   "inicio": "2023-12-23",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 121,
+   "inicio": "2024-03-26",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 122,
+   "inicio": "2021-09-27",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 123,
+   "inicio": "2016-12-03",
+   "salario": 16500,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 16500
+  },
+  {
+   "fila": 124,
+   "inicio": "2002-04-14",
+   "salario": 15250.2,
+   "anticipo": 15250.2,
+   "dias": 360,
+   "total": 0
+  },
+  {
+   "fila": 128,
+   "inicio": "2003-10-03",
+   "salario": 15250.2,
+   "anticipo": 7000,
+   "dias": 360,
+   "total": 8250.2
+  },
+  {
+   "fila": 129,
+   "inicio": "2005-11-15",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 130,
+   "inicio": "2005-11-15",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 131,
+   "inicio": "2002-12-19",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 132,
+   "inicio": "2009-09-05",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 133,
+   "inicio": "2022-05-24",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 137,
+   "inicio": "2009-08-06",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 138,
+   "inicio": "2011-07-12",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 139,
+   "inicio": "2007-11-01",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 140,
+   "inicio": "2011-03-08",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 141,
+   "inicio": "2014-12-26",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 142,
+   "inicio": "2004-05-29",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 143,
+   "inicio": "2010-05-04",
+   "salario": 15750,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15750
+  },
+  {
+   "fila": 144,
+   "inicio": "2010-05-18",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 145,
+   "inicio": "2018-10-29",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 146,
+   "inicio": "2014-10-22",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 147,
+   "inicio": "2019-04-08",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 148,
+   "inicio": "2019-05-04",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 149,
+   "inicio": "2010-04-12",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 150,
+   "inicio": "2012-04-10",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 151,
+   "inicio": "2014-12-26",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 152,
+   "inicio": "2011-12-29",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 156,
+   "inicio": "2008-01-15",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 157,
+   "inicio": "2016-12-26",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 158,
+   "inicio": "2008-12-21",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 159,
+   "inicio": "2008-10-16",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  },
+  {
+   "fila": 160,
+   "inicio": "2023-05-01",
+   "salario": 15250.2,
+   "anticipo": 0,
+   "dias": 360,
+   "total": 15250.2
+  }
+ ]
+}
