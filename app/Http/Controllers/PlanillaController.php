@@ -53,7 +53,7 @@ class PlanillaController extends Controller
     {
         $request->validate([
             'nombre_planilla'    => 'required|string|max:50',
-            'tipo_planilla'      => 'required|in:Fijos,Extras,Especial',
+            'tipo_planilla'      => 'required|in:Fijos,Extras',
             'fecha_generada'     => 'required|date',
             'usar_marcaciones'   => 'boolean',
             'periodo_desde'      => 'nullable|required_if:usar_marcaciones,true|date',
@@ -73,11 +73,11 @@ class PlanillaController extends Controller
                 'id_usuario'      => $request->user()->id,
             ]);
 
-            // tipo_planilla (Fijos/Extras/Especial) -> tipo_contrato (Fijo/Extra/Especial)
+            // tipo_planilla (Fijos/Extras) -> tipo_contrato (Fijo/Extra). El tipo "Especial"
+            // (planilla de jefes) se dejó de usar; las planillas viejas de ese tipo se conservan.
             $tipoContrato = [
-                'Fijos'    => 'Fijo',
-                'Extras'   => 'Extra',
-                'Especial' => 'Especial',
+                'Fijos'  => 'Fijo',
+                'Extras' => 'Extra',
             ][$request->tipo_planilla];
 
             $empleados = Empleado::with(['informacionLaboral.banco', 'departamento'])
