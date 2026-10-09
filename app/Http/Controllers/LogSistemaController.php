@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\LogSistema;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\NombraArchivos;
+use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
+// Bitácora del sistema: solo administradores (módulo Configuración).
 class LogSistemaController extends Controller
 {
-    use NombraArchivos, GeneraCorrelativo;
+    use NombraArchivos, GeneraCorrelativo, SoloAdmin;
 
     private function filtrar(Request $request)
     {
@@ -25,11 +27,15 @@ class LogSistemaController extends Controller
 
     public function index(Request $request)
     {
+        $this->soloAdmin($request);
+
         return response()->json($this->filtrar($request)->paginate(25));
     }
 
     public function exportPdf(Request $request)
     {
+        $this->soloAdmin($request);
+
         $logs = $this->filtrar($request)->get();
 
         $filtros = [
