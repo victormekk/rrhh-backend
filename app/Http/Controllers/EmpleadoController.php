@@ -58,7 +58,7 @@ class EmpleadoController extends Controller
         $request->validate([
             'nombres'             => 'required|string|max:30',
             'apellidos'           => 'required|string|max:30',
-            'cedula'              => 'required|string|max:13|unique:empleados',
+            'cedula'              => ['required', 'string', 'max:30', 'regex:/^[0-9-]+$/', 'unique:empleados'],
             'codigo_biometrico'   => 'nullable|string|max:20|unique:empleados',
             'rtn'                 => 'nullable|string|max:14',
             'genero'              => 'required|string|max:10',
@@ -138,7 +138,7 @@ class EmpleadoController extends Controller
         $request->validate([
             'nombres'             => 'required|string|max:30',
             'apellidos'           => 'required|string|max:30',
-            'cedula'              => "required|string|max:13|unique:empleados,cedula,{$id}",
+            'cedula'              => ['required', 'string', 'max:30', 'regex:/^[0-9-]+$/', "unique:empleados,cedula,{$id}"],
             'codigo_biometrico'   => "nullable|string|max:20|unique:empleados,codigo_biometrico,{$id}",
             'rtn'                 => 'nullable|string|max:14',
             'genero'              => 'required|string|max:10',
