@@ -41,15 +41,11 @@
 <body>
 <div class="page">
 
-<div class="header">
-  <img src="{{ public_path('images/hpr_logo.png') }}" alt="Hotel y Villas Palma Real">
-  <h2>{{ $titulo }} — {{ strtoupper($planilla->nombre_planilla) }}</h2>
-  <p>
-    N° {{ $correlativo }} &nbsp;|&nbsp;
-    Fecha: {{ \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y') }} &nbsp;|&nbsp;
-    Empleados: {{ $detalles->count() }}
-  </p>
-</div>
+<x-pdf-encabezado titulo="{{ $titulo }} — {{ strtoupper($planilla->nombre_planilla) }}">
+  N° {{ $correlativo }} &nbsp;|&nbsp;
+  Fecha: {{ \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y') }} &nbsp;|&nbsp;
+  Empleados: {{ $detalles->count() }}
+</x-pdf-encabezado>
 
 <table>
   <thead>

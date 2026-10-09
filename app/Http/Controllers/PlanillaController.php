@@ -9,6 +9,7 @@ use App\Models\DetallePlanilla;
 use App\Models\Empleado;
 use App\Models\OtroIngreso;
 use App\Traits\GeneraCorrelativo;
+use App\Traits\EncabezadoExcel;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
 use App\Traits\SoloAdmin;
@@ -22,7 +23,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanillaController extends Controller
 {
-    use LogsActividad, NombraArchivos, SoloAdmin, GeneraCorrelativo;
+    use LogsActividad, NombraArchivos, SoloAdmin, GeneraCorrelativo, EncabezadoExcel;
 
     public function index(Request $request)
     {
@@ -147,10 +148,15 @@ class PlanillaController extends Controller
                 ]);
             }
 
-            return response()->json(
-                $cabecera->loadCount('detalles')->loadSum('detalles', 'salario_neto'),
-                201
-            );
+            $cabecera->loadCount('detalles')->loadSum('detalles', 'salario_neto');
+
+            $this->logActividad('creado', 'Planillas', sprintf(
+                "Planilla '%s' (%s) creada con %d empleado(s); total neto L %s.",
+                $cabecera->nombre_planilla, $cabecera->tipo_planilla, $cabecera->detalles_count,
+                number_format((float) $cabecera->detalles_sum_salario_neto, 2)
+            ), $cabecera->id);
+
+            return response()->json($cabecera, 201);
         });
     }
 
@@ -221,6 +227,13 @@ class PlanillaController extends Controller
         DB::transaction(function () use ($planilla) {
             $planilla->update(['estado' => 'Cerrado']);
 
+            $empleados = DetallePlanilla::where('id_cabecera_planilla', $planilla->id)->count();
+            $totalNeto = (float) DetallePlanilla::where('id_cabecera_planilla', $planilla->id)->sum('salario_neto');
+            $this->logActividad('cerrado', 'Planillas', sprintf(
+                "Planilla '%s' (%s) cerrada: %d empleado(s), total neto L %s.",
+                $planilla->nombre_planilla, $planilla->tipo_planilla, $empleados, number_format($totalNeto, 2)
+            ), $planilla->id);
+
             // Aplicar cuotas a cada empleado de esta planilla
             $empleadoIds = DetallePlanilla::where('id_cabecera_planilla', $planilla->id)
                 ->pluck('id_empleado');
@@ -244,8 +257,17 @@ class PlanillaController extends Controller
         $this->soloAdmin($request);
 
         $planilla = CabeceraPlanilla::where('estado', 'Activo')->findOrFail($id);
-        $planilla->detalles()->delete();
-        $planilla->delete();
+        $empleados = $planilla->detalles()->count();
+
+        DB::transaction(function () use ($planilla, $empleados) {
+            $planilla->detalles()->delete();
+            $planilla->delete();
+
+            $this->logActividad('anulado', 'Planillas', sprintf(
+                "Planilla '%s' (%s) anulada antes de cerrarse; tenía %d empleado(s).",
+                $planilla->nombre_planilla, $planilla->tipo_planilla, $empleados
+            ), $planilla->id);
+        });
 
         return response()->json(['message' => 'Planilla eliminada.']);
     }
@@ -355,24 +377,17 @@ class PlanillaController extends Controller
         $sheet       = $spreadsheet->getActiveSheet();
         $sheet->setTitle($sufijoArchivo);
 
-        $sheet->mergeCells("A1:{$ultimaCol}1");
-        $sheet->setCellValue('A1', 'INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells("A2:{$ultimaCol}2");
-        $sheet->setCellValue('A2', strtoupper($planilla->nombre_planilla) . ' — ' . $titulo);
-        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells("A3:{$ultimaCol}3");
-        $sheet->setCellValue('A3', sprintf(
+        // Logo a la izquierda y los títulos a su derecha (ver App\Traits\EncabezadoExcel)
+        $this->encabezadoExcel($sheet, $ultimaCol, [
+            ['INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL', 14],
+            [strtoupper($planilla->nombre_planilla) . ' — ' . $titulo, 12],
+            [sprintf(
             'Tipo: %s   |   Fecha: %s   |   Empleados: %d',
             $planilla->tipo_planilla,
             \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y'),
             $detalles->count()
-        ));
-        $sheet->getStyle('A3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        ), null],
+        ]);
 
         $row = 5;
         foreach ($columnas as $col => $tituloCol) {
@@ -429,6 +444,7 @@ class PlanillaController extends Controller
         }
 
         $tempFile = tempnam(sys_get_temp_dir(), 'planilla') . '.xlsx';
+        $this->anchoColumnaLogo($sheet);
         (new Xlsx($spreadsheet))->save($tempFile);
 
         $nombre = $this->sanitizarNombreArchivo($planilla->nombre_planilla);
@@ -486,25 +502,18 @@ class PlanillaController extends Controller
         $sheet       = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Planilla');
 
-        $sheet->mergeCells("A1:{$ultimaCol}1");
-        $sheet->setCellValue('A1', 'INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells("A2:{$ultimaCol}2");
-        $sheet->setCellValue('A2', strtoupper($planilla->nombre_planilla));
-        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells("A3:{$ultimaCol}3");
-        $sheet->setCellValue('A3', sprintf(
+        // Logo a la izquierda y los títulos a su derecha (ver App\Traits\EncabezadoExcel)
+        $this->encabezadoExcel($sheet, $ultimaCol, [
+            ['INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL', 14],
+            [strtoupper($planilla->nombre_planilla), 12],
+            [sprintf(
             'Tipo: %s   |   Fecha: %s   |   Estado: %s   |   Empleados: %d',
             $planilla->tipo_planilla,
             \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y'),
             $planilla->estado,
             $planilla->detalles->count()
-        ));
-        $sheet->getStyle('A3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        ), null],
+        ]);
 
         $row = 5;
         foreach ($columnas as $col => $titulo) {
@@ -564,6 +573,7 @@ class PlanillaController extends Controller
         }
 
         $tempFile = tempnam(sys_get_temp_dir(), 'planilla') . '.xlsx';
+        $this->anchoColumnaLogo($sheet);
         (new Xlsx($spreadsheet))->save($tempFile);
 
         return response()->download($tempFile, $this->sanitizarNombreArchivo($planilla->nombre_planilla) . '.xlsx')
@@ -588,24 +598,17 @@ class PlanillaController extends Controller
         $sheet       = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Pago');
 
-        $sheet->mergeCells('A1:B1');
-        $sheet->setCellValue('A1', 'INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL');
-        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells('A2:B2');
-        $sheet->setCellValue('A2', strtoupper($planilla->nombre_planilla) . ' — GENERAR PAGO');
-        $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
-        $sheet->getStyle('A2')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-
-        $sheet->mergeCells('A3:B3');
-        $sheet->setCellValue('A3', sprintf(
+        // Logo a la izquierda y los títulos a su derecha (ver App\Traits\EncabezadoExcel)
+        $this->encabezadoExcel($sheet, 'B', [
+            ['INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL', 14],
+            [strtoupper($planilla->nombre_planilla) . ' — GENERAR PAGO', 12],
+            [sprintf(
             'Tipo: %s   |   Fecha: %s   |   Empleados: %d',
             $planilla->tipo_planilla,
             \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y'),
             $detalles->count()
-        ));
-        $sheet->getStyle('A3')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        ), null],
+        ]);
 
         $row = 5;
         $sheet->setCellValue("A{$row}", 'Empleado');
@@ -632,6 +635,7 @@ class PlanillaController extends Controller
         $sheet->getColumnDimension('B')->setWidth(16);
 
         $tempFile = tempnam(sys_get_temp_dir(), 'pago') . '.xlsx';
+        $this->anchoColumnaLogo($sheet);
         (new Xlsx($spreadsheet))->save($tempFile);
 
         $nombre = $this->sanitizarNombreArchivo($planilla->nombre_planilla);

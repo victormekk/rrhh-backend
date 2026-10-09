@@ -51,17 +51,11 @@
 <body>
 <div class="page">
 
-  <div class="header">
-    <img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas">
-    <h2>ESTADÍSTICA LABORAL</h2>
-    <p>Días trabajados y salario neto devengado por empleado</p>
-  </div>
+  <x-pdf-encabezado titulo="ESTADÍSTICA LABORAL" subtitulo="Días trabajados y salario neto devengado por empleado">
+    N° {{ $correlativo }} &nbsp;|&nbsp; Generado el {{ now()->format('d/m/Y H:i') }}
+  </x-pdf-encabezado>
 
   <div class="meta">
-    <div class="meta-item">
-      <span>N° </span>
-      <strong>{{ $correlativo }}</strong>
-    </div>
     <div class="meta-item">
       <span>Período: </span>
       <strong>

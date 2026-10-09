@@ -41,18 +41,12 @@
 <body>
 <div class="page">
 
-<table class="header">
-  <tr>
-    <td class="hdr-logo"><img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas"></td>
-    <td class="hdr-info">
-      <h1>{{ $nombre }}</h1>
-      <p>N° {{ $correlativo }}
-         &mdash; Generado el {{ now()->format('d/m/Y') }}
-         &mdash; {{ $meta->concepto }} {{ $meta->tipo_aguinaldo }}
-         &mdash; Estado: {{ $meta->estado }}</p>
-    </td>
-  </tr>
-</table>
+<x-pdf-encabezado :titulo="$nombre">
+  N° {{ $correlativo }}
+  &mdash; Generado el {{ now()->format('d/m/Y') }}
+  &mdash; {{ $meta->concepto }} {{ $meta->tipo_aguinaldo }}
+  &mdash; Estado: {{ $meta->estado }}
+</x-pdf-encabezado>
 
 @if($fijos->isNotEmpty())
 <div class="section-title">Empleados Fijos</div>

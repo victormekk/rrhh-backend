@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Calculos\CalculoAguinaldo;
 use App\Models\AguinaldoExtra;
 use App\Models\AguinaldoFijo;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
 use App\Traits\GeneraCorrelativo;
+use App\Traits\EncabezadoExcel;
+use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
 use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -22,7 +25,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class AguinaldoController extends Controller
 {
-    use NombraArchivos, GeneraCorrelativo, SoloAdmin;
+    use NombraArchivos, GeneraCorrelativo, SoloAdmin, LogsActividad, EncabezadoExcel;
 
     // ─── List batches ────────────────────────────────────────────
     public function index()
@@ -157,9 +160,7 @@ class AguinaldoController extends Controller
                 // hasta la fecha de corte elegida (ej. 31/12/AAAA, o un corte
                 // distinto si se calcula un catorceavo).
                 $fechaInicio = Carbon::parse($il->fecha_inicio);
-                // max(0): desde Carbon 3 diffInDays es negativo si el empleado inició
-                // después del corte; en ese caso no acumula días.
-                $diasBase    = (int) max(0, min(360, $fechaInicio->diffInDays($fechaCorte, false)));
+                $diasBase    = CalculoAguinaldo::diasFijo($fechaInicio, $fechaCorte);
 
                 if ($esFijo && ($tipo === 'Fijos' || $tipo === 'Ambos')) {
                     AguinaldoFijo::create([
@@ -173,7 +174,7 @@ class AguinaldoController extends Controller
                         'salario_base'     => $il->salario_base,
                         'dias_trabajados'  => $diasBase,
                         'anticipo'         => 0,
-                        'total_aguinaldo'  => round(($il->salario_base / 360) * $diasBase, 2),
+                        'total_aguinaldo'  => CalculoAguinaldo::totalFijo((float) $il->salario_base, $diasBase),
                         'fecha_generada'   => $fecha,
                         'fecha_corte'      => $corte,
                         'estado'           => 'Activo',
@@ -229,6 +230,11 @@ class AguinaldoController extends Controller
 
             abort_if($countFijo + $countExtr === 0, 422, 'No se encontraron empleados activos del tipo seleccionado.');
 
+            $this->logActividad('creado', 'Planillas Especiales', sprintf(
+                "Planilla especial '%s' (%s %s) creada con %d empleado(s).",
+                $nombre, $request->concepto, $tipo, $countFijo + $countExtr
+            ));
+
             return response()->json([
                 'nombre_aguinaldo' => $nombre,
                 'tipo_aguinaldo'   => $tipo,
@@ -251,7 +257,7 @@ class AguinaldoController extends Controller
 
         $dias  = $request->input('dias_trabajados', $registro->dias_trabajados);
         $antic = (float) $request->input('anticipo', $registro->anticipo);
-        $total = max(0, round(($registro->salario_base / 360) * $dias - $antic, 2));
+        $total = CalculoAguinaldo::totalFijo((float) $registro->salario_base, (int) $dias, $antic);
 
         $registro->update([
             'dias_trabajados' => $dias,
@@ -303,10 +309,14 @@ class AguinaldoController extends Controller
         $fijos  = AguinaldoFijo::where('nombre_aguinaldo', $nombre)->where('estado', 'Activo');
         $extras = AguinaldoExtra::where('nombre_aguinaldo', $nombre)->where('estado', 'Activo');
 
-        abort_if($fijos->count() + $extras->count() === 0, 404, 'Aguinaldo no encontrado o ya cerrado.');
+        $empleados = $fijos->count() + $extras->count();
+        abort_if($empleados === 0, 404, 'Aguinaldo no encontrado o ya cerrado.');
 
         $fijos->update(['estado'  => 'Cerrado']);
         $extras->update(['estado' => 'Cerrado']);
+
+        $this->logActividad('cerrado', 'Planillas Especiales',
+            "Planilla especial '{$nombre}' cerrada: {$empleados} empleado(s).");
 
         return response()->json(['message' => 'Aguinaldo cerrado correctamente.']);
     }
@@ -319,10 +329,14 @@ class AguinaldoController extends Controller
         $fijos  = AguinaldoFijo::where('nombre_aguinaldo', $nombre)->where('estado', 'Activo');
         $extras = AguinaldoExtra::where('nombre_aguinaldo', $nombre)->where('estado', 'Activo');
 
-        abort_if($fijos->count() + $extras->count() === 0, 404, 'Aguinaldo no encontrado o ya cerrado.');
+        $empleados = $fijos->count() + $extras->count();
+        abort_if($empleados === 0, 404, 'Aguinaldo no encontrado o ya cerrado.');
 
         $fijos->delete();
         $extras->delete();
+
+        $this->logActividad('anulado', 'Planillas Especiales',
+            "Planilla especial '{$nombre}' anulada antes de cerrarse; tenía {$empleados} empleado(s).");
 
         return response()->json(['message' => 'Aguinaldo eliminado.']);
     }
@@ -509,16 +523,13 @@ class AguinaldoController extends Controller
     {
         $sheet->setTitle($nombreHoja);
         $ultima = Coordinate::stringFromColumnIndex(count($columnas));
-        $centro = Alignment::HORIZONTAL_CENTER;
 
-        foreach ([1 => ['INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL', 14], 2 => [$titulo, 12], 3 => [$info, null]] as $fila => [$texto, $tam]) {
-            $sheet->mergeCells("A{$fila}:{$ultima}{$fila}");
-            $sheet->setCellValue("A{$fila}", $texto);
-            $sheet->getStyle("A{$fila}")->getAlignment()->setHorizontal($centro);
-            if ($tam) {
-                $sheet->getStyle("A{$fila}")->getFont()->setBold(true)->setSize($tam);
-            }
-        }
+        // Logo a la izquierda y los títulos a su derecha (ver App\Traits\EncabezadoExcel)
+        $this->encabezadoExcel($sheet, $ultima, [
+            ['INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL', 14],
+            [$titulo, 12],
+            [$info, null],
+        ]);
 
         $row = 5;
         foreach ($columnas as $i => [$tituloCol]) {
@@ -568,6 +579,7 @@ class AguinaldoController extends Controller
         foreach (range(1, count($columnas)) as $i) {
             $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($i))->setAutoSize(true);
         }
+        $this->anchoColumnaLogo($sheet);
     }
 
     private function pintarFila($sheet, string $rango, string $fondo, ?string $fuente = null): void
@@ -652,42 +664,26 @@ class AguinaldoController extends Controller
         return compact('desde', 'hasta', 'quincenas', 'meses', 'dias');
     }
 
-    // Promedio mensual exacto (antes de cortar decimales).
+    // Los cálculos viven en App\Calculos\CalculoAguinaldo (probados contra las planillas
+    // reales en tests/Unit/CalculoAguinaldoTest.php); aquí solo se adaptan los datos de la BD.
     private function promedioEmpleado(array $promedios, int $idEmpleado): float
     {
-        if ($promedios['meses'] == 0) {
-            return 0;
-        }
-
-        $total = collect($promedios['dias'][$idEmpleado] ?? [])->sum(fn ($d) => min(15, $d));
-
-        return round($total / $promedios['meses'], 3);
+        return CalculoAguinaldo::promedioMensual($promedios['dias'][$idEmpleado] ?? [], $promedios['meses']);
     }
 
-    // Días promediados: se cortan los decimales (17.9 → 17), máximo 30.
     private function diasPromediados(?float $promedio): int
     {
-        return (int) min(30, floor(round((float) $promedio, 6)));
+        return CalculoAguinaldo::diasPromediados($promedio);
     }
 
-    // Antigüedad en "días de 30": 30 si al corte cumple 360 días o más; si no,
-    // proporcional (días al corte / 360 * 30). Días calendario, como en el Excel.
     private function antiguedadExtra(Carbon $inicio, Carbon $corte): float
     {
-        $dias = max(0, $inicio->diffInDays($corte, false));
-
-        // Sin redondear: el total usa el valor exacto, como el Excel (la columna lo guarda con 4 decimales).
-        return $dias >= 360 ? 30.0 : $dias / 360 * 30;
+        return CalculoAguinaldo::antiguedadExtra($inicio, $corte);
     }
 
-    // Subtotal = diario × antigüedad. Total = días prom. / 30 × subtotal − anticipos.
-    // Sin promedio (trabaja todos los días): total = subtotal − anticipos.
     private function calcularExtra(float $diario, float $antiguedad, ?int $diasProm, float $anticipos): array
     {
-        $subtotal = $diario * $antiguedad;
-        $factor   = $diasProm === null ? 1 : $diasProm / 30;
-
-        return [round($subtotal, 2), max(0, round($factor * $subtotal - $anticipos, 2))];
+        return CalculoAguinaldo::totalExtra($diario, $antiguedad, $diasProm, $anticipos);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────

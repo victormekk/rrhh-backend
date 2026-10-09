@@ -38,16 +38,12 @@
 
 @php $columnas = $conCuenta ? 5 : 4; @endphp
 
-<div class="header">
-  <img src="{{ public_path('images/hpr_logo.png') }}" alt="Hotel y Villas Palma Real">
-  <h2>{{ $titulo }} — {{ strtoupper($nombre) }}</h2>
-  <p>
-    N° {{ $correlativo }} &nbsp;|&nbsp;
-    {{ $meta->concepto }} {{ $meta->tipo_aguinaldo }} &nbsp;|&nbsp;
-    Corte: {{ $meta->fecha_corte ? \Carbon\Carbon::parse($meta->fecha_corte)->format('d/m/Y') : '—' }} &nbsp;|&nbsp;
-    Empleados: {{ $filas->count() }}
-  </p>
-</div>
+<x-pdf-encabezado titulo="{{ $titulo }} — {{ strtoupper($nombre) }}">
+  N° {{ $correlativo }} &nbsp;|&nbsp;
+  {{ $meta->concepto }} {{ $meta->tipo_aguinaldo }} &nbsp;|&nbsp;
+  Corte: {{ $meta->fecha_corte ? \Carbon\Carbon::parse($meta->fecha_corte)->format('d/m/Y') : '—' }} &nbsp;|&nbsp;
+  Empleados: {{ $filas->count() }}
+</x-pdf-encabezado>
 
 <table>
   <thead>

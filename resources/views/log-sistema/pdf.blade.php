@@ -41,6 +41,9 @@
   .badge-eliminado { background: #fee2e2; color: #991b1b; }
   .badge-login     { background: #ede9fe; color: #5b21b6; }
   .badge-logout    { background: #f1f5f9; color: #475569; }
+  .badge-cerrado   { background: #dbeafe; color: #1e40af; }
+  .badge-anulado   { background: #ffedd5; color: #9a3412; }
+  .badge-generado  { background: #e0f2fe; color: #075985; }
 
   .empty { text-align: center; padding: 30px; color: #94a3b8; font-size: 9px; }
 
@@ -50,17 +53,11 @@
 <body>
 <div class="page">
 
-  <div class="header">
-    <img src="{{ public_path('images/hpr_logo.png') }}" alt="Palma Real Hotel y Villas">
-    <h2>LOG DEL SISTEMA</h2>
-    <p>Historial de actividad — acciones registradas por los usuarios</p>
-  </div>
+  <x-pdf-encabezado titulo="LOG DEL SISTEMA" subtitulo="Historial de actividad — acciones registradas por los usuarios">
+    N° {{ $correlativo }} &nbsp;|&nbsp; Generado el {{ now()->format('d/m/Y H:i') }}
+  </x-pdf-encabezado>
 
   <div class="meta">
-    <div class="meta-item">
-      <span>N° </span>
-      <strong>{{ $correlativo }}</strong>
-    </div>
     <div class="meta-item">
       <span>Período: </span>
       <strong>
