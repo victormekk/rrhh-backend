@@ -332,4 +332,75 @@ class EmpleadoController extends Controller
         return response()->json(['message' => 'Empleado desactivado correctamente.']);
     }
 
+    // ─── Cuentas bancarias (módulo Bancos) ────────────────────────
+    // Empleados activos sin número de cuenta: hoy cobran por cheque.
+    public function sinCuenta()
+    {
+        $empleados = Empleado::with(['informacionLaboral:id,tipo_contrato,fecha_inicio,num_cuenta,estado', 'cargo:id,nombre', 'departamento:id,nombre'])
+            ->whereHas('informacionLaboral', fn ($q) => $q->where('estado', 'Activo')
+                ->where(fn ($w) => $w->whereNull('num_cuenta')->orWhere('num_cuenta', '')))
+            ->orderBy('nombres')->orderBy('apellidos')
+            ->get(['id', 'nombres', 'apellidos', 'cedula', 'id_info_laboral', 'id_cargo', 'id_departamento']);
+
+        return response()->json($empleados->map(fn ($e) => [
+            'id'            => $e->id,
+            'nombre'        => trim("{$e->nombres} {$e->apellidos}"),
+            'cedula'        => $e->cedula,
+            'departamento'  => $e->departamento?->nombre,
+            'cargo'         => $e->cargo?->nombre,
+            'tipo_contrato' => $e->informacionLaboral->tipo_contrato,
+            'fecha_inicio'  => $e->informacionLaboral->fecha_inicio?->toDateString(),
+        ]));
+    }
+
+    // Asigna banco y número de cuenta: el empleado pasa a cobrar por transferencia.
+    // También se aplica a las planillas de pago y especiales que siguen abiertas;
+    // las cerradas no se modifican en nada.
+    public function asignarCuenta(Request $request, $id)
+    {
+        $empleado = Empleado::with('informacionLaboral')->findOrFail($id);
+
+        $request->merge(['num_cuenta' => strtoupper(trim((string) $request->num_cuenta))]);
+        $data = $request->validate([
+            'id_banco'   => 'required|exists:bancos,id',
+            'num_cuenta' => 'required|string|max:25',
+        ]);
+
+        $duplicada = Empleado::whereHas('informacionLaboral', fn ($q) => $q->where('num_cuenta', $data['num_cuenta']))
+            ->where('id', '!=', $empleado->id)->first();
+        abort_if($duplicada, 422, "Esa cuenta ya está registrada a nombre de {$duplicada?->nombres} {$duplicada?->apellidos}.");
+
+        return DB::transaction(function () use ($empleado, $data) {
+            $empleado->informacionLaboral->update([
+                'num_cuenta'    => $data['num_cuenta'],
+                'id_banco'      => $data['id_banco'],
+                'forma_de_pago' => 'Transferencia',
+            ]);
+
+            $planillas = DB::table('detalle_planillas')
+                ->join('cabecera_planillas as c', 'c.id', '=', 'detalle_planillas.id_cabecera_planilla')
+                ->where('detalle_planillas.id_empleado', $empleado->id)
+                ->where('c.estado', '!=', 'Cerrado')
+                ->update(['detalle_planillas.cuenta_banco' => $data['num_cuenta']]);
+
+            $especiales = 0;
+            foreach ([\App\Models\AguinaldoFijo::class, \App\Models\AguinaldoExtra::class] as $modelo) {
+                $especiales += $modelo::where('id_empleado', $empleado->id)
+                    ->where('estado', '!=', 'Cerrado')
+                    ->update(['cuenta' => $data['num_cuenta']]);
+            }
+
+            $banco = DB::table('bancos')->where('id', $data['id_banco'])->value('nombre');
+            $this->logActividad('editado', 'Empleados',
+                "Cuenta {$data['num_cuenta']} ({$banco}) asignada a {$empleado->nombres} {$empleado->apellidos}."
+                . ($planillas + $especiales ? " Aplicada a {$planillas} planilla(s) de pago y {$especiales} especial(es) abiertas." : ''),
+                $empleado->id);
+
+            return response()->json([
+                'message'                => 'Cuenta asignada.',
+                'planillas_actualizadas' => $planillas,
+                'especiales_actualizadas' => $especiales,
+            ]);
+        });
+    }
 }

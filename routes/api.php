@@ -50,6 +50,8 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::post('/empleados/{empleado}/foto', [EmpleadoController::class, 'uploadFoto']);
     Route::delete('/empleados/{empleado}/foto', [EmpleadoController::class, 'deleteFoto']);
     Route::get('/empleados-informacion-laboral/excel', [EmpleadoController::class, 'exportarInformacionLaboral']);
+    Route::get('/empleados-sin-cuenta', [EmpleadoController::class, 'sinCuenta']);
+    Route::post('/empleados/{empleado}/cuenta', [EmpleadoController::class, 'asignarCuenta']);
     Route::apiResource('empleados', EmpleadoController::class);
 
     // Catálogos
