@@ -143,7 +143,7 @@ class PlanillaController extends Controller
                     'desc_otras_deducciones' => null,
                     'deduccion_neta'         => $deduccionNeta,
                     'salario_neto'           => $salarioNeto,
-                    'cuenta_banco'           => $il->num_cuenta,
+                    'cuenta_banco'           => $il->cuentaParaPago(),
                     'fecha_generada'         => $request->fecha_generada,
                     'id_usuario'             => $request->user()->id,
                 ]);
@@ -350,9 +350,10 @@ class PlanillaController extends Controller
 
     // Detalles de una planilla que cobran por transferencia (tienen cuenta_banco
     // guardada, capturada de la ficha del empleado al generar la planilla) o por
-    // cheque (sin cuenta_banco). Es la unica fuente de verdad para la division:
-    // no depende de "forma_de_pago", asi el admin controla el destino de cada
-    // quien con solo llenar o vaciar el numero de cuenta en la ficha del empleado.
+    // cheque (sin cuenta_banco). Es la unica fuente de verdad para la division.
+    // Al generar, la cuenta solo se copia si la forma de pago de la ficha es
+    // "Transferencia" (ver InformacionLaboral::cuentaParaPago): asi quien pidio
+    // cobrar por cheque conserva su numero de cuenta en la ficha.
     private function detallesPorMetodoPago(CabeceraPlanilla $planilla, string $metodo)
     {
         return $planilla->detalles->filter(
@@ -585,19 +586,19 @@ class PlanillaController extends Controller
             ->deleteFileAfterSend(true);
     }
 
-    // Excel simple para el archivo de pago: solo Empleado y Salario Neto, en
-    // orden alfabetico por nombre (no agrupado por departamento), unicamente
-    // los empleados que cobran por transferencia bancaria (tienen cuenta
-    // registrada) — los de cheque no van en este archivo.
+    // Excel simple para el archivo de pago ("Generar Pago"): solo Empleado y
+    // Salario Neto, en el mismo orden que la planilla (por departamento y nombre)
+    // pero sin filas de departamento; unicamente los empleados que cobran por
+    // transferencia bancaria (tienen cuenta registrada) — los de cheque no van.
     public function exportPagoGeneralExcel($id)
     {
         $planilla = CabeceraPlanilla::with([
-            'detalles.empleado:id,nombres,apellidos',
+            'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
+                $q->with('empleado:id,nombres,apellidos')
+            ),
         ])->findOrFail($id);
 
-        $detalles = $this->detallesPorMetodoPago($planilla, 'banco')
-            ->sortBy(fn($d) => trim("{$d->empleado->nombres} {$d->empleado->apellidos}"), SORT_NATURAL | SORT_FLAG_CASE)
-            ->values();
+        $detalles = $this->detallesPorMetodoPago($planilla, 'banco');
 
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();

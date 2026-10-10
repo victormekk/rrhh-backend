@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\CampoVariable;
+use App\Models\Cargo;
+use App\Models\Departamento;
 use App\Models\Empleado;
 use App\Models\HistorialLaboral;
 use App\Models\InformacionLaboral;
@@ -42,8 +44,8 @@ class EmpleadoController extends Controller
             ->when($request->estado, fn($q, $estado) =>
                 $q->whereHas('informacionLaboral', fn($q) => $q->where('estado', $estado))
             )
-            // Orden alfabetico por departamento (Administración, Animación, Bares...) y,
-            // dentro de cada uno, por nombre; los que se llaman igual, por apellidos.
+            // Siempre, con o sin filtros: por departamento (Administración, Animación, Bares...)
+            // y, dentro de cada uno, por nombre; los que se llaman igual, por apellidos.
             ->orderBy('departamentos.nombre')
             ->orderBy('empleados.nombres')
             ->orderBy('empleados.apellidos')
@@ -174,6 +176,10 @@ class EmpleadoController extends Controller
             && strtotime($request->fecha_inicio) !== false
             && date('Y-m-d', strtotime($request->fecha_inicio)) !== $fechaActual;
 
+        // Cambio de cargo y/o departamento: queda en el historial con la fecha en que se hace efectivo.
+        $cambiaPuesto = (int) $request->id_cargo !== (int) $empleado->id_cargo
+            || (int) $request->id_departamento !== (int) $empleado->id_departamento;
+
         $request->validate([
             'nombres'             => 'required|string|max:30',
             'apellidos'           => 'required|string|max:30',
@@ -205,6 +211,9 @@ class EmpleadoController extends Controller
             'cambio_contrato.liquidacion'   => [Rule::requiredIf($conNuevaFecha), 'nullable', Rule::in(HistorialLaboral::LIQUIDACION)],
             'cambio_contrato.observaciones' => 'nullable|string|max:500',
             'motivo_cambio_fecha'           => [Rule::requiredIf($cambiaFecha), 'nullable', 'string', 'min:5', 'max:500'],
+            'cambio_puesto'                 => [Rule::requiredIf($cambiaPuesto), 'nullable', 'array'],
+            'cambio_puesto.fecha'           => [Rule::requiredIf($cambiaPuesto), 'nullable', 'date'],
+            'cambio_puesto.observaciones'   => 'nullable|string|max:500',
             'forma_de_pago'       => 'required|string|max:50',
             'moneda'              => 'required|string|max:20',
             'salario_base'        => 'required|numeric|min:0',
@@ -220,11 +229,28 @@ class EmpleadoController extends Controller
             'cambio_contrato.modo.required' => 'Indica cómo se maneja el cambio de tipo de contrato.',
             'motivo_cambio_fecha.required'  => 'Indica por qué se cambia la fecha de inicio.',
             'motivo_cambio_fecha.min'       => 'Describe un poco más por qué se cambia la fecha de inicio.',
+            'cambio_puesto.required'        => 'Indica la fecha del cambio de cargo o departamento.',
+            'cambio_puesto.fecha.required'  => 'Indica la fecha del cambio de cargo o departamento.',
         ]);
 
         $fechaInicio = $conNuevaFecha ? $request->input('cambio_contrato.fecha_inicio') : $request->fecha_inicio;
 
-        return DB::transaction(function () use ($request, $empleado, $il, $cambiaContrato, $conNuevaFecha, $fechaInicio, $cambiaFecha, $fechaActual) {
+        return DB::transaction(function () use ($request, $empleado, $il, $cambiaContrato, $conNuevaFecha, $fechaInicio, $cambiaFecha, $fechaActual, $cambiaPuesto) {
+            if ($cambiaPuesto) {
+                $empleado->loadMissing(['cargo', 'departamento']);
+                HistorialLaboral::create([
+                    'id_empleado'           => $empleado->id,
+                    'tipo_evento'           => HistorialLaboral::CAMBIO_PUESTO,
+                    'fecha'                 => $request->input('cambio_puesto.fecha'),
+                    'cargo_anterior'        => $empleado->cargo?->nombre,
+                    'cargo_nuevo'           => Cargo::find($request->id_cargo)?->nombre,
+                    'departamento_anterior' => $empleado->departamento?->nombre,
+                    'departamento_nuevo'    => Departamento::find($request->id_departamento)?->nombre,
+                    'observaciones'         => $request->input('cambio_puesto.observaciones') ?: null,
+                    'id_usuario'            => $request->user()->id,
+                ]);
+            }
+
             if ($cambiaFecha) {
                 HistorialLaboral::create([
                     'id_empleado'           => $empleado->id,
@@ -459,8 +485,11 @@ class EmpleadoController extends Controller
         $empleados = Empleado::with(['informacionLaboral:id,tipo_contrato,fecha_inicio,num_cuenta,estado', 'cargo:id,nombre', 'departamento:id,nombre'])
             ->whereHas('informacionLaboral', fn ($q) => $q->where('estado', 'Activo')
                 ->where(fn ($w) => $w->whereNull('num_cuenta')->orWhere('num_cuenta', '')))
-            ->orderBy('nombres')->orderBy('apellidos')
-            ->get(['id', 'nombres', 'apellidos', 'cedula', 'id_info_laboral', 'id_cargo', 'id_departamento']);
+            // Mismo orden que la lista de empleados: por departamento y, dentro de cada uno, por nombre
+            ->leftJoin('departamentos', 'departamentos.id', '=', 'empleados.id_departamento')
+            ->orderBy('departamentos.nombre')->orderBy('empleados.nombres')->orderBy('empleados.apellidos')
+            ->get(['empleados.id', 'empleados.nombres', 'empleados.apellidos', 'empleados.cedula',
+                   'empleados.id_info_laboral', 'empleados.id_cargo', 'empleados.id_departamento']);
 
         return response()->json($empleados->map(fn ($e) => [
             'id'            => $e->id,

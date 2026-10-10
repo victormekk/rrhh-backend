@@ -64,9 +64,9 @@ table.dias td:last-child { border-right: none; }
 .obs { border: 1px solid #e2e8f0; border-radius: 3px; padding: 8px 14px; min-height: 30px; font-size: 9.5px; color: #334155; line-height: 1.6; margin-bottom: 14px; }
 
 /* ── Firmas ── */
-table.firmas { width: 100%; border-collapse: collapse; margin-top: 24px; }
+table.firmas { width: 100%; border-collapse: collapse; margin-top: 40px; }
 table.firmas td { width: 50%; text-align: center; vertical-align: top; padding: 0 42px; }
-.f-espacio { height: 36px; border-bottom: 1px solid #334155; }
+.f-espacio { height: 56px; border-bottom: 1px solid #334155; }
 .f-nombre  { font-size: 10.5px; font-weight: bold; color: #0f172a; margin-top: 6px; }
 .f-cargo   { font-size: 9px; color: #64748b; margin-top: 2px; }
 .f-dni     { font-size: 8.5px; color: #94a3b8; margin-top: 2px; }

@@ -169,7 +169,7 @@ class AguinaldoController extends Controller
                         'nombres'          => $emp->nombres,
                         'apellidos'        => $emp->apellidos,
                         'cargo'            => $emp->cargo?->nombre ?? '',
-                        'cuenta'           => $il->num_cuenta,
+                        'cuenta'           => $il->cuentaParaPago(),
                         'fecha_inicio'     => $il->fecha_inicio,
                         'salario_base'     => $il->salario_base,
                         'dias_trabajados'  => $diasBase,
@@ -201,7 +201,7 @@ class AguinaldoController extends Controller
                         'departamento'     => $emp->departamento?->nombre ?? '',
                         'nombres'          => $emp->nombres,
                         'apellidos'        => $emp->apellidos,
-                        'cuenta'           => $il->num_cuenta,
+                        'cuenta'           => $il->cuentaParaPago(),
                         'fecha_inicio'     => $il->fecha_inicio,
                         'salario_base'     => $il->salario_base,
                         'diario'           => $diario,
@@ -398,14 +398,14 @@ class AguinaldoController extends Controller
         return $this->descargarExcel($spreadsheet, $this->sanitizarNombreArchivo($nombre) . '.xlsx');
     }
 
-    // Archivo para el banco: solo Empleado y Total, orden alfabético, únicamente
-    // los que cobran por transferencia (tienen cuenta registrada).
+    // Archivo para el banco ("Generar Pago"): solo Empleado y Total, en el mismo
+    // orden que el lote (por departamento y nombre) pero sin filas de departamento;
+    // únicamente los que cobran por transferencia (tienen cuenta registrada).
     public function exportPagoGeneralExcel($nombre)
     {
         [$fijos, $extras, $meta] = $this->cargarLote($nombre);
 
-        $filas = $this->filasPago($fijos, $extras, 'banco')
-            ->sortBy('empleado', SORT_NATURAL | SORT_FLAG_CASE)->values();
+        $filas = $this->filasPago($fijos, $extras, 'banco');
 
         $spreadsheet = new Spreadsheet();
         $this->hojaExcel($spreadsheet->getActiveSheet(), 'Pago', strtoupper($nombre) . ' — GENERAR PAGO',

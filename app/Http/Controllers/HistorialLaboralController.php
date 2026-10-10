@@ -20,13 +20,44 @@ class HistorialLaboralController extends Controller
 {
     use LogsActividad, EncabezadoExcel;
 
+    // "Cargo: A → B. Departamento: X → Y" (solo lo que cambió)
+    private static function detallePuesto(HistorialLaboral $m): string
+    {
+        $partes = [];
+        if ($m->cargo_anterior !== $m->cargo_nuevo) {
+            $partes[] = "Cargo: {$m->cargo_anterior} → {$m->cargo_nuevo}";
+        }
+        if ($m->departamento_anterior !== $m->departamento_nuevo) {
+            $partes[] = "Departamento: {$m->departamento_anterior} → {$m->departamento_nuevo}";
+        }
+        return implode('. ', $partes);
+    }
+
     // ─── Historial de un empleado (línea de tiempo en su ficha) ───────────────
+    // Incluye sus incidencias (título, fecha y grado). No se copian a historial_laboral:
+    // se leen de la tabla de incidencias, así una edición o borrado se refleja solo.
     public function porEmpleado($id)
     {
         $empleado = Empleado::findOrFail($id);
 
+        $movimientos = $empleado->historialLaboral()->with('usuario:id,name')->get()
+            ->map(fn ($m) => $m->toArray());
+
+        $incidencias = $empleado->incidencias()->with('usuario:id,name')->get()
+            ->map(fn ($i) => [
+                'id'          => "inc-{$i->id}",
+                'tipo_evento' => 'Incidencia',
+                'fecha'       => Carbon::parse($i->fecha_incidencia)->toDateString(),
+                'titulo'      => $i->titulo,
+                'grado'       => $i->grado,
+                'usuario'     => $i->usuario ? ['id' => $i->usuario->id, 'name' => $i->usuario->name] : null,
+            ]);
+
+        // Orden cronológico; en la misma fecha, los movimientos laborales primero
         return response()->json(
-            $empleado->historialLaboral()->with('usuario:id,name')->get()
+            $movimientos->concat($incidencias)
+                ->sortBy([['fecha', 'asc'], [fn ($a, $b) => ($a['tipo_evento'] === 'Incidencia') <=> ($b['tipo_evento'] === 'Incidencia')]])
+                ->values()
         );
     }
 
@@ -243,7 +274,10 @@ class HistorialLaboralController extends Controller
             $sheet->setCellValue("J{$row}", $m->liquidacion
                 ? $m->liquidacion . ($m->fecha_liquidacion ? ' (' . $f($m->fecha_liquidacion) . ')' : '')
                 : '');
-            $sheet->setCellValue("K{$row}", $m->observaciones ?? '');
+            $sheet->setCellValue("K{$row}", trim(implode('. ', array_filter([
+                $m->tipo_evento === HistorialLaboral::CAMBIO_PUESTO ? self::detallePuesto($m) : null,
+                $m->observaciones,
+            ]))));
             $sheet->setCellValue("L{$row}", $m->usuario?->name ?? '');
             $row++;
         }

@@ -13,8 +13,9 @@ class HistorialLaboral extends Model
     public const REINTEGRO        = 'Reintegro';
     public const CAMBIO_CONTRATO  = 'Cambio de contrato';
     public const CAMBIO_FECHA     = 'Cambio de fecha'; // corrección de la fecha de inicio desde "Editar"
+    public const CAMBIO_PUESTO    = 'Cambio de puesto'; // cambio de cargo y/o departamento
 
-    public const TIPOS_EVENTO = [self::INGRESO, self::CESE, self::REINTEGRO, self::CAMBIO_CONTRATO, self::CAMBIO_FECHA];
+    public const TIPOS_EVENTO = [self::INGRESO, self::CESE, self::REINTEGRO, self::CAMBIO_CONTRATO, self::CAMBIO_FECHA, self::CAMBIO_PUESTO];
 
     public const MOTIVOS_CESE = [
         'Despido', 'Despido justificado', 'Renuncia', 'Jubilación',
@@ -27,6 +28,7 @@ class HistorialLaboral extends Model
         'id_empleado', 'tipo_evento', 'fecha',
         'tipo_contrato_anterior', 'tipo_contrato_nuevo',
         'fecha_inicio_anterior', 'fecha_inicio_nueva',
+        'cargo_anterior', 'cargo_nuevo', 'departamento_anterior', 'departamento_nuevo',
         'motivo_cese', 'liquidacion', 'fecha_liquidacion',
         'observaciones', 'id_usuario',
     ];

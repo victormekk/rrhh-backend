@@ -38,4 +38,13 @@ class InformacionLaboral extends Model
     {
         return $this->belongsTo(Banco::class, 'id_banco');
     }
+
+    // Cuenta que se copia a planillas y aguinaldos al generarlos: con cuenta va a
+    // "Bancos", sin cuenta a "Cheques". Solo se copia si la forma de pago es
+    // Transferencia: quien pidió cobrar por cheque conserva su cuenta en la ficha
+    // para cuando vuelva a transferencia.
+    public function cuentaParaPago(): ?string
+    {
+        return $this->forma_de_pago === 'Transferencia' && filled($this->num_cuenta) ? $this->num_cuenta : null;
+    }
 }

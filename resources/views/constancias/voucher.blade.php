@@ -18,8 +18,8 @@ body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #1e293b; li
 
 /* ── Header ── */
 table.hdr { width: 100%; border-collapse: collapse; border-bottom: 2px solid #3b2b16; padding-bottom: 12px; margin-bottom: 14px; }
-.hdr-logo { width: 200px; vertical-align: middle; }
-.hdr-logo img { width: 200px; height: auto; display: block; }
+.hdr-logo { width: 180px; vertical-align: middle; }
+.hdr-logo img { width: 180px; height: auto; display: block; }
 .hdr-info { vertical-align: middle; padding-left: 16px; }
 .hdr-info h2 { font-size: 23px; color: #3b2b16; font-weight: bold; letter-spacing: 0.4px; line-height: 1.2; margin-top: 8px; }
 .hdr-info p  { font-size: 10px; color: #b9921a; margin-top: 5px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
@@ -163,7 +163,7 @@ table.resumen td:last-child { border-right: none; }
   {{-- ══ FIRMA ══ --}}
   <div class="firma-wrap">
     <div class="firma-linea"></div>
-    <div class="f-cargo">Generado por Recursos Humanos</div>
+    <div class="f-cargo">Hotel Palma Real</div>
   </div>
 
   {{-- ══ PIE ══ --}}
