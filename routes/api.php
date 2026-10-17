@@ -126,6 +126,7 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::get('planillas/{planilla}/bancos/pdf', [PlanillaController::class, 'exportBancosPdf']);
     Route::get('planillas/{planilla}/cheques/excel', [PlanillaController::class, 'exportChequesExcel']);
     Route::get('planillas/{planilla}/cheques/pdf', [PlanillaController::class, 'exportChequesPdf']);
+    Route::post('planillas/{planilla}/actualizar-marcas', [PlanillaController::class, 'actualizarMarcas']);
     Route::post('planillas/{planilla}/cerrar', [PlanillaController::class, 'cerrar']);
     Route::delete('planillas/{id}/eliminar-cerrada', [PlanillaController::class, 'eliminarCerrada']);
     Route::put('planillas/{planilla}/detalles/{detalle}', [PlanillaController::class, 'updateDetalle']);

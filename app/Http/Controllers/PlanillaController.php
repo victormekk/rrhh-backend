@@ -225,6 +225,82 @@ class PlanillaController extends Controller
         return response()->json($detalle->fresh(['empleado:id,nombres,apellidos']));
     }
 
+    // "Actualizar marcas": recalcula los días trabajados desde las marcas del
+    // reloj (y las marcas incompletas justificadas) para los empleados con
+    // código biométrico. Con "simular" solo devuelve los cambios para
+    // confirmarlos; sin él los guarda. Solo en planillas abiertas.
+    public function actualizarMarcas(Request $request, $id)
+    {
+        $planilla = CabeceraPlanilla::findOrFail($id);
+        abort_if($planilla->estado === 'Cerrado', 422, 'No se puede editar una planilla cerrada.');
+
+        $data = $request->validate([
+            'desde'   => 'required|date',
+            'hasta'   => 'required|date|after_or_equal:desde',
+            'simular' => 'boolean',
+        ]);
+
+        $detalles = DetallePlanilla::with('empleado:id,nombres,apellidos,codigo_biometrico')
+            ->where('id_cabecera_planilla', $planilla->id)
+            ->get();
+
+        // Empleados con al menos una marca o un día justificado en el período. A
+        // quien no tiene ninguna no se le tocan los días (puede marcar en otro
+        // reloj o estar de vacaciones): se listan aparte para revisarlos a mano.
+        $conMarcas = \App\Models\Marcacion::whereBetween('fecha', [$data['desde'], $data['hasta']])
+            ->whereNotNull('id_empleado')->distinct()->pluck('id_empleado')
+            ->merge(\App\Models\MarcaJustificada::whereBetween('fecha', [$data['desde'], $data['hasta']])->pluck('id_empleado'))
+            ->flip();
+
+        $cambios = [];
+        $sinCodigo = 0;
+        $sinMarcas = [];
+        foreach ($detalles as $d) {
+            if (blank($d->empleado?->codigo_biometrico)) {
+                $sinCodigo++;
+                continue;
+            }
+            if (!$conMarcas->has($d->id_empleado)) {
+                $sinMarcas[] = trim("{$d->empleado->nombres} {$d->empleado->apellidos}");
+                continue;
+            }
+            $dias = min(30, \App\Models\Marcacion::diasTrabajados($d->id_empleado, $data['desde'], $data['hasta']));
+            if ($dias !== (int) $d->dias_trabajados) {
+                $cambios[] = ['detalle' => $d, 'antes' => (int) $d->dias_trabajados, 'despues' => $dias];
+            }
+        }
+
+        if (!$request->boolean('simular')) {
+            DB::transaction(function () use ($cambios) {
+                foreach ($cambios as $c) {
+                    $d = $c['detalle'];
+                    $salarioBase = round($d->salario_diario * $c['despues'], 2);
+                    $d->update([
+                        'dias_trabajados' => $c['despues'],
+                        'salario_base'    => $salarioBase,
+                        'salario_neto'    => $salarioBase + (float) $d->otros_ingresos + (float) $d->monto_horas_extras - (float) $d->deduccion_neta,
+                    ]);
+                }
+            });
+
+            $this->logActividad('editado', 'Planillas', sprintf(
+                "Planilla '%s': días actualizados desde las marcas del %s al %s (%d empleado(s)).",
+                $planilla->nombre_planilla, $data['desde'], $data['hasta'], count($cambios)
+            ), $planilla->id);
+        }
+
+        return response()->json([
+            'con_codigo' => $detalles->count() - $sinCodigo,
+            'sin_codigo' => $sinCodigo,
+            'sin_marcas' => collect($sinMarcas)->sort()->values(),
+            'cambios'    => collect($cambios)->map(fn ($c) => [
+                'empleado' => trim("{$c['detalle']->empleado->nombres} {$c['detalle']->empleado->apellidos}"),
+                'antes'    => $c['antes'],
+                'despues'  => $c['despues'],
+            ])->sortBy('empleado')->values(),
+        ]);
+    }
+
     public function cerrar(Request $request, $id)
     {
         $planilla = CabeceraPlanilla::where('estado', 'Activo')->findOrFail($id);
