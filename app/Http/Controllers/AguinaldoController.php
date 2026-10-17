@@ -247,33 +247,33 @@ class AguinaldoController extends Controller
     // ─── Update fijo record ───────────────────────────────────────
     public function updateFijo(Request $request, $id)
     {
-        $registro = AguinaldoFijo::findOrFail($id);
-        abort_if($registro->estado === 'Cerrado', 422, 'No se puede editar un aguinaldo cerrado.');
-
         $request->validate([
             'dias_trabajados' => 'sometimes|integer|min:0|max:360',
             'anticipo'        => 'sometimes|numeric|min:0',
         ]);
 
-        $dias  = $request->input('dias_trabajados', $registro->dias_trabajados);
-        $antic = (float) $request->input('anticipo', $registro->anticipo);
-        $total = CalculoAguinaldo::totalFijo((float) $registro->salario_base, (int) $dias, $antic);
+        // Registro bloqueado mientras se calcula y guarda (ver PlanillaController::updateDetalle).
+        return DB::transaction(function () use ($request, $id) {
+            $registro = AguinaldoFijo::lockForUpdate()->findOrFail($id);
+            abort_if($registro->estado === 'Cerrado', 422, 'No se puede editar un aguinaldo cerrado.');
 
-        $registro->update([
-            'dias_trabajados' => $dias,
-            'anticipo'        => $antic,
-            'total_aguinaldo' => $total,
-        ]);
+            $dias  = $request->input('dias_trabajados', $registro->dias_trabajados);
+            $antic = (float) $request->input('anticipo', $registro->anticipo);
+            $total = CalculoAguinaldo::totalFijo((float) $registro->salario_base, (int) $dias, $antic);
 
-        return response()->json($registro->fresh());
+            $registro->update([
+                'dias_trabajados' => $dias,
+                'anticipo'        => $antic,
+                'total_aguinaldo' => $total,
+            ]);
+
+            return response()->json($registro->fresh());
+        });
     }
 
     // ─── Update extras record ─────────────────────────────────────
     public function updateExtra(Request $request, $id)
     {
-        $registro = AguinaldoExtra::findOrFail($id);
-        abort_if($registro->estado === 'Cerrado', 422, 'No se puede editar un aguinaldo cerrado.');
-
         $request->validate([
             'dias_promedio' => 'sometimes|nullable|integer|min:0|max:30',
             'antiguedad'    => 'sometimes|numeric|min:0|max:30',
@@ -281,26 +281,32 @@ class AguinaldoController extends Controller
             'sin_promedio'  => 'sometimes|boolean',
         ]);
 
-        $sinPromedio = $request->has('sin_promedio') ? $request->boolean('sin_promedio') : $registro->sin_promedio;
-        $dias        = $sinPromedio ? null : (int) $request->input('dias_promedio', $registro->dias_promedio ?? 0);
-        // Si la antigüedad (enviada o guardada) es la calculada por fechas, se usa el valor
-        // exacto para no arrastrar el redondeo de 4 decimales; si no, es un ajuste manual.
-        $exacta = $this->antiguedadExtra(Carbon::parse($registro->fecha_inicio), Carbon::parse($registro->fecha_corte));
-        $valor  = $request->filled('antiguedad') ? (float) $request->antiguedad : (float) $registro->antiguedad;
-        $antig  = abs($valor - round($exacta, 4)) < 0.00005 ? $exacta : $valor;
-        $anticipos   = (float) $request->input('anticipos', $registro->anticipos);
-        [$subtotal, $total] = $this->calcularExtra((float) $registro->diario, $antig, $dias, $anticipos);
+        // Registro bloqueado mientras se calcula y guarda (ver PlanillaController::updateDetalle).
+        return DB::transaction(function () use ($request, $id) {
+            $registro = AguinaldoExtra::lockForUpdate()->findOrFail($id);
+            abort_if($registro->estado === 'Cerrado', 422, 'No se puede editar un aguinaldo cerrado.');
 
-        $registro->update([
-            'sin_promedio'    => $sinPromedio,
-            'dias_promedio'   => $dias,
-            'antiguedad'      => $antig,
-            'anticipos'       => $anticipos,
-            'subtotal'        => $subtotal,
-            'total_aguinaldo' => $total,
-        ]);
+            $sinPromedio = $request->has('sin_promedio') ? $request->boolean('sin_promedio') : $registro->sin_promedio;
+            $dias        = $sinPromedio ? null : (int) $request->input('dias_promedio', $registro->dias_promedio ?? 0);
+            // Si la antigüedad (enviada o guardada) es la calculada por fechas, se usa el valor
+            // exacto para no arrastrar el redondeo de 4 decimales; si no, es un ajuste manual.
+            $exacta = $this->antiguedadExtra(Carbon::parse($registro->fecha_inicio), Carbon::parse($registro->fecha_corte));
+            $valor  = $request->filled('antiguedad') ? (float) $request->antiguedad : (float) $registro->antiguedad;
+            $antig  = abs($valor - round($exacta, 4)) < 0.00005 ? $exacta : $valor;
+            $anticipos   = (float) $request->input('anticipos', $registro->anticipos);
+            [$subtotal, $total] = $this->calcularExtra((float) $registro->diario, $antig, $dias, $anticipos);
 
-        return response()->json($registro->fresh());
+            $registro->update([
+                'sin_promedio'    => $sinPromedio,
+                'dias_promedio'   => $dias,
+                'antiguedad'      => $antig,
+                'anticipos'       => $anticipos,
+                'subtotal'        => $subtotal,
+                'total_aguinaldo' => $total,
+            ]);
+
+            return response()->json($registro->fresh());
+        });
     }
 
     // ─── Close batch ──────────────────────────────────────────────

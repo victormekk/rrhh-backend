@@ -163,13 +163,6 @@ class PlanillaController extends Controller
 
     public function updateDetalle(Request $request, $planillaId, $detalleId)
     {
-        $detalle = DetallePlanilla::where('id_cabecera_planilla', $planillaId)
-            ->findOrFail($detalleId);
-
-        // Verificar que la planilla no está cerrada
-        $planilla = CabeceraPlanilla::findOrFail($planillaId);
-        abort_if($planilla->estado === 'Cerrado', 422, 'No se puede editar una planilla cerrada.');
-
         $request->validate([
             'dias_trabajados'        => 'sometimes|integer|min:0|max:30',
             'otros_ingresos'         => 'sometimes|numeric|min:0',
@@ -189,38 +182,52 @@ class PlanillaController extends Controller
             'desc_otras_deducciones' => 'nullable|string|max:100',
         ]);
 
-        $dias        = $request->input('dias_trabajados', $detalle->dias_trabajados);
-        $salarioBase = round($detalle->salario_diario * $dias, 2);
+        // La fila se bloquea (lockForUpdate) mientras se lee, se calcula y se guarda: si
+        // llegan dos cambios de la misma fila a la vez (ej. días e IHSS seguidos), el
+        // segundo espera al primero y calcula con sus datos ya guardados.
+        $detalle = DB::transaction(function () use ($request, $planillaId, $detalleId) {
+            $planilla = CabeceraPlanilla::findOrFail($planillaId);
+            abort_if($planilla->estado === 'Cerrado', 422, 'No se puede editar una planilla cerrada.');
 
-        $get = fn(string $field) => (float) $request->input($field, $detalle->$field);
+            $detalle = DetallePlanilla::where('id_cabecera_planilla', $planillaId)
+                ->lockForUpdate()
+                ->findOrFail($detalleId);
 
-        // El monto de horas extra siempre se recalcula en el servidor a partir del salario
-        // diario propio de este empleado — nunca se confia en un monto enviado por el cliente.
-        // El recargo (25/50/75 %) es opcional: sin marcar, la hora extra se paga a diario ÷ 8.
-        $horasExtras       = $get('horas_extras');
-        $recargoHoras      = (int) $request->input('recargo_horas_extras', $detalle->recargo_horas_extras);
-        $montoHorasExtras  = DetallePlanilla::montoHorasExtras($detalle->salario_diario, $horasExtras, $recargoHoras);
+            $dias        = $request->input('dias_trabajados', $detalle->dias_trabajados);
+            $salarioBase = round($detalle->salario_diario * $dias, 2);
 
-        $deduccionNeta = $get('ihss') + $get('retencion_ahorro') + $get('crefisa')
-            + $get('isr') + $get('transporte') + $get('radios')
-            + $get('uniforme') + $get('garden') + $get('i_vecinal') + $get('otras_deducciones');
+            $get = fn(string $field) => (float) $request->input($field, $detalle->$field);
 
-        $salarioNeto = $salarioBase + $get('otros_ingresos') + $montoHorasExtras - $deduccionNeta;
+            // El monto de horas extra siempre se recalcula en el servidor a partir del salario
+            // diario propio de este empleado — nunca se confia en un monto enviado por el cliente.
+            // El recargo (25/50/75 %) es opcional: sin marcar, la hora extra se paga a diario ÷ 8.
+            $horasExtras       = $get('horas_extras');
+            $recargoHoras      = (int) $request->input('recargo_horas_extras', $detalle->recargo_horas_extras);
+            $montoHorasExtras  = DetallePlanilla::montoHorasExtras($detalle->salario_diario, $horasExtras, $recargoHoras);
 
-        $detalle->update([
-            ...$request->only([
-                'dias_trabajados', 'otros_ingresos', 'desc_ingresos',
-                'ihss', 'retencion_ahorro', 'crefisa', 'isr',
-                'transporte', 'radios', 'uniforme', 'garden', 'i_vecinal',
-                'otras_deducciones', 'desc_otras_deducciones',
-            ]),
-            'horas_extras'         => $horasExtras,
-            'recargo_horas_extras' => $recargoHoras,
-            'monto_horas_extras'   => $montoHorasExtras,
-            'salario_base'       => $salarioBase,
-            'deduccion_neta'     => $deduccionNeta,
-            'salario_neto'       => $salarioNeto,
-        ]);
+            $deduccionNeta = $get('ihss') + $get('retencion_ahorro') + $get('crefisa')
+                + $get('isr') + $get('transporte') + $get('radios')
+                + $get('uniforme') + $get('garden') + $get('i_vecinal') + $get('otras_deducciones');
+
+            $salarioNeto = $salarioBase + $get('otros_ingresos') + $montoHorasExtras - $deduccionNeta;
+
+            $detalle->update([
+                ...$request->only([
+                    'dias_trabajados', 'otros_ingresos', 'desc_ingresos',
+                    'ihss', 'retencion_ahorro', 'crefisa', 'isr',
+                    'transporte', 'radios', 'uniforme', 'garden', 'i_vecinal',
+                    'otras_deducciones', 'desc_otras_deducciones',
+                ]),
+                'horas_extras'         => $horasExtras,
+                'recargo_horas_extras' => $recargoHoras,
+                'monto_horas_extras'   => $montoHorasExtras,
+                'salario_base'       => $salarioBase,
+                'deduccion_neta'     => $deduccionNeta,
+                'salario_neto'       => $salarioNeto,
+            ]);
+
+            return $detalle;
+        });
 
         return response()->json($detalle->fresh(['empleado:id,nombres,apellidos']));
     }
