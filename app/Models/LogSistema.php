@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class LogSistema extends Model
 {
-    protected $table = 'log_sistema';
+    protected $table = 'bitacora';
 
     protected $fillable = [
         'id_usuario', 'accion', 'descripcion',

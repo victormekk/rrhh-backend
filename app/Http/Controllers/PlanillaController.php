@@ -670,18 +670,12 @@ class PlanillaController extends Controller
         return round(min($quincenal, $techo) * 0.035, 2);
     }
 
-    // Cuenta, dentro del rango, los dias donde el empleado tiene 2 o mas
-    // marcaciones biometricas (entrada + salida) — ver App\Models\Marcacion,
-    // alimentado por el agente local de reloj biometrico (zkteco-agente/).
+    // Días con entrada y salida marcadas (2 o más marcas) más los días con
+    // marca incompleta justificados — ver App\Models\Marcacion::diasTrabajados.
+    // Las marcas se cargan por CSV en "Cargar Marcas".
     private function diasTrabajadosDesdeMarcaciones(int $idEmpleado, string $desde, string $hasta): int
     {
-        return \App\Models\Marcacion::where('id_empleado', $idEmpleado)
-            ->whereBetween('fecha', [$desde, $hasta])
-            ->select('fecha')
-            ->groupBy('fecha')
-            ->havingRaw('COUNT(*) >= 2')
-            ->get()
-            ->count();
+        return \App\Models\Marcacion::diasTrabajados($idEmpleado, $desde, $hasta);
     }
 
     private function calcularTotales($detalles): array

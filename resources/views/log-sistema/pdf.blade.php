@@ -53,7 +53,7 @@
 <body>
 <div class="page">
 
-  <x-pdf-encabezado titulo="LOG DEL SISTEMA" subtitulo="Historial de actividad — acciones registradas por los usuarios">
+  <x-pdf-encabezado titulo="BITÁCORA" subtitulo="Historial de actividad — acciones registradas por los usuarios">
     N° {{ $correlativo }} &nbsp;|&nbsp; Generado el {{ now()->format('d/m/Y H:i') }}
   </x-pdf-encabezado>
 

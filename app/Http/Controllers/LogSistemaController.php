@@ -46,11 +46,11 @@ class LogSistemaController extends Controller
             'fecha_hasta'  => $request->fecha_hasta,
         ];
 
-        $correlativo = $this->siguienteCorrelativo('log_sistema');
+        $correlativo = $this->siguienteCorrelativo('bitacora');
 
         $pdf = Pdf::loadView('log-sistema.pdf', compact('logs', 'filtros', 'correlativo'))
             ->setPaper('letter', 'landscape');
 
-        return $pdf->download($this->nombreArchivo('LogSistema', '', 'pdf'));
+        return $pdf->download($this->nombreArchivo('Bitacora', '', 'pdf'));
     }
 }

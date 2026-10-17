@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AguinaldoController;
 use App\Http\Controllers\AsistenciaController;
+use App\Http\Controllers\MarcasIncompletasController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BancoController;
 use App\Http\Controllers\CamposVariablesController;
@@ -37,6 +38,18 @@ Route::middleware('asistencia.token')->post('/asistencias/importar', [Asistencia
 
 Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::get('/asistencias/resumen', [AsistenciaController::class, 'resumen']);
+    Route::get('/asistencias/estado', [AsistenciaController::class, 'estado']);
+    Route::get('/asistencias/periodo', [AsistenciaController::class, 'resumenPeriodo']);
+    Route::post('/asistencias/cargar-csv', [AsistenciaController::class, 'cargarCsv']);
+    Route::get('/asistencias/eliminar/contar', [AsistenciaController::class, 'contarParaEliminar']);
+    Route::delete('/asistencias', [AsistenciaController::class, 'eliminar']);
+
+    // Marcas incompletas (un solo marcaje en el día) y sus justificaciones
+    Route::get('/marcas-incompletas',          [MarcasIncompletasController::class, 'index']);
+    Route::get('/marcas-incompletas/excel',    [MarcasIncompletasController::class, 'excel']);
+    Route::get('/marcas-incompletas/pdf',      [MarcasIncompletasController::class, 'pdf']);
+    Route::post('/marcas-incompletas/justificar', [MarcasIncompletasController::class, 'justificar']);
+    Route::delete('/marcas-incompletas/justificar/{justificada}', [MarcasIncompletasController::class, 'quitarJustificacion']);
 
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -127,9 +140,9 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::get('estadistica-laboral/pdf',     [EstadisticaLaboralController::class, 'exportPdf']);
     Route::get('estadistica-laboral/{empleado}', [EstadisticaLaboralController::class, 'show']);
 
-    // Log del sistema
-    Route::get('log-sistema',     [LogSistemaController::class, 'index']);
-    Route::get('log-sistema/pdf', [LogSistemaController::class, 'exportPdf']);
+    // Bitácora
+    Route::get('bitacora',     [LogSistemaController::class, 'index']);
+    Route::get('bitacora/pdf', [LogSistemaController::class, 'exportPdf']);
 
     // Gestión de usuarios (solo admin)
     Route::apiResource('usuarios', UsuarioController::class)->except(['show']);
