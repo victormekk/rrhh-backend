@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\CabeceraPlanilla;
 use App\Models\CampoVariable;
-use App\Models\DeduccionCuota;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
 use App\Models\OtroIngreso;
+use App\Services\IngresosDeduccionesPlanilla;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\EncabezadoExcel;
 use App\Traits\LogsActividad;
@@ -91,10 +91,6 @@ class PlanillaController extends Controller
             $ingresosMap = OtroIngreso::where('nombre_planilla', $request->nombre_planilla)
                 ->get()->groupBy('id_empleado');
 
-            $cuotasMap = DeduccionCuota::whereIn('id_empleado', $empleados->pluck('id'))
-                ->where('estado', 'Activo')
-                ->get()->groupBy('id_empleado');
-
             $usarMarcaciones = $request->boolean('usar_marcaciones');
 
             foreach ($empleados as $emp) {
@@ -107,14 +103,14 @@ class PlanillaController extends Controller
                 $empIngresos   = $ingresosMap->get($emp->id, collect());
                 $otrosIngresos = (float) $empIngresos->sum('monto');
                 $descIngresos  = $empIngresos->pluck('descripcion')->filter()->implode(', ');
-                $cuotasMonto   = (float) $cuotasMap->get($emp->id, collect())->sum('monto');
 
                 // El personal de contrato Extra no cotiza IHSS en esta planilla.
                 $ihss = $request->tipo_planilla === 'Extras' ? 0 : $ihssFijo;
 
                 // RAP e ISR se editan a mano por empleado (no calzan con una formula automatica
-                // en la practica real de nomina), arrancan en 0.
-                $deduccionNeta = $ihss + $cuotasMonto;
+                // en la practica real de nomina), arrancan en 0. Los ingresos/deducciones
+                // recurrentes se suman abajo, al terminar de crear las filas.
+                $deduccionNeta = $ihss;
                 $salarioNeto   = $salarioBase + $otrosIngresos - $deduccionNeta;
 
                 DetallePlanilla::create([
@@ -139,7 +135,7 @@ class PlanillaController extends Controller
                     'uniforme'               => 0,
                     'garden'                 => 0,
                     'i_vecinal'              => 0,
-                    'otras_deducciones'      => $cuotasMonto,
+                    'otras_deducciones'      => 0,
                     'desc_otras_deducciones' => null,
                     'deduccion_neta'         => $deduccionNeta,
                     'salario_neto'           => $salarioNeto,
@@ -149,7 +145,10 @@ class PlanillaController extends Controller
                 ]);
             }
 
+            $cargados = app(IngresosDeduccionesPlanilla::class)->cargar($cabecera);
+
             $cabecera->loadCount('detalles')->loadSum('detalles', 'salario_neto');
+            $cabecera->ingresos_deducciones_cargados = $cargados;
 
             $this->logActividad('creado', 'Planillas', sprintf(
                 "Planilla '%s' (%s) creada con %d empleado(s); total neto L %s.",
@@ -322,19 +321,8 @@ class PlanillaController extends Controller
                 $planilla->nombre_planilla, $planilla->tipo_planilla, $empleados, number_format($totalNeto, 2)
             ), $planilla->id);
 
-            // Aplicar cuotas a cada empleado de esta planilla
-            $empleadoIds = DetallePlanilla::where('id_cabecera_planilla', $planilla->id)
-                ->pluck('id_empleado');
-
-            DeduccionCuota::whereIn('id_empleado', $empleadoIds)
-                ->where('estado', 'Activo')
-                ->get()
-                ->each(function ($cuota) {
-                    $cuota->increment('cuotas_aplicadas');
-                    if ($cuota->cuotas_aplicadas >= $cuota->total_cuotas) {
-                        $cuota->update(['estado' => 'Completado']);
-                    }
-                });
+            // Cuenta como pagada cada cuota de ingresos/deducciones que siguió en la celda.
+            app(IngresosDeduccionesPlanilla::class)->confirmarAlCerrar($planilla);
         });
 
         return response()->json(['message' => 'Planilla cerrada y cuotas aplicadas correctamente.']);
@@ -380,8 +368,17 @@ class PlanillaController extends Controller
         $planilla = CabeceraPlanilla::where('estado', 'Cerrado')->findOrFail($id);
         $nombre   = $planilla->nombre_planilla;
 
-        $planilla->detalles()->delete();
-        $planilla->delete();
+        // Las cuotas pagadas en esta planilla se devuelven (se borran con ella) y
+        // los préstamos que quedaron Completados por ella vuelven a Activo.
+        DB::transaction(function () use ($planilla) {
+            $servicio  = app(IngresosDeduccionesPlanilla::class);
+            $registros = $servicio->registrosDe($planilla);
+
+            $planilla->detalles()->delete();
+            $planilla->delete();
+
+            $servicio->recalcularEstados($registros);
+        });
 
         $this->logActividad(
             'eliminado',

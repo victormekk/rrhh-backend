@@ -83,9 +83,9 @@ class Empleado extends Model
         return $this->hasMany(OtraDeduccion::class, 'id_empleado');
     }
 
-    public function deduccionesCuotas()
+    public function ingresosDeducciones()
     {
-        return $this->hasMany(DeduccionCuota::class, 'id_empleado');
+        return $this->hasMany(IngresoDeduccion::class, 'id_empleado');
     }
 
     public function historialLaboral()

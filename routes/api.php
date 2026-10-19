@@ -14,6 +14,7 @@ use App\Http\Controllers\DepartamentoController;
 use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\HistorialLaboralController;
 use App\Http\Controllers\IncidenciaController;
+use App\Http\Controllers\IngresoDeduccionController;
 use App\Http\Controllers\LogSistemaController;
 use App\Http\Controllers\PlanillaController;
 use App\Http\Controllers\CargoController;
@@ -131,6 +132,10 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::delete('planillas/{id}/eliminar-cerrada', [PlanillaController::class, 'eliminarCerrada']);
     Route::put('planillas/{planilla}/detalles/{detalle}', [PlanillaController::class, 'updateDetalle']);
     Route::apiResource('planillas', PlanillaController::class)->except(['update']);
+
+    // Ingresos/deducciones recurrentes (préstamos, adelantos, bonos fijos)
+    Route::patch('ingresos-deducciones/{id}/estado', [IngresoDeduccionController::class, 'cambiarEstado']);
+    Route::apiResource('ingresos-deducciones', IngresoDeduccionController::class);
 
     // Campos Variables
     Route::get('campos-variables',  [CamposVariablesController::class, 'index']);
