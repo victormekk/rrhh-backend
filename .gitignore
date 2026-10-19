@@ -24,3 +24,6 @@ yarn-error.log
 /zkteco-agente/sync.log
 /zkteco-agente/ultima_sincronizacion.txt
 /zkteco-agente/.env
+
+# Dumps de la base: tienen datos reales
+*.sql

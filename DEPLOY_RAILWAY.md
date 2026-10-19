@@ -22,16 +22,15 @@ health check y la política de reinicio. Al arrancar, el backend corre `docker/s
 2. **Pasar los datos actuales** (antes de desplegar el backend):
    0. **Borrar los datos de prueba** en local: `php artisan pruebas:extras --borrar`
       (20 extras con cédula `PRUEBA-…` y planillas "PRUEBA Extras …").
-   1. Exportar la base local a un `.sql` (no subirlo a GitHub: tiene datos reales). Con Laragon:
+   1. Exportar y cargar con el script (lee la base local desde el `.env`):
       ```
-      mysqldump -uroot -p --single-transaction --routines --triggers --no-tablespaces --set-gtid-purged=OFF --default-character-set=utf8mb4 --add-drop-table rrhh_hpr > rrhh_hpr_railway.sql
+      powershell -ExecutionPolicy Bypass -File scripts\exportar-base.ps1 -RailwayUrl "<MYSQL_PUBLIC_URL>"
       ```
-      (o en HeidiSQL: clic derecho en `rrhh_hpr` → **Exportar base de datos como SQL**,
-      con *Crear tablas* (con *DROP*) e *Insertar datos*).
-   2. En Railway, servicio MySQL → **Variables**: copiar `MYSQL_PUBLIC_URL`
-      (host, puerto, usuario y contraseña de acceso público).
-   3. En HeidiSQL: **Nueva sesión** con esos datos → abrir la base `railway` →
-      **Archivo → Ejecutar archivo SQL** → elegir el `.sql` exportado.
+      `MYSQL_PUBLIC_URL` está en el servicio MySQL → **Variables**. Sin `-RailwayUrl` solo
+      genera el `.sql` en el Escritorio (no subirlo a GitHub: tiene datos reales).
+      Cargarlo **reemplaza** las tablas que ya existan en Railway.
+   2. Alternativa manual: en HeidiSQL, **Nueva sesión** con los datos de `MYSQL_PUBLIC_URL` →
+      base `railway` → **Archivo → Ejecutar archivo SQL** → elegir el `.sql`.
 
    > Si la base se carga antes del primer deploy, las migraciones ya figuran como
    > ejecutadas y el backend no intentará recrear tablas.
