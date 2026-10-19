@@ -8,9 +8,11 @@ El sistema son **3 servicios** dentro de un mismo proyecto de Railway:
 | **rrhh-backend** | GitHub `victormekk/rrhh-backend` | API Laravel 13 / PHP 8.4 |
 | **rrhh-frontend** | GitHub `victormekk/rrhh_frontend` | Vue (Vite), servido como sitio estático |
 
-Railway detecta solo cada proyecto (builder **Railpack**). Cada repo trae un `railway.json`
-con el health check y la política de reinicio. Al arrancar, el backend corre solo
-`php artisan migrate --force`, `storage:link` y `optimize`.
+El frontend se construye con **Railpack** (detección automática). El backend usa su propio
+**`Dockerfile`** (PHP 8.4 + FrankenPHP con `pdo_mysql`, `gd`, `zip`, `intl`, `bcmath`), porque
+la imagen de Railpack no traía el driver de MySQL. Cada repo trae un `railway.json` con el
+health check y la política de reinicio. Al arrancar, el backend corre `docker/start.sh`:
+`php artisan migrate --force`, `storage:link`, `optimize` y luego levanta el servidor en `$PORT`.
 
 ---
 
@@ -20,8 +22,12 @@ con el health check y la política de reinicio. Al arrancar, el backend corre so
 2. **Pasar los datos actuales** (antes de desplegar el backend):
    0. **Borrar los datos de prueba** en local: `php artisan pruebas:extras --borrar`
       (20 extras con cédula `PRUEBA-…` y planillas "PRUEBA Extras …").
-   1. En HeidiSQL (local): clic derecho en `rrhh_hpr` → **Exportar base de datos como SQL**.
-      Marcar *Crear tablas* (con *DROP*) e *Insertar datos*. Guardar el `.sql`.
+   1. Exportar la base local a un `.sql` (no subirlo a GitHub: tiene datos reales). Con Laragon:
+      ```
+      mysqldump -uroot -p --single-transaction --routines --triggers --no-tablespaces --set-gtid-purged=OFF --default-character-set=utf8mb4 --add-drop-table rrhh_hpr > rrhh_hpr_railway.sql
+      ```
+      (o en HeidiSQL: clic derecho en `rrhh_hpr` → **Exportar base de datos como SQL**,
+      con *Crear tablas* (con *DROP*) e *Insertar datos*).
    2. En Railway, servicio MySQL → **Variables**: copiar `MYSQL_PUBLIC_URL`
       (host, puerto, usuario y contraseña de acceso público).
    3. En HeidiSQL: **Nueva sesión** con esos datos → abrir la base `railway` →
@@ -97,5 +103,5 @@ API_TOKEN=<mismo valor que ASISTENCIA_TOKEN>
 | El navegador muestra error de CORS | `CORS_ALLOWED_ORIGINS` no coincide exactamente con el dominio del frontend (con `https://`, sin `/` final). |
 | El frontend llama a `localhost:8000` | Falta `VITE_API_URL` o se agregó después de compilar: redeploy del frontend. |
 | Las fotos no cargan | Falta el volumen o `APP_URL` no es el dominio público del backend. |
-| Error de permisos al subir fotos | Agregar la variable `RAILWAY_RUN_UID=0` al backend. |
+| `could not find driver` | El servicio se está construyendo con Railpack: revisar que `railway.json` diga `"builder": "DOCKERFILE"`. |
 | El health check falla | Revisar `DATABASE_URL` y los logs del deploy (con `LOG_CHANNEL=stderr` se ven en Railway). |
