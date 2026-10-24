@@ -348,60 +348,17 @@ class AguinaldoController extends Controller
     }
 
     // ─── Exportaciones (las mismas que en las planillas de pago) ──
+    // El general y los de Bancos/Cheques salen con el mismo formato (mismas
+    // tablas de fijos y extras en Excel y PDF); solo cambia quién aparece:
+    // Bancos = tienen cuenta guardada en el lote, Cheques = sin cuenta.
     public function exportPdf($nombre)
     {
-        [$fijos, $extras, $meta] = $this->cargarLote($nombre);
-
-        $totalesFijos    = $this->totalesFijos($fijos);
-        $totalesExtras   = $this->totalesExtras($extras);
-        $correlativo     = $this->siguienteCorrelativo($this->tipoDocumento($meta), $meta->id ?? null);
-
-        $pdf = Pdf::loadView('aguinaldo.pdf', compact(
-            'nombre', 'fijos', 'extras', 'meta', 'totalesFijos', 'totalesExtras', 'correlativo'
-        ))->setPaper('letter', 'landscape');
-
-        return $pdf->download($this->sanitizarNombreArchivo($nombre) . '.pdf');
+        return $this->generarPdf($nombre);
     }
 
-    // Excel general con las mismas columnas que las planillas de Excel que usa RRHH
-    // (fijos: días del año y aguinaldo a pagar; extras: antigüedad, subtotal y días prom.).
     public function exportExcel($nombre)
     {
-        [$fijos, $extras, $meta] = $this->cargarLote($nombre);
-
-        $spreadsheet = new Spreadsheet();
-        $spreadsheet->removeSheetByIndex(0);
-
-        if ($fijos->isNotEmpty()) {
-            $this->hojaExcel($spreadsheet->createSheet(), 'Fijos', strtoupper($nombre), $this->infoLote($meta, $fijos->count()), [
-                ['Nombre', fn ($r) => "{$r->nombres} {$r->apellidos}", 'texto'],
-                ['Cuenta', fn ($r) => $r->cuenta, 'texto'],
-                ['Cargo', fn ($r) => $r->cargo, 'texto'],
-                ['F. Inicio', fn ($r) => $r->fecha_inicio?->format('d/m/Y'), 'texto'],
-                ['Salario Mensual', fn ($r) => $r->salario_base, 'monto', true],
-                ['Días Año', fn ($r) => $r->dias_trabajados, 'numero'],
-                ['Anticipo', fn ($r) => $r->anticipo, 'monto', true],
-                [$meta->concepto === 'Catorceavo' ? 'Catorceavo a Pagar' : 'Aguinaldo a Pagar', fn ($r) => $r->total_aguinaldo, 'monto', true],
-            ], $fijos);
-        }
-
-        if ($extras->isNotEmpty()) {
-            $this->hojaExcel($spreadsheet->createSheet(), 'Extras', strtoupper($nombre), $this->infoLote($meta, $extras->count()), [
-                ['Nombre', fn ($r) => "{$r->nombres} {$r->apellidos}", 'texto'],
-                ['Cuenta', fn ($r) => $r->cuenta, 'texto'],
-                ['Cargo', fn ($r) => $r->empleado?->cargo?->nombre, 'texto'],
-                ['F. Inicio', fn ($r) => $r->fecha_inicio?->format('d/m/Y'), 'texto'],
-                ['Sal. Mensual', fn ($r) => $r->salario_base, 'monto'],
-                ['Sal. Diario', fn ($r) => $r->diario, 'monto'],
-                ['Antigüedad', fn ($r) => $r->antiguedad, 'monto'],
-                ['Subtotal', fn ($r) => $r->subtotal, 'monto', true],
-                ['Días Prom.', fn ($r) => $r->sin_promedio ? 'N/A' : $r->dias_promedio, 'numero'],
-                ['Anticipos', fn ($r) => $r->anticipos, 'monto', true],
-                ['Total a Pagar', fn ($r) => $r->total_aguinaldo, 'monto', true],
-            ], $extras);
-        }
-
-        return $this->descargarExcel($spreadsheet, $this->sanitizarNombreArchivo($nombre) . '.xlsx');
+        return $this->generarExcel($nombre);
     }
 
     // Archivo para el banco ("Generar Pago"): solo Empleado y Total, en el mismo
@@ -425,57 +382,107 @@ class AguinaldoController extends Controller
 
     public function exportBancosExcel($nombre)
     {
-        return $this->exportPagoExcel($nombre, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA');
+        return $this->generarExcel($nombre, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA');
     }
 
     public function exportBancosPdf($nombre)
     {
-        return $this->exportPagoPdf($nombre, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA');
+        return $this->generarPdf($nombre, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA');
     }
 
     public function exportChequesExcel($nombre)
     {
-        return $this->exportPagoExcel($nombre, 'cheque', 'Cheques', 'PAGO POR CHEQUE');
+        return $this->generarExcel($nombre, 'cheque', 'Cheques', 'PAGO POR CHEQUE');
     }
 
     public function exportChequesPdf($nombre)
     {
-        return $this->exportPagoPdf($nombre, 'cheque', 'Cheques', 'PAGO POR CHEQUE');
+        return $this->generarPdf($nombre, 'cheque', 'Cheques', 'PAGO POR CHEQUE');
     }
 
-    private function exportPagoExcel($nombre, string $metodo, string $sufijo, string $titulo)
+    // Deja solo los registros que cobran por el método indicado (null = todos).
+    private function filtrarPorMetodo($registros, ?string $metodo)
+    {
+        if ($metodo === null) {
+            return $registros;
+        }
+        return $registros->filter(fn ($r) => $metodo === 'banco' ? filled($r->cuenta) : blank($r->cuenta))->values();
+    }
+
+    // Nombre del archivo: "Aguinaldo X" o, si es de pago, "Bancos (Aguinaldo X)".
+    private function nombreArchivoExport($nombre, ?string $sufijo): string
+    {
+        $archivo = $this->sanitizarNombreArchivo($nombre);
+        return $sufijo ? "{$sufijo} ({$archivo})" : $archivo;
+    }
+
+    private function generarPdf($nombre, ?string $metodo = null, ?string $sufijo = null, ?string $titulo = null)
     {
         [$fijos, $extras, $meta] = $this->cargarLote($nombre);
-        $filas = $this->filasPago($fijos, $extras, $metodo);
+        $fijos  = $this->filtrarPorMetodo($fijos, $metodo);
+        $extras = $this->filtrarPorMetodo($extras, $metodo);
 
-        $columnas = [['Empleado', fn ($r) => $r->empleado, 'texto']];
-        if ($metodo === 'banco') {
-            $columnas[] = ['Cuenta', fn ($r) => $r->cuenta, 'texto'];
-        }
-        array_push($columnas,
-            ['Monto', fn ($r) => $r->monto, 'monto', true],
-            ['Anticipos', fn ($r) => $r->anticipos, 'monto', true],
-            ['Total a Pagar', fn ($r) => $r->total, 'monto', true],
-        );
+        $totalesFijos  = $this->totalesFijos($fijos);
+        $totalesExtras = $this->totalesExtras($extras);
+        $tipo          = $this->tipoDocumento($meta) . ($metodo ? ($metodo === 'banco' ? '_bancos' : '_cheques') : '');
+        $correlativo   = $this->siguienteCorrelativo($tipo, $meta->id ?? null);
+
+        $pdf = Pdf::loadView('aguinaldo.pdf', compact(
+            'nombre', 'fijos', 'extras', 'meta', 'totalesFijos', 'totalesExtras', 'correlativo', 'titulo'
+        ))->setPaper('letter', 'landscape');
+
+        return $pdf->download($this->nombreArchivoExport($nombre, $sufijo) . '.pdf');
+    }
+
+    // Excel con las mismas columnas que las planillas de Excel que usa RRHH
+    // (fijos: días del año y aguinaldo a pagar; extras: antigüedad, subtotal y días prom.).
+    private function generarExcel($nombre, ?string $metodo = null, ?string $sufijo = null, ?string $titulo = null)
+    {
+        [$fijos, $extras, $meta] = $this->cargarLote($nombre);
+        $fijos      = $this->filtrarPorMetodo($fijos, $metodo);
+        $extras     = $this->filtrarPorMetodo($extras, $metodo);
+        $tituloHoja = strtoupper($nombre) . ($titulo ? " — {$titulo}" : '');
 
         $spreadsheet = new Spreadsheet();
-        $this->hojaExcel($spreadsheet->getActiveSheet(), $sufijo, strtoupper($nombre) . ' — ' . $titulo,
-            $this->infoLote($meta, $filas->count()), $columnas, $filas);
+        $spreadsheet->removeSheetByIndex(0);
 
-        return $this->descargarExcel($spreadsheet, "{$sufijo} (" . $this->sanitizarNombreArchivo($nombre) . ').xlsx');
-    }
+        if ($fijos->isNotEmpty()) {
+            $this->hojaExcel($spreadsheet->createSheet(), 'Fijos', $tituloHoja, $this->infoLote($meta, $fijos->count()), [
+                ['Nombre', fn ($r) => "{$r->nombres} {$r->apellidos}", 'texto'],
+                ['Cuenta', fn ($r) => $r->cuenta, 'texto'],
+                ['Cargo', fn ($r) => $r->cargo, 'texto'],
+                ['F. Inicio', fn ($r) => $r->fecha_inicio?->format('d/m/Y'), 'texto'],
+                ['Salario Mensual', fn ($r) => $r->salario_base, 'monto', true],
+                ['Días Año', fn ($r) => $r->dias_trabajados, 'numero'],
+                ['Anticipo', fn ($r) => $r->anticipo, 'monto', true],
+                [$meta->concepto === 'Catorceavo' ? 'Catorceavo a Pagar' : 'Aguinaldo a Pagar', fn ($r) => $r->total_aguinaldo, 'monto', true],
+            ], $fijos);
+        }
 
-    private function exportPagoPdf($nombre, string $metodo, string $sufijo, string $titulo)
-    {
-        [$fijos, $extras, $meta] = $this->cargarLote($nombre);
-        $filas       = $this->filasPago($fijos, $extras, $metodo);
-        $correlativo = $this->siguienteCorrelativo($this->tipoDocumento($meta) . ($metodo === 'banco' ? '_bancos' : '_cheques'), $meta->id);
-        $conCuenta   = $metodo === 'banco';
+        if ($extras->isNotEmpty()) {
+            $this->hojaExcel($spreadsheet->createSheet(), 'Extras', $tituloHoja, $this->infoLote($meta, $extras->count()), [
+                ['Nombre', fn ($r) => "{$r->nombres} {$r->apellidos}", 'texto'],
+                ['Cuenta', fn ($r) => $r->cuenta, 'texto'],
+                ['Cargo', fn ($r) => $r->empleado?->cargo?->nombre, 'texto'],
+                ['F. Inicio', fn ($r) => $r->fecha_inicio?->format('d/m/Y'), 'texto'],
+                ['Sal. Mensual', fn ($r) => $r->salario_base, 'monto'],
+                ['Sal. Diario', fn ($r) => $r->diario, 'monto'],
+                ['Antigüedad', fn ($r) => $r->antiguedad, 'monto'],
+                ['Subtotal', fn ($r) => $r->subtotal, 'monto', true],
+                ['Días Prom.', fn ($r) => $r->sin_promedio ? 'N/A' : $r->dias_promedio, 'numero'],
+                ['Anticipos', fn ($r) => $r->anticipos, 'monto', true],
+                ['Total a Pagar', fn ($r) => $r->total_aguinaldo, 'monto', true],
+            ], $extras);
+        }
 
-        $pdf = Pdf::loadView('aguinaldo.pago-pdf', compact('nombre', 'meta', 'filas', 'titulo', 'correlativo', 'conCuenta'))
-            ->setPaper('letter', 'portrait');
+        // Si nadie cobra por este método, igual se entrega un archivo con su hoja vacía
+        if ($spreadsheet->getSheetCount() === 0) {
+            $this->hojaExcel($spreadsheet->createSheet(), $sufijo ?? 'Hoja1', $tituloHoja, $this->infoLote($meta, 0), [
+                ['Nombre', fn ($r) => null, 'texto'],
+            ], collect(), agrupar: false);
+        }
 
-        return $pdf->download("{$sufijo} (" . $this->sanitizarNombreArchivo($nombre) . ').pdf');
+        return $this->descargarExcel($spreadsheet, $this->nombreArchivoExport($nombre, $sufijo) . '.xlsx');
     }
 
     private function cargarLote($nombre): array

@@ -55,12 +55,12 @@
 <body>
 <div class="page">
 
-<x-pdf-encabezado titulo="PLANILLA DE PAGO — {{ strtoupper($planilla->nombre_planilla) }}">
+<x-pdf-encabezado titulo="PLANILLA DE PAGO — {{ strtoupper($planilla->nombre_planilla) }}" :subtitulo="$titulo ?? null">
   N° {{ $correlativo }} &nbsp;|&nbsp;
   Tipo: {{ $planilla->tipo_planilla }} &nbsp;|&nbsp;
   Fecha: {{ \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y') }} &nbsp;|&nbsp;
   Estado: <span class="{{ $planilla->estado === 'Activo' ? 'badge-activo' : 'badge-cerrado' }}">{{ $planilla->estado }}</span> &nbsp;|&nbsp;
-  Empleados: {{ $planilla->detalles->count() }}
+  Empleados: {{ $detalles->count() }}
 </x-pdf-encabezado>
 
 <table>
@@ -86,7 +86,7 @@
     </tr>
   </thead>
   <tbody>
-    @foreach($planilla->detalles->groupBy('departamento') as $departamento => $filas)
+    @foreach($detalles->groupBy('departamento') as $departamento => $filas)
     <tr>
       <td colspan="17" style="background-color:#f8f2df; color:#3b2b16; font-weight:bold; padding:4px;">{{ $departamento }}</td>
     </tr>

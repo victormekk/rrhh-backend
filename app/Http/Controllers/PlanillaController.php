@@ -390,42 +390,37 @@ class PlanillaController extends Controller
         return response()->json(['message' => 'Planilla eliminada.']);
     }
 
+    // La planilla general y las de Bancos/Cheques salen con el mismo formato
+    // (mismas columnas en Excel y PDF); solo cambia quién aparece:
+    // Bancos = cobran por transferencia, Cheques = cobran por cheque.
     public function exportPdf($id)
     {
-        $planilla = CabeceraPlanilla::with([
-            'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
-                $q->with('empleado:id,nombres,apellidos')
-            ),
-        ])->findOrFail($id);
+        return $this->generarPdf($id);
+    }
 
-        $totales     = $this->calcularTotales($planilla->detalles);
-        $correlativo = $this->siguienteCorrelativo('planilla', $planilla->id);
-        $pdf         = Pdf::loadView('planillas.pdf', compact('planilla', 'totales', 'correlativo'))
-            ->setPaper('letter', 'landscape');
-
-        return $pdf->download($this->sanitizarNombreArchivo($planilla->nombre_planilla) . '.pdf')
-            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-            ->header('Pragma', 'no-cache');
+    public function exportExcel($id)
+    {
+        return $this->generarExcel($id);
     }
 
     public function exportBancosExcel($id)
     {
-        return $this->exportPagoExcel($id, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA');
+        return $this->generarExcel($id, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA');
     }
 
     public function exportBancosPdf($id)
     {
-        return $this->exportPagoPdf($id, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA', 'planilla_bancos');
+        return $this->generarPdf($id, 'banco', 'Bancos', 'PAGO POR TRANSFERENCIA BANCARIA', 'planilla_bancos');
     }
 
     public function exportChequesExcel($id)
     {
-        return $this->exportPagoExcel($id, 'cheque', 'Cheques', 'PAGO POR CHEQUE');
+        return $this->generarExcel($id, 'cheque', 'Cheques', 'PAGO POR CHEQUE');
     }
 
     public function exportChequesPdf($id)
     {
-        return $this->exportPagoPdf($id, 'cheque', 'Cheques', 'PAGO POR CHEQUE', 'planilla_cheques');
+        return $this->generarPdf($id, 'cheque', 'Cheques', 'PAGO POR CHEQUE', 'planilla_cheques');
     }
 
     // Detalles de una planilla que cobran por transferencia (tienen cuenta_banco
@@ -441,135 +436,41 @@ class PlanillaController extends Controller
         )->values();
     }
 
-    private function exportPagoExcel($id, string $metodo, string $sufijoArchivo, string $titulo)
+    private function cargarPlanillaExport($id): CabeceraPlanilla
     {
-        $planilla = CabeceraPlanilla::with([
+        return CabeceraPlanilla::with([
             'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
                 $q->with('empleado:id,nombres,apellidos')
             ),
         ])->findOrFail($id);
-
-        $detalles = $this->detallesPorMetodoPago($planilla, $metodo);
-        $totales  = $this->calcularTotales($detalles);
-
-        $columnas  = [
-            'A' => 'Empleado', 'B' => 'H. Extra', 'C' => 'Otros Ing.',
-            'D' => 'IHSS',     'E' => 'Otras Ded.', 'F' => 'Ded. Neta', 'G' => 'Sal. Neto',
-        ];
-        $ultimaCol = 'G';
-        $camposNum = ['monto_horas_extras', 'otros_ingresos', 'ihss', 'otras_deducciones', 'deduccion_neta', 'salario_neto'];
-
-        $spreadsheet = new Spreadsheet();
-        $sheet       = $spreadsheet->getActiveSheet();
-        $sheet->setTitle($sufijoArchivo);
-
-        // Logo a la izquierda y los títulos a su derecha (ver App\Traits\EncabezadoExcel)
-        $this->encabezadoExcel($sheet, $ultimaCol, [
-            ['INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL', 14],
-            [strtoupper($planilla->nombre_planilla) . ' — ' . $titulo, 12],
-            [sprintf(
-            'Tipo: %s   |   Fecha: %s   |   Empleados: %d',
-            $planilla->tipo_planilla,
-            \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y'),
-            $detalles->count()
-        ), null],
-        ]);
-
-        $row = 5;
-        foreach ($columnas as $col => $tituloCol) {
-            $sheet->setCellValue("{$col}{$row}", $tituloCol);
-        }
-        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
-            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('3B2B16');
-        $row++;
-
-        foreach ($detalles->groupBy('departamento') as $departamento => $filas) {
-            $sheet->setCellValue("A{$row}", $departamento);
-            $sheet->mergeCells("A{$row}:{$ultimaCol}{$row}");
-            $sheet->getStyle("A{$row}")->getFont()->setBold(true)->getColor()->setRGB('3B2B16');
-            $sheet->getStyle("A{$row}")->getFill()
-                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('F8F2DF');
-            $row++;
-
-            foreach ($filas as $d) {
-                $sheet->setCellValue("A{$row}", trim("{$d->empleado->nombres} {$d->empleado->apellidos}"));
-                $col = 'B';
-                foreach ($camposNum as $campo) {
-                    $sheet->setCellValueExplicit("{$col}{$row}", round((float) $d->$campo, 2), DataType::TYPE_NUMERIC);
-                    $col++;
-                }
-                $row++;
-            }
-
-            $sheet->setCellValue("A{$row}", "SUBTOTAL: {$departamento}");
-            $col = 'B';
-            foreach ($camposNum as $campo) {
-                $sheet->setCellValueExplicit("{$col}{$row}", round((float) $filas->sum($campo), 2), DataType::TYPE_NUMERIC);
-                $col++;
-            }
-            $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true);
-            $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
-                ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('EEE3C3');
-            $row++;
-        }
-
-        $sheet->setCellValue("A{$row}", 'TOTAL GENERAL');
-        $col = 'B';
-        foreach ($camposNum as $campo) {
-            $sheet->setCellValueExplicit("{$col}{$row}", round((float) $totales[$campo], 2), DataType::TYPE_NUMERIC);
-            $col++;
-        }
-        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true);
-        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
-            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('B9921A');
-
-        $sheet->getStyle("B6:{$ultimaCol}{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
-        foreach (array_keys($columnas) as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        $tempFile = tempnam(sys_get_temp_dir(), 'planilla') . '.xlsx';
-        $this->anchoColumnaLogo($sheet);
-        (new Xlsx($spreadsheet))->save($tempFile);
-
-        $nombre = $this->sanitizarNombreArchivo($planilla->nombre_planilla);
-
-        return response()->download($tempFile, "{$sufijoArchivo} ({$nombre}).xlsx")
-            ->deleteFileAfterSend(true);
     }
 
-    private function exportPagoPdf($id, string $metodo, string $sufijoArchivo, string $titulo, string $tipoCorrelativo)
+    // Nombre del archivo: "Planilla X" o, si es de pago, "Bancos (Planilla X)".
+    private function nombreArchivoExport(CabeceraPlanilla $planilla, ?string $sufijo): string
     {
-        $planilla = CabeceraPlanilla::with([
-            'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
-                $q->with('empleado:id,nombres,apellidos')
-            ),
-        ])->findOrFail($id);
+        $nombre = $this->sanitizarNombreArchivo($planilla->nombre_planilla);
+        return $sufijo ? "{$sufijo} ({$nombre})" : $nombre;
+    }
 
-        $detalles    = $this->detallesPorMetodoPago($planilla, $metodo);
+    private function generarPdf($id, ?string $metodo = null, ?string $sufijo = null, ?string $titulo = null, string $tipoCorrelativo = 'planilla')
+    {
+        $planilla    = $this->cargarPlanillaExport($id);
+        $detalles    = $metodo ? $this->detallesPorMetodoPago($planilla, $metodo) : $planilla->detalles;
         $totales     = $this->calcularTotales($detalles);
         $correlativo = $this->siguienteCorrelativo($tipoCorrelativo, $planilla->id);
+        $pdf         = Pdf::loadView('planillas.pdf', compact('planilla', 'detalles', 'totales', 'correlativo', 'titulo'))
+            ->setPaper('letter', 'landscape');
 
-        $pdf = Pdf::loadView('planillas.pago-pdf', compact('planilla', 'detalles', 'totales', 'titulo', 'correlativo'))
-            ->setPaper('letter', 'portrait');
-
-        $nombre = $this->sanitizarNombreArchivo($planilla->nombre_planilla);
-
-        return $pdf->download("{$sufijoArchivo} ({$nombre}).pdf")
+        return $pdf->download($this->nombreArchivoExport($planilla, $sufijo) . '.pdf')
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
             ->header('Pragma', 'no-cache');
     }
 
-    public function exportExcel($id)
+    private function generarExcel($id, ?string $metodo = null, ?string $sufijo = null, ?string $titulo = null)
     {
-        $planilla = CabeceraPlanilla::with([
-            'detalles' => fn($q) => $this->ordenarPorDeptoYNombre(
-                $q->with('empleado:id,nombres,apellidos')
-            ),
-        ])->findOrFail($id);
-
-        $totales = $this->calcularTotales($planilla->detalles);
+        $planilla = $this->cargarPlanillaExport($id);
+        $detalles = $metodo ? $this->detallesPorMetodoPago($planilla, $metodo) : $planilla->detalles;
+        $totales  = $this->calcularTotales($detalles);
 
         $columnas = [
             'A' => 'Empleado',     'B' => 'Días',        'C' => 'Sal. Base',
@@ -586,18 +487,18 @@ class PlanillaController extends Controller
 
         $spreadsheet = new Spreadsheet();
         $sheet       = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Planilla');
+        $sheet->setTitle($sufijo ?? 'Planilla');
 
         // Logo a la izquierda y los títulos a su derecha (ver App\Traits\EncabezadoExcel)
         $this->encabezadoExcel($sheet, $ultimaCol, [
             ['INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL', 14],
-            [strtoupper($planilla->nombre_planilla), 12],
+            [strtoupper($planilla->nombre_planilla) . ($titulo ? " — {$titulo}" : ''), 12],
             [sprintf(
             'Tipo: %s   |   Fecha: %s   |   Estado: %s   |   Empleados: %d',
             $planilla->tipo_planilla,
             \Carbon\Carbon::parse($planilla->fecha_generada)->format('d/m/Y'),
             $planilla->estado,
-            $planilla->detalles->count()
+            $detalles->count()
         ), null],
         ]);
 
@@ -610,7 +511,7 @@ class PlanillaController extends Controller
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('3B2B16');
         $row++;
 
-        foreach ($planilla->detalles->groupBy('departamento') as $departamento => $filas) {
+        foreach ($detalles->groupBy('departamento') as $departamento => $filas) {
             $sheet->setCellValue("A{$row}", $departamento);
             $sheet->mergeCells("A{$row}:{$ultimaCol}{$row}");
             $sheet->getStyle("A{$row}")->getFont()->setBold(true)->getColor()->setRGB('3B2B16');
@@ -662,7 +563,7 @@ class PlanillaController extends Controller
         $this->anchoColumnaLogo($sheet);
         (new Xlsx($spreadsheet))->save($tempFile);
 
-        return response()->download($tempFile, $this->sanitizarNombreArchivo($planilla->nombre_planilla) . '.xlsx')
+        return response()->download($tempFile, $this->nombreArchivoExport($planilla, $sufijo) . '.xlsx')
             ->deleteFileAfterSend(true);
     }
 

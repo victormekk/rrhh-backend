@@ -41,7 +41,7 @@
 <body>
 <div class="page">
 
-<x-pdf-encabezado :titulo="$nombre">
+<x-pdf-encabezado :titulo="$nombre" :subtitulo="$titulo ?? null">
   N° {{ $correlativo }}
   &mdash; Generado el {{ now()->format('d/m/Y') }}
   &mdash; {{ $meta->concepto }} {{ $meta->tipo_aguinaldo }}
