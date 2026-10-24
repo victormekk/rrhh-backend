@@ -3,7 +3,8 @@ FROM dunglas/frankenphp:1-php8.4
 
 # Extensiones que usa el sistema:
 # pdo_mysql (base de datos), gd y zip (PDF y Excel), intl, bcmath, exif, opcache
-RUN install-php-extensions pdo_mysql gd zip intl bcmath exif opcache
+# calendar: easter_date() para los feriados de Semana Santa (vacaciones)
+RUN install-php-extensions pdo_mysql gd zip intl bcmath exif opcache calendar
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
