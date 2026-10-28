@@ -52,13 +52,22 @@ class PlanillaController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge(['nombre_planilla' => trim((string) $request->nombre_planilla)]);
+
         $request->validate([
-            'nombre_planilla'    => 'required|string|max:50',
+            // El nombre no se repite dentro del mismo tipo (sí puede haber una
+            // "Planilla 15 de octubre" de Fijos y otra de Extras).
+            'nombre_planilla'    => [
+                'required', 'string', 'max:50',
+                Rule::unique('cabecera_planillas', 'nombre_planilla')->where('tipo_planilla', $request->tipo_planilla),
+            ],
             'tipo_planilla'      => 'required|in:Fijos,Extras',
             'fecha_generada'     => 'required|date',
             'usar_marcaciones'   => 'boolean',
             'periodo_desde'      => 'nullable|required_if:usar_marcaciones,true|date',
             'periodo_hasta'      => 'nullable|required_if:usar_marcaciones,true|date|after_or_equal:periodo_desde',
+        ], [
+            'nombre_planilla.unique' => "Ya existe una planilla de {$request->tipo_planilla} con ese nombre.",
         ]);
 
         return DB::transaction(function () use ($request) {
