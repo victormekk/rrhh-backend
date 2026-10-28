@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cargo;
+use App\Traits\LogsActividad;
 use App\Traits\SoloAdmin;
 use Illuminate\Http\Request;
 
 class CargoController extends Controller
 {
-    use SoloAdmin;
+    use LogsActividad, SoloAdmin;
 
     public function index(Request $request)
     {
@@ -34,6 +35,8 @@ class CargoController extends Controller
             'id_usuario' => $request->user()->id,
         ]);
 
+        $this->logActividad('creado', 'Cargos', "Cargo '{$cargo->nombre}' creado.", $cargo->id);
+
         return response()->json($cargo, 201);
     }
 
@@ -53,7 +56,15 @@ class CargoController extends Controller
             'estado' => 'required|string|max:20',
         ]);
 
+        $antes = $cargo->only(['nombre', 'estado']);
         $cargo->update($request->only(['nombre', 'estado']));
+
+        $cambios = [];
+        if ($antes['nombre'] !== $cargo->nombre) $cambios[] = "nombre '{$antes['nombre']}' → '{$cargo->nombre}'";
+        if ($antes['estado'] !== $cargo->estado) $cambios[] = "estado {$antes['estado']} → {$cargo->estado}";
+        if ($cambios) {
+            $this->logActividad('editado', 'Cargos', "Cargo '{$cargo->nombre}' editado: " . implode(', ', $cambios) . '.', $cargo->id);
+        }
 
         return response()->json($cargo);
     }
@@ -74,6 +85,7 @@ class CargoController extends Controller
         );
 
         $cargo->update(['estado' => 'Inactivo']);
+        $this->logActividad('editado', 'Cargos', "Cargo '{$cargo->nombre}' desactivado.", $cargo->id);
 
         return response()->json(['message' => 'Cargo desactivado.']);
     }
@@ -101,6 +113,7 @@ class CargoController extends Controller
         );
 
         $cargo->delete();
+        $this->logActividad('eliminado', 'Cargos', "Cargo '{$cargo->nombre}' eliminado permanentemente.", $cargo->id);
 
         return response()->json(['message' => 'Cargo eliminado permanentemente.']);
     }

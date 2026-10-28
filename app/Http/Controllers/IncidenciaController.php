@@ -9,13 +9,17 @@ use App\Traits\NombraArchivos;
 use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class IncidenciaController extends Controller
 {
     use LogsActividad, NombraArchivos, GeneraCorrelativo, SoloAdmin;
     public function index(Request $request)
     {
+        $anuladas = $request->boolean('anuladas');
+
         $incidencias = Incidencia::with('empleado:id,nombres,apellidos,id_departamento')
+            ->when($anuladas, fn($q) => $q->onlyTrashed()->with('usuarioAnula:id,name'))
             ->when($request->search, fn($q, $s) =>
                 $q->whereHas('empleado', fn($eq) =>
                     $eq->where('nombres', 'like', "%$s%")
@@ -26,6 +30,7 @@ class IncidenciaController extends Controller
             ->when($request->fecha_inicio, fn($q, $f) => $q->where('fecha_incidencia', '>=', $f))
             ->when($request->fecha_fin,    fn($q, $f) => $q->where('fecha_incidencia', '<=', $f))
             ->when($request->id_empleado,  fn($q, $id) => $q->where('id_empleado', $id))
+            ->when($anuladas, fn($q) => $q->orderByDesc('anulada_at'))
             ->orderByDesc('fecha_incidencia')
             ->orderByDesc('id')
             ->paginate(20);
@@ -79,15 +84,44 @@ class IncidenciaController extends Controller
         );
     }
 
+    // No borra la fila: la anula (borrado lógico) guardando quién, cuándo y por qué.
     public function destroy(Request $request, $id)
     {
         $this->soloAdmin($request);
 
-        $inc = Incidencia::with('empleado:id,nombres,apellidos')->findOrFail($id);
-        $inc->delete();
-        $this->logActividad('eliminado', 'Incidencias', "Incidencia '{$inc->titulo}' de {$inc->empleado->nombres} {$inc->empleado->apellidos} eliminada.", $id);
+        $data = $request->validate([
+            'motivo' => 'required|string|max:300',
+        ]);
 
-        return response()->json(['message' => 'Incidencia eliminada.']);
+        $inc = Incidencia::with('empleado:id,nombres,apellidos')->findOrFail($id);
+
+        DB::transaction(function () use ($inc, $data, $request) {
+            $inc->forceFill([
+                'anulada_por'      => $request->user()->id,
+                'motivo_anulacion' => $data['motivo'],
+            ])->save();
+            $inc->delete();
+        });
+
+        $this->logActividad('anulado', 'Incidencias', "Incidencia '{$inc->titulo}' de {$inc->empleado->nombres} {$inc->empleado->apellidos} anulada. Motivo: {$data['motivo']}", $inc->id);
+
+        return response()->json(['message' => 'Incidencia anulada.']);
+    }
+
+    public function restaurar(Request $request, $id)
+    {
+        $this->soloAdmin($request);
+
+        $inc = Incidencia::onlyTrashed()->with('empleado:id,nombres,apellidos')->findOrFail($id);
+
+        DB::transaction(function () use ($inc) {
+            $inc->restore();
+            $inc->forceFill(['anulada_por' => null, 'motivo_anulacion' => null])->save();
+        });
+
+        $this->logActividad('editado', 'Incidencias', "Incidencia '{$inc->titulo}' de {$inc->empleado->nombres} {$inc->empleado->apellidos} restaurada.", $inc->id);
+
+        return response()->json(['message' => 'Incidencia restaurada.']);
     }
 
     public function pdf($id)

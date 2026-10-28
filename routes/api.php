@@ -112,11 +112,13 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
 
     // Incidencias
     Route::get('incidencias/{id}/pdf', [IncidenciaController::class, 'pdf']);
+    Route::post('incidencias/{id}/restaurar', [IncidenciaController::class, 'restaurar']);
     Route::apiResource('incidencias', IncidenciaController::class);
 
     // Vacaciones
     Route::get('vacaciones/saldo/{id}',  [VacacionController::class, 'saldo']);
     Route::get('vacaciones/{id}/pdf',    [VacacionController::class, 'pdf']);
+    Route::post('vacaciones/{id}/restaurar', [VacacionController::class, 'restaurar']);
     Route::apiResource('vacaciones',     VacacionController::class)->except(['show']);
 
     // Planillas
@@ -129,7 +131,6 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::get('planillas/{planilla}/cheques/pdf', [PlanillaController::class, 'exportChequesPdf']);
     Route::post('planillas/{planilla}/actualizar-marcas', [PlanillaController::class, 'actualizarMarcas']);
     Route::post('planillas/{planilla}/cerrar', [PlanillaController::class, 'cerrar']);
-    Route::delete('planillas/{id}/eliminar-cerrada', [PlanillaController::class, 'eliminarCerrada']);
     Route::put('planillas/{planilla}/detalles/{detalle}', [PlanillaController::class, 'updateDetalle']);
     Route::apiResource('planillas', PlanillaController::class)->except(['update']);
 

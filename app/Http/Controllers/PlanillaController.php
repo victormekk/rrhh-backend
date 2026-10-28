@@ -16,7 +16,6 @@ use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -344,48 +343,6 @@ class PlanillaController extends Controller
                 $planilla->nombre_planilla, $planilla->tipo_planilla, $empleados
             ), $planilla->id);
         });
-
-        return response()->json(['message' => 'Planilla eliminada.']);
-    }
-
-    // Borrado de una planilla ya CERRADA: solo administradores, y solo
-    // confirmando con la contraseña de la sesion (accion mas sensible que
-    // anular una planilla activa, porque una cerrada ya aplico cuotas).
-    public function eliminarCerrada(Request $request, $id)
-    {
-        $this->soloAdmin($request);
-
-        $request->validate([
-            'password' => 'required|string',
-        ]);
-
-        abort_unless(
-            Hash::check($request->password, $request->user()->password),
-            422,
-            'Contraseña incorrecta.'
-        );
-
-        $planilla = CabeceraPlanilla::where('estado', 'Cerrado')->findOrFail($id);
-        $nombre   = $planilla->nombre_planilla;
-
-        // Las cuotas pagadas en esta planilla se devuelven (se borran con ella) y
-        // los préstamos que quedaron Completados por ella vuelven a Activo.
-        DB::transaction(function () use ($planilla) {
-            $servicio  = app(IngresosDeduccionesPlanilla::class);
-            $registros = $servicio->registrosDe($planilla);
-
-            $planilla->detalles()->delete();
-            $planilla->delete();
-
-            $servicio->recalcularEstados($registros);
-        });
-
-        $this->logActividad(
-            'eliminado',
-            'Planillas',
-            "Planilla cerrada '{$nombre}' eliminada permanentemente.",
-            $id
-        );
 
         return response()->json(['message' => 'Planilla eliminada.']);
     }

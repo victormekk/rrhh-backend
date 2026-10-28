@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Departamento;
+use App\Traits\LogsActividad;
 use App\Traits\SoloAdmin;
 use Illuminate\Http\Request;
 
 class DepartamentoController extends Controller
 {
-    use SoloAdmin;
+    use LogsActividad, SoloAdmin;
 
     public function index(Request $request)
     {
@@ -34,6 +35,8 @@ class DepartamentoController extends Controller
             'id_usuario' => $request->user()->id,
         ]);
 
+        $this->logActividad('creado', 'Departamentos', "Departamento '{$departamento->nombre}' creado.", $departamento->id);
+
         return response()->json($departamento, 201);
     }
 
@@ -53,7 +56,15 @@ class DepartamentoController extends Controller
             'estado' => 'required|string|max:15',
         ]);
 
+        $antes = $departamento->only(['nombre', 'estado']);
         $departamento->update($request->only(['nombre', 'estado']));
+
+        $cambios = [];
+        if ($antes['nombre'] !== $departamento->nombre) $cambios[] = "nombre '{$antes['nombre']}' → '{$departamento->nombre}'";
+        if ($antes['estado'] !== $departamento->estado) $cambios[] = "estado {$antes['estado']} → {$departamento->estado}";
+        if ($cambios) {
+            $this->logActividad('editado', 'Departamentos', "Departamento '{$departamento->nombre}' editado: " . implode(', ', $cambios) . '.', $departamento->id);
+        }
 
         return response()->json($departamento);
     }
@@ -74,6 +85,7 @@ class DepartamentoController extends Controller
         );
 
         $departamento->update(['estado' => 'Inactivo']);
+        $this->logActividad('editado', 'Departamentos', "Departamento '{$departamento->nombre}' desactivado.", $departamento->id);
 
         return response()->json(['message' => 'Departamento desactivado.']);
     }
@@ -101,6 +113,7 @@ class DepartamentoController extends Controller
         );
 
         $departamento->delete();
+        $this->logActividad('eliminado', 'Departamentos', "Departamento '{$departamento->nombre}' eliminado permanentemente.", $departamento->id);
 
         return response()->json(['message' => 'Departamento eliminado permanentemente.']);
     }

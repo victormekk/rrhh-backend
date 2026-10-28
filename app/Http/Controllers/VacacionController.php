@@ -15,6 +15,7 @@ use App\Traits\TieneFeriados;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class VacacionController extends Controller
 {
@@ -79,7 +80,10 @@ class VacacionController extends Controller
 
     public function index(Request $request)
     {
+        $anuladas = $request->boolean('anuladas');
+
         $solicitudes = SolicitudVacacion::with('empleado:id,nombres,apellidos,id_cargo,id_departamento')
+            ->when($anuladas, fn($q) => $q->onlyTrashed()->with('usuarioAnula:id,name')->orderByDesc('anulada_at'))
             ->when($request->id_empleado, fn($q, $id) => $q->where('id_empleado', $id))
             ->when($request->search, fn($q, $s) =>
                 $q->whereHas('empleado', fn($eq) =>
@@ -174,15 +178,53 @@ class VacacionController extends Controller
         return response()->json($fresco);
     }
 
+    // No borra la fila: la anula (borrado lógico) guardando quién, cuándo y por qué.
+    // Los días vuelven al saldo porque calcularSaldo ignora las anuladas.
     public function destroy(Request $request, $id)
     {
         $this->soloAdmin($request);
 
-        $sol = SolicitudVacacion::with('empleado:id,nombres,apellidos')->findOrFail($id);
-        $sol->delete();
-        $this->logActividad('eliminado', 'Vacaciones', "Solicitud de vacaciones de {$sol->empleado->nombres} {$sol->empleado->apellidos} eliminada.", $id);
+        $data = $request->validate([
+            'motivo' => 'required|string|max:300',
+        ]);
 
-        return response()->json(['message' => 'Solicitud eliminada.']);
+        $sol = SolicitudVacacion::with('empleado:id,nombres,apellidos')->findOrFail($id);
+
+        DB::transaction(function () use ($sol, $data, $request) {
+            $sol->forceFill([
+                'anulada_por'      => $request->user()->id,
+                'motivo_anulacion' => $data['motivo'],
+            ])->save();
+            $sol->delete();
+        });
+
+        $this->logActividad('anulado', 'Vacaciones', "Solicitud de vacaciones de {$sol->empleado->nombres} {$sol->empleado->apellidos} (" . (float) $sol->dias_tomados . " día(s)) anulada. Motivo: {$data['motivo']}", $sol->id);
+
+        return response()->json(['message' => 'Solicitud anulada.']);
+    }
+
+    // Restaurar vuelve a descontar los días, así que primero revisa el saldo.
+    public function restaurar(Request $request, $id)
+    {
+        $this->soloAdmin($request);
+
+        $sol = SolicitudVacacion::onlyTrashed()->with('empleado.informacionLaboral')->findOrFail($id);
+
+        $saldo = $this->calcularSaldo($sol->empleado)['saldo'];
+        if ($saldo < $sol->dias_tomados) {
+            return response()->json([
+                'message' => "No hay suficientes días disponibles para restaurarla. Disponibles: {$saldo} día(s), la solicitud tiene: " . (float) $sol->dias_tomados . ".",
+            ], 422);
+        }
+
+        DB::transaction(function () use ($sol) {
+            $sol->restore();
+            $sol->forceFill(['anulada_por' => null, 'motivo_anulacion' => null])->save();
+        });
+
+        $this->logActividad('editado', 'Vacaciones', "Solicitud de vacaciones de {$sol->empleado->nombres} {$sol->empleado->apellidos} restaurada.", $sol->id);
+
+        return response()->json(['message' => 'Solicitud restaurada.']);
     }
 
     public function pdf($id)
