@@ -35,15 +35,22 @@ class Feriados
         ];
     }
 
+    // Feriados de cada año ya calculados, por fecha 'Y-m-d': al contar los días de un
+    // rango largo se consulta muchas veces el mismo año y recalcularlo era muy lento.
+    private static array $porAnio = [];
+
     // Nombre del feriado si la fecha cae en uno, o null si es un día normal.
     public static function nombre(Carbon $fecha): ?string
     {
-        foreach (self::delAnio($fecha->year) as $feriado) {
-            if ($feriado['fecha']->isSameDay($fecha)) {
-                return $feriado['nombre'];
+        $anio = $fecha->year;
+        if (!isset(self::$porAnio[$anio])) {
+            self::$porAnio[$anio] = [];
+            foreach (self::delAnio($anio) as $feriado) {
+                self::$porAnio[$anio][$feriado['fecha']->format('Y-m-d')] = $feriado['nombre'];
             }
         }
-        return null;
+
+        return self::$porAnio[$anio][$fecha->format('Y-m-d')] ?? null;
     }
 
     // Siguiente día hábil después de una fecha: salta domingos y feriados.

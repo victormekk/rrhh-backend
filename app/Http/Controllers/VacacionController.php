@@ -119,6 +119,16 @@ class VacacionController extends Controller
         return [null, $dias];
     }
 
+    // Fechas permitidas: desde 1990 hasta 10 años después del actual (el límite de
+    // arriba avanza solo cada año). Evita contar días de años a medio escribir (0002,
+    // 0202...) o mal escritos (2206), que dejaban el cálculo ocupado por mucho tiempo.
+    private function reglasAnio(): array
+    {
+        $hasta = now()->addYears(10)->endOfYear()->toDateString();
+
+        return ['after_or_equal:1990-01-01', "before_or_equal:{$hasta}"];
+    }
+
     // ── Endpoints ─────────────────────────────────────────────────────────────
 
     public function index(Request $request)
@@ -155,8 +165,8 @@ class VacacionController extends Controller
     {
         $data = $request->validate([
             'id_empleado'  => 'required|exists:empleados,id',
-            'fecha_inicio' => 'required|date',
-            'fecha_fin'    => 'required|date|after_or_equal:fecha_inicio',
+            'fecha_inicio' => ['required', 'date', ...$this->reglasAnio()],
+            'fecha_fin'    => ['required', 'date', 'after_or_equal:fecha_inicio', ...$this->reglasAnio()],
             'observaciones'=> 'nullable|string|max:500',
             'adelantar'    => 'boolean',
         ]);
@@ -198,8 +208,8 @@ class VacacionController extends Controller
         $solicitud = SolicitudVacacion::with('empleado.informacionLaboral')->findOrFail($id);
 
         $data = $request->validate([
-            'fecha_inicio'  => 'required|date',
-            'fecha_fin'     => 'required|date|after_or_equal:fecha_inicio',
+            'fecha_inicio'  => ['required', 'date', ...$this->reglasAnio()],
+            'fecha_fin'     => ['required', 'date', 'after_or_equal:fecha_inicio', ...$this->reglasAnio()],
             'observaciones' => 'nullable|string|max:500',
             'adelantar'     => 'boolean',
         ]);

@@ -125,6 +125,31 @@ class VacacionesAdelantoTest extends TestCase
         ])->assertStatus(422)->assertJsonPath('message', 'No hay suficientes días disponibles. Disponibles: 4 día(s), solicitados: 6.');
     }
 
+    public function test_rechaza_anios_a_medio_escribir_pero_acepta_rangos_de_mas_de_un_anio(): void
+    {
+        // Año a medio escribir (0002): se rechaza sin contar días.
+        $this->postJson('/api/vacaciones', [
+            'id_empleado' => $this->empleado, 'fecha_inicio' => '0002-12-07', 'fecha_fin' => '2026-12-12', 'adelantar' => true,
+        ])->assertStatus(422)->assertJsonValidationErrors('fecha_inicio');
+        // Año mal escrito (2206): pasa del límite (año actual + 10).
+        $this->postJson('/api/vacaciones', [
+            'id_empleado' => $this->empleado, 'fecha_inicio' => '2026-12-07', 'fecha_fin' => '2206-12-12', 'adelantar' => true,
+        ])->assertStatus(422)->assertJsonValidationErrors('fecha_fin');
+        $this->assertSame(0, SolicitudVacacion::count());
+
+        // 1995 sí se acepta como fecha (hay empleados que ingresaron antes del 2000).
+        $this->postJson('/api/vacaciones', [
+            'id_empleado' => $this->empleado, 'fecha_inicio' => '1995-07-03', 'fecha_fin' => '1995-07-04', 'adelantar' => true,
+        ])->assertJsonMissingValidationErrors(['fecha_inicio', 'fecha_fin']);
+        SolicitudVacacion::query()->forceDelete();
+
+        // Más de un año (ajuste de saldos acumulados): se cuenta normal, sin límite de rango.
+        DB::table('informacion_laboral')->update(['fecha_inicio' => '2006-08-01']); // 20 años: mucho saldo
+        $this->postJson('/api/vacaciones', [
+            'id_empleado' => $this->empleado, 'fecha_inicio' => '2026-01-05', 'fecha_fin' => '2027-03-01',
+        ])->assertCreated();
+    }
+
     public function test_una_solicitud_normal_no_lleva_adelanto(): void
     {
         // Con un año cumplido (10 días) pide 6: no hay adelanto ni aviso en la constancia.
