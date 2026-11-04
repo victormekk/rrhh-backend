@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Calculos\Fechas;
 use App\Models\Empleado;
 use App\Pdf\AvatarCircular;
+use App\Pdf\DecoracionCumpleanos;
 use App\Traits\LogsActividad;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -46,7 +47,8 @@ class CumpleanosController extends Controller
 
             return [
                 ...$emp,
-                'color'  => $color,
+                'color'   => $color,
+                'globito' => DecoracionCumpleanos::globito($color),
                 'avatar' => ($archivo && is_file($archivo) ? AvatarCircular::foto($archivo) : null)
                     ?? AvatarCircular::iniciales($iniciales, $color),
             ];
@@ -54,7 +56,15 @@ class CumpleanosController extends Controller
 
         $this->logActividad('generado', 'Empleados', "Exportó los cumpleaños de {$nombreMes} a PDF ({$lista->count()} empleado(s)).");
 
-        return Pdf::loadView('cumpleanos.pdf', compact('lista', 'nombreMes'))
+        // Adornos: se publica en cada departamento, por eso lleva globos, banderines y confeti.
+        $deco = [
+            'banderines' => DecoracionCumpleanos::banderines(),
+            'globosIzq'  => DecoracionCumpleanos::globos(['#c0101a', '#f5d92a', '#8b5cf6']),
+            'globosDer'  => DecoracionCumpleanos::globos(['#06b6d4', '#e8892f', '#ec4899']),
+            'confeti'    => DecoracionCumpleanos::confeti(),
+        ];
+
+        return Pdf::loadView('cumpleanos.pdf', compact('lista', 'nombreMes', 'deco'))
             ->setPaper('letter', 'portrait')
             ->download("Cumpleanos_{$nombreMes}_" . now()->format('dmY') . '.pdf');
     }
