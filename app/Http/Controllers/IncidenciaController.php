@@ -6,14 +6,13 @@ use App\Models\Incidencia;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
-use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class IncidenciaController extends Controller
 {
-    use LogsActividad, NombraArchivos, GeneraCorrelativo, SoloAdmin;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo;
     public function index(Request $request)
     {
         $anuladas = $request->boolean('anuladas');
@@ -87,8 +86,6 @@ class IncidenciaController extends Controller
     // No borra la fila: la anula (borrado lógico) guardando quién, cuándo y por qué.
     public function destroy(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         $data = $request->validate([
             'motivo' => 'required|string|max:300',
         ]);
@@ -110,8 +107,6 @@ class IncidenciaController extends Controller
 
     public function restaurar(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         $inc = Incidencia::onlyTrashed()->with('empleado:id,nombres,apellidos')->findOrFail($id);
 
         DB::transaction(function () use ($inc) {

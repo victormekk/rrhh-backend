@@ -12,7 +12,6 @@ use App\Traits\GeneraCorrelativo;
 use App\Traits\EncabezadoExcel;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
-use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +22,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanillaController extends Controller
 {
-    use LogsActividad, NombraArchivos, SoloAdmin, GeneraCorrelativo, EncabezadoExcel;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo, EncabezadoExcel;
 
     public function index(Request $request)
     {
@@ -338,8 +337,6 @@ class PlanillaController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         $planilla = CabeceraPlanilla::where('estado', 'Activo')->findOrFail($id);
         $empleados = $planilla->detalles()->count();
 

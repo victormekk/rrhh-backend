@@ -5,14 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\LogSistema;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\NombraArchivos;
-use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
-// Bitácora del sistema: solo administradores (módulo Configuración).
+// Bitácora del sistema (Configuración). Requiere el permiso bitacora.ver; quien solo
+// tiene permisos de Constancias ve únicamente el historial de constancias.
 class LogSistemaController extends Controller
 {
-    use NombraArchivos, GeneraCorrelativo, SoloAdmin;
+    use NombraArchivos, GeneraCorrelativo;
 
     private function filtrar(Request $request)
     {
@@ -27,15 +27,15 @@ class LogSistemaController extends Controller
 
     public function index(Request $request)
     {
-        $this->soloAdmin($request);
+        if (!$request->user()->tienePermiso('bitacora.ver')) {
+            $request->merge(['modulo' => 'Constancias']);
+        }
 
         return response()->json($this->filtrar($request)->paginate(25));
     }
 
     public function exportPdf(Request $request)
     {
-        $this->soloAdmin($request);
-
         $logs = $this->filtrar($request)->get();
 
         $filtros = [

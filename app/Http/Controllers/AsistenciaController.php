@@ -5,14 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Empleado;
 use App\Models\Marcacion;
 use App\Traits\LogsActividad;
-use App\Traits\SoloAdmin;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AsistenciaController extends Controller
 {
-    use LogsActividad, SoloAdmin;
+    use LogsActividad;
 
     // Recibe las marcaciones que el agente local (zkteco-agente/) leyo del
     // reloj biometrico y las sube por HTTPS. No usa auth:sanctum (el agente
@@ -250,15 +249,11 @@ class AsistenciaController extends Controller
     // porque guardan sus propios días trabajados.
     public function contarParaEliminar(Request $request)
     {
-        $this->soloAdmin($request);
-
         return response()->json(['total' => $this->marcasDelRango($request)->count()]);
     }
 
     public function eliminar(Request $request)
     {
-        $this->soloAdmin($request);
-
         $eliminadas = $this->marcasDelRango($request)->delete();
         $reloj = $request->reloj ? " del reloj {$request->reloj}" : '';
 

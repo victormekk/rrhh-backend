@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\IngresoDeduccion;
 use App\Traits\LogsActividad;
-use App\Traits\SoloAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -12,7 +11,7 @@ use Illuminate\Validation\Rule;
 // fijos). Se cargan solos en cada planilla; ver App\Services\IngresosDeduccionesPlanilla.
 class IngresoDeduccionController extends Controller
 {
-    use LogsActividad, SoloAdmin;
+    use LogsActividad;
 
     public function index(Request $request)
     {
@@ -105,8 +104,6 @@ class IngresoDeduccionController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         $registro = IngresoDeduccion::withCount('aplicaciones')->findOrFail($id);
         abort_if(
             $registro->aplicaciones_count > 0,

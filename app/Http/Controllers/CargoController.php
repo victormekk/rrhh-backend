@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Cargo;
 use App\Traits\LogsActividad;
-use App\Traits\SoloAdmin;
 use Illuminate\Http\Request;
 
 class CargoController extends Controller
 {
-    use LogsActividad, SoloAdmin;
+    use LogsActividad;
 
     public function index(Request $request)
     {
@@ -93,8 +92,6 @@ class CargoController extends Controller
     // Borrado permanente: solo administradores.
     public function eliminar(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         $cargo = Cargo::findOrFail($id);
 
         abort_if(

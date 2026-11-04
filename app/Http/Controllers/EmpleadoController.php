@@ -51,15 +51,34 @@ class EmpleadoController extends Controller
             ->orderBy('empleados.apellidos')
             ->orderBy('empleados.id');
 
-        return response()->json($query->paginate($request->input('per_page', 15)));
+        $pagina = $query->paginate($request->input('per_page', 15));
+        $this->ocultarSalarios($request, $pagina->getCollection());
+
+        return response()->json($pagina);
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $empleado = Empleado::with(['informacionLaboral.banco', 'cargo', 'departamento'])
             ->findOrFail($id);
 
-        return response()->json($empleado);
+        return response()->json($this->ocultarSalarios($request, $empleado));
+    }
+
+    // Campos de información laboral que solo ve quien tiene el permiso salarios.ver.
+    private const CAMPOS_SALARIO = [
+        'salario_base', 'salario_quincenal', 'salario_diario', 'salario_por_hora', 'usa_salario_minimo',
+    ];
+
+    private function ocultarSalarios(Request $request, $empleados)
+    {
+        if (!$request->user()->tienePermiso('salarios.ver')) {
+            foreach ($empleados instanceof Empleado ? [$empleados] : $empleados as $emp) {
+                $emp->informacionLaboral?->makeHidden(self::CAMPOS_SALARIO);
+            }
+        }
+
+        return $empleados;
     }
 
     public function store(Request $request)
@@ -147,7 +166,7 @@ class EmpleadoController extends Controller
             $this->logActividad('creado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} registrado.", $empleado->id);
 
             return response()->json(
-                $empleado->load(['informacionLaboral.banco', 'cargo', 'departamento']),
+                $this->ocultarSalarios($request, $empleado->load(['informacionLaboral.banco', 'cargo', 'departamento'])),
                 201
             );
         });
@@ -157,6 +176,14 @@ class EmpleadoController extends Controller
     {
         $empleado = Empleado::with('informacionLaboral')->findOrFail($id);
         $il = $empleado->informacionLaboral;
+
+        // Quien no ve salarios tampoco los cambia: se conserva el salario actual.
+        if (!$request->user()->tienePermiso('salarios.ver')) {
+            $request->merge([
+                'salario_base'       => $il->salario_base,
+                'usa_salario_minimo' => (bool) $il->usa_salario_minimo,
+            ]);
+        }
 
         if ($resp = $this->rechazarDniDuplicado($request->cedula, $empleado->id)) {
             return $resp;
@@ -315,9 +342,10 @@ class EmpleadoController extends Controller
 
             $this->logActividad('editado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} actualizado.", $empleado->id);
 
-            return response()->json(
+            return response()->json($this->ocultarSalarios(
+                $request,
                 $empleado->fresh(['informacionLaboral.banco', 'cargo', 'departamento'])
-            );
+            ));
         });
     }
 
@@ -366,11 +394,13 @@ class EmpleadoController extends Controller
             ->orderBy('nombres')
             ->get();
 
+        $conSalario = $request->user()->tienePermiso('salarios.ver');
         $columnas = [
             'A' => 'Nombre completo', 'B' => 'DNI', 'C' => 'Fecha de inicio',
-            'D' => 'Departamento', 'E' => 'Cargo', 'F' => 'Salario mensual',
+            'D' => 'Departamento', 'E' => 'Cargo',
+            ...($conSalario ? ['F' => 'Salario mensual'] : []),
         ];
-        $ultimaCol = 'F';
+        $ultimaCol = $conSalario ? 'F' : 'E';
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -401,11 +431,15 @@ class EmpleadoController extends Controller
                 : '—');
             $sheet->setCellValue("D{$row}", $emp->departamento?->nombre ?? '—');
             $sheet->setCellValue("E{$row}", $emp->cargo?->nombre ?? '—');
-            $sheet->setCellValueExplicit("F{$row}", round((float) ($il->salario_base ?? 0), 2), DataType::TYPE_NUMERIC);
+            if ($conSalario) {
+                $sheet->setCellValueExplicit("F{$row}", round((float) ($il->salario_base ?? 0), 2), DataType::TYPE_NUMERIC);
+            }
             $row++;
         }
 
-        $sheet->getStyle("F6:F" . ($row - 1))->getNumberFormat()->setFormatCode('#,##0.00');
+        if ($conSalario) {
+            $sheet->getStyle("F6:F" . ($row - 1))->getNumberFormat()->setFormatCode('#,##0.00');
+        }
         foreach (array_keys($columnas) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }

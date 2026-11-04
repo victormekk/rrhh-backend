@@ -2,24 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Rol;
 use App\Models\User;
 use App\Traits\LogsActividad;
-use App\Traits\SoloAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class UsuarioController extends Controller
 {
-    use LogsActividad, SoloAdmin;
+    use LogsActividad;
 
     public function index(Request $request)
     {
-        $this->soloAdmin($request);
-
-        return User::select('id', 'name', 'email', 'rol', 'activo', 'created_at')
+        return User::with('rol:id,nombre,es_admin')
+            ->select('id', 'name', 'email', 'id_rol', 'activo', 'created_at')
             ->when($request->search, fn($q, $s) =>
-                $q->where('name', 'like', "%$s%")
-                  ->orWhere('email', 'like', "%$s%")
+                $q->where(fn($q) => $q->where('name', 'like', "%$s%")
+                  ->orWhere('email', 'like', "%$s%"))
             )
             ->orderBy('name')
             ->paginate(20);
@@ -27,44 +26,54 @@ class UsuarioController extends Controller
 
     public function store(Request $request)
     {
-        $this->soloAdmin($request);
-
         $data = $request->validate([
             'name'     => 'required|string|max:100',
             'email'    => 'required|email|max:100|unique:users,email',
             'password' => 'required|string|min:8',
-            'rol'      => 'required|in:admin,rrhh',
-        ]);
+            'id_rol'   => 'required|exists:roles,id',
+        ], ['id_rol.required' => 'Seleccione un rol.']);
+
+        $rol = Rol::find($data['id_rol']);
+        $this->exigirAdminParaRolAdmin($request, $rol);
 
         $user = User::create([
             'name'     => $data['name'],
             'email'    => $data['email'],
             'password' => Hash::make($data['password']),
-            'rol'      => $data['rol'],
+            'id_rol'   => $rol->id,
         ]);
 
-        $this->logActividad('creado', 'Usuarios', "Usuario {$user->name} ({$user->email}) creado con rol {$user->rol}.", $user->id);
+        $this->logActividad('creado', 'Usuarios', "Usuario {$user->name} ({$user->email}) creado con rol {$rol->nombre}.", $user->id);
 
-        return response()->json($user->only(['id', 'name', 'email', 'rol', 'activo', 'created_at']), 201);
+        return response()->json($this->datos($user), 201);
     }
 
     public function update(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
-        $user = User::findOrFail($id);
+        $user = User::with('rol')->findOrFail($id);
 
         $data = $request->validate([
             'name'     => 'required|string|max:100',
             'email'    => "required|email|max:100|unique:users,email,{$id}",
-            'rol'      => 'required|in:admin,rrhh',
+            'id_rol'   => 'required|exists:roles,id',
             'password' => 'nullable|string|min:8',
-        ]);
+        ], ['id_rol.required' => 'Seleccione un rol.']);
+
+        $rol = Rol::find($data['id_rol']);
+        $cambiaRol = (int) $user->id_rol !== (int) $rol->id;
+
+        if ($cambiaRol && $request->user()->id == $user->id) {
+            return response()->json(['message' => 'No puedes cambiar tu propio rol.'], 422);
+        }
+
+        // Editar a un Administrador o dar el rol Administrador: solo otro Administrador.
+        $this->exigirAdminParaRolAdmin($request, $user->rol);
+        $this->exigirAdminParaRolAdmin($request, $rol);
 
         $update = [
-            'name'  => $data['name'],
-            'email' => $data['email'],
-            'rol'   => $data['rol'],
+            'name'   => $data['name'],
+            'email'  => $data['email'],
+            'id_rol' => $rol->id,
         ];
 
         if (!empty($data['password'])) {
@@ -73,22 +82,21 @@ class UsuarioController extends Controller
 
         $user->update($update);
 
-        $this->logActividad('editado', 'Usuarios', "Usuario {$user->name} actualizado (rol: {$user->rol}).", $user->id);
+        $this->logActividad('editado', 'Usuarios', "Usuario {$user->name} actualizado (rol: {$rol->nombre}).", $user->id);
 
-        return response()->json($user->fresh()->only(['id', 'name', 'email', 'rol', 'activo', 'created_at']));
+        return response()->json($this->datos($user));
     }
 
     public function cambiarEstado(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         if ($request->user()->id == $id) {
             return response()->json(['message' => 'No puedes deshabilitar tu propio usuario.'], 422);
         }
 
         $data = $request->validate(['activo' => 'required|boolean']);
 
-        $user = User::findOrFail($id);
+        $user = User::with('rol')->findOrFail($id);
+        $this->exigirAdminParaRolAdmin($request, $user->rol);
         $user->update(['activo' => $data['activo']]);
 
         // Los tokens no se revocan aquí: en su siguiente acción VerificaUsuarioActivo
@@ -96,18 +104,17 @@ class UsuarioController extends Controller
         $estado = $user->activo ? 'habilitado' : 'deshabilitado';
         $this->logActividad('editado', 'Usuarios', "Usuario {$user->name} {$estado}.", $user->id);
 
-        return response()->json($user->only(['id', 'name', 'email', 'rol', 'activo', 'created_at']));
+        return response()->json($this->datos($user));
     }
 
     public function destroy(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         if ($request->user()->id == $id) {
             return response()->json(['message' => 'No puedes eliminar tu propio usuario.'], 422);
         }
 
-        $user = User::findOrFail($id);
+        $user = User::with('rol')->findOrFail($id);
+        $this->exigirAdminParaRolAdmin($request, $user->rol);
 
         if ($user->activo) {
             return response()->json(['message' => 'Primero deshabilite al usuario para poder eliminarlo.'], 422);
@@ -121,5 +128,30 @@ class UsuarioController extends Controller
         $this->logActividad('eliminado', 'Usuarios', "Usuario {$nombre} eliminado.", $id);
 
         return response()->json(['message' => 'Usuario eliminado.']);
+    }
+
+    // Roles para el selector del formulario de usuario.
+    public function roles()
+    {
+        return response()->json(
+            Rol::orderByDesc('es_admin')->orderBy('nombre')->get(['id', 'nombre', 'descripcion', 'es_admin'])
+        );
+    }
+
+    private function exigirAdminParaRolAdmin(Request $request, ?Rol $rol): void
+    {
+        if ($rol?->es_admin && !$request->user()->esAdmin()) {
+            abort(response()->json(['message' => 'Solo un Administrador puede gestionar usuarios con el rol Administrador.'], 403));
+        }
+    }
+
+    private function datos(User $user): array
+    {
+        $user->load('rol:id,nombre,es_admin');
+
+        return [
+            ...$user->only(['id', 'name', 'email', 'id_rol', 'activo', 'created_at']),
+            'rol' => $user->rol,
+        ];
     }
 }

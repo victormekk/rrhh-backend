@@ -10,7 +10,6 @@ use App\Models\Vacacion;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
-use App\Traits\SoloAdmin;
 use App\Traits\TieneFeriados;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -19,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 
 class VacacionController extends Controller
 {
-    use LogsActividad, NombraArchivos, GeneraCorrelativo, SoloAdmin, TieneFeriados;
+    use LogsActividad, NombraArchivos, GeneraCorrelativo, TieneFeriados;
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     // La lógica de días laborables y saldo vive en App\Calculos\CalculoVacaciones
@@ -182,8 +181,6 @@ class VacacionController extends Controller
     // Los días vuelven al saldo porque calcularSaldo ignora las anuladas.
     public function destroy(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         $data = $request->validate([
             'motivo' => 'required|string|max:300',
         ]);
@@ -206,8 +203,6 @@ class VacacionController extends Controller
     // Restaurar vuelve a descontar los días, así que primero revisa el saldo.
     public function restaurar(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         $sol = SolicitudVacacion::onlyTrashed()->with('empleado.informacionLaboral')->findOrFail($id);
 
         $saldo = $this->calcularSaldo($sol->empleado)['saldo'];

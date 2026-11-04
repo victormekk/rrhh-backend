@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Departamento;
 use App\Traits\LogsActividad;
-use App\Traits\SoloAdmin;
 use Illuminate\Http\Request;
 
 class DepartamentoController extends Controller
 {
-    use LogsActividad, SoloAdmin;
+    use LogsActividad;
 
     public function index(Request $request)
     {
@@ -93,8 +92,6 @@ class DepartamentoController extends Controller
     // Borrado permanente: solo administradores.
     public function eliminar(Request $request, $id)
     {
-        $this->soloAdmin($request);
-
         $departamento = Departamento::findOrFail($id);
 
         abort_if(

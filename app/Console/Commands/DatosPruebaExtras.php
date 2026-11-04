@@ -63,7 +63,9 @@ class DatosPruebaExtras extends Command
             return self::FAILURE;
         }
 
-        $usuario = DB::table('users')->where('rol', 'admin')->value('id');
+        $usuario = DB::table('users')
+            ->join('roles', 'roles.id', '=', 'users.id_rol')
+            ->where('roles.es_admin', true)->value('users.id');
         $minimo  = (float) (DB::table('campos_variables')->where('nombre_campo', 'salario_minimo')->value('monto') ?? 16317.60);
         $diario  = round($minimo / 30, 2);
         $hoy     = Carbon::today();

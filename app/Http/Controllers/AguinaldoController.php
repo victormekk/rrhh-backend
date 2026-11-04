@@ -11,7 +11,6 @@ use App\Traits\GeneraCorrelativo;
 use App\Traits\EncabezadoExcel;
 use App\Traits\LogsActividad;
 use App\Traits\NombraArchivos;
-use App\Traits\SoloAdmin;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -25,7 +24,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class AguinaldoController extends Controller
 {
-    use NombraArchivos, GeneraCorrelativo, SoloAdmin, LogsActividad, EncabezadoExcel;
+    use NombraArchivos, GeneraCorrelativo, LogsActividad, EncabezadoExcel;
 
     // ─── List batches ────────────────────────────────────────────
     public function index()
@@ -330,8 +329,6 @@ class AguinaldoController extends Controller
     // ─── Delete batch ─────────────────────────────────────────────
     public function destroy(Request $request, $nombre)
     {
-        $this->soloAdmin($request);
-
         $fijos  = AguinaldoFijo::where('nombre_aguinaldo', $nombre)->where('estado', 'Activo');
         $extras = AguinaldoExtra::where('nombre_aguinaldo', $nombre)->where('estado', 'Activo');
 
