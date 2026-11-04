@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Shared\Font;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -58,13 +59,73 @@ trait EncabezadoExcel
     }
 
     // Llamar cuando la hoja ya tiene todos sus datos (antes de guardar): si el ancho
-    // automático de la columna A queda más angosto que el logo, se ensancha.
+    // automático de la columna A queda más angosto que el logo, se ensancha. Además,
+    // con los anchos ya calculados, alarga las celdas combinadas de los títulos si el
+    // texto no cabe (en reportes de pocas columnas, como el archivo de pago, el título
+    // quedaba cortado porque una celda combinada no deja que el texto se desborde).
     protected function anchoColumnaLogo(Worksheet $sheet): void
     {
         $sheet->calculateColumnWidths();
         $columna = $sheet->getColumnDimension('A');
         if ($columna->getWidth() < self::COLUMNA_A_MINIMA) {
             $columna->setAutoSize(false)->setWidth(self::COLUMNA_A_MINIMA);
+        }
+
+        $this->ajustarTitulosEncabezado($sheet);
+    }
+
+    // Extiende hacia la derecha (solo alarga, nunca acorta) las combinaciones B{fila}:X{fila}
+    // de las líneas de título hasta que la suma de anchos de columna alcance para el texto
+    // más largo; las tres líneas quedan combinadas hasta la misma columna.
+    private function ajustarTitulosEncabezado(Worksheet $sheet): void
+    {
+        $anchoDefecto = $sheet->getDefaultColumnDimension()->getWidth();
+        $anchoDefecto = $anchoDefecto > 0 ? $anchoDefecto : 8.43; // ancho estándar de Excel
+        $dimensiones  = $sheet->getColumnDimensions();
+        $anchoDe = function (int $i) use ($dimensiones, $anchoDefecto): float {
+            $col = Coordinate::stringFromColumnIndex($i);
+            $w   = isset($dimensiones[$col]) ? $dimensiones[$col]->getWidth() : -1;
+            return $w > 0 ? $w : $anchoDefecto;
+        };
+
+        $rangos    = [];
+        $necesario = 0;
+        foreach ([1, 2, 3] as $fila) {
+            $rango = collect(array_keys($sheet->getMergeCells()))
+                ->first(fn ($r) => str_starts_with($r, "B{$fila}:"));
+            $texto = (string) $sheet->getCell("B{$fila}")->getValue();
+            if (!$rango || $texto === '') {
+                continue;
+            }
+            $rangos[$fila] = $rango;
+
+            $estilo    = $sheet->getStyle("B{$fila}");
+            $necesario = max($necesario, Font::calculateColumnWidth(
+                $estilo->getFont(), $texto, 0, $sheet->getParent()?->getDefaultStyle()->getFont(),
+                false, (int) $estilo->getAlignment()->getIndent()
+            ) * 1.15); // margen: el cálculo aproximado no considera negrita ni mayúsculas
+        }
+        if (!$rangos) {
+            return;
+        }
+
+        $fin = max(array_map(
+            fn ($r) => Coordinate::columnIndexFromString(preg_replace('/\d+$/', '', explode(':', $r)[1])),
+            $rangos
+        ));
+        $nuevoFin  = 2;
+        $acumulado = $anchoDe(2);
+        while ($acumulado < $necesario || $nuevoFin < $fin) {
+            $nuevoFin++;
+            $acumulado += $anchoDe($nuevoFin);
+        }
+
+        $hasta = Coordinate::stringFromColumnIndex($nuevoFin);
+        foreach ($rangos as $fila => $rango) {
+            if ($rango !== "B{$fila}:{$hasta}{$fila}") {
+                $sheet->unmergeCells($rango);
+                $sheet->mergeCells("B{$fila}:{$hasta}{$fila}");
+            }
         }
     }
 }
