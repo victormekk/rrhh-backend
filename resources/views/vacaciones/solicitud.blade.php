@@ -60,6 +60,11 @@ table.dias td:last-child { border-right: none; }
 .p-sub { font-size: 9px; color: #64748b; }
 .p-ret { font-size: 11px; font-weight: 600; margin-top: 5px; color: #3b2b16; }
 
+/* ── Adelanto de vacaciones ── */
+.tag-adelanto { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 3px; background: #c2410c; color: #fff; font-size: 8.5px; font-weight: bold; letter-spacing: 0.6px; }
+.adelanto { border: 1px solid #fdba74; background: #fff7ed; border-left: 4px solid #c2410c; padding: 7px 10px; margin-bottom: 12px; font-size: 9.5px; color: #431407; line-height: 1.5; }
+.adelanto strong { color: #9a3412; }
+
 /* ── Observaciones ── */
 .obs { border: 1px solid #e2e8f0; border-radius: 3px; padding: 8px 14px; min-height: 30px; font-size: 9.5px; color: #334155; line-height: 1.6; margin-bottom: 14px; }
 
@@ -100,6 +105,9 @@ table.firmas td { width: 50%; text-align: center; vertical-align: top; padding: 
       <td class="hdr-info">
         <h2>CONSTANCIA DE VACACIONES</h2>
         <p>Departamento de Recursos Humanos &nbsp;·&nbsp; La Ceiba, Atlántida, Honduras</p>
+        @if($periodoAdelanto)
+          <span class="tag-adelanto">ADELANTO DE VACACIONES</span>
+        @endif
       </td>
       <td class="hdr-doc">
         <div class="num">N° {{ $correlativo }}</div>
@@ -184,6 +192,18 @@ table.firmas td { width: 50%; text-align: center; vertical-align: top; padding: 
       </td>
     </tr>
   </table>
+
+  @if($periodoAdelanto)
+    @php($adelantados = (float) $solicitud->dias_adelantados)
+    <div class="adelanto">
+      <strong>Adelanto de vacaciones:</strong>
+      de los {{ number_format($solicitud->dias_tomados, 0) }} días de esta solicitud,
+      <strong>{{ number_format($adelantados, 0) }} {{ $adelantados == 1 ? 'día corresponde' : 'días corresponden' }}
+      al período vacacional {{ $periodoAdelanto->year }}–{{ $periodoAdelanto->year + 1 }}, que inicia el {{ $periodoAdelanto->format('d') }} de {{ $meses[$periodoAdelanto->month - 1] }} de {{ $periodoAdelanto->format('Y') }}</strong>
+      y se conceden por adelantado. Al cumplirse esa fecha, estos días se descontarán de las vacaciones
+      que le correspondan en ese período.
+    </div>
+  @endif
 
   {{-- ══ III. PERÍODO DE AUSENCIA ══ --}}
   <div class="sec">III. Período de Ausencia</div>

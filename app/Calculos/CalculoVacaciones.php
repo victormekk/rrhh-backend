@@ -108,6 +108,16 @@ class CalculoVacaciones
         $excedentePeriodo      = max(0, $tomadosPeriodo - $diasAnioActual);
         $diasPrevios           = max(0, $diasGanadosAnteriores - $diasTomadosAnteriores - $excedentePeriodo);
 
+        // Adelanto: solo cuando el saldo llega a cero se pueden tomar por adelantado,
+        // como máximo, los días del próximo período. Lo adelantado deja el saldo "en
+        // negativo" (aquí se muestra en 0 y en dias_adelantados); al cumplir el siguiente
+        // aniversario se suman los días de ese año y el saldo vuelve a cuadrar solo,
+        // en cero si se adelantó todo.
+        $saldoReal          = $diasAcumulados - $tomadosTotal;
+        $diasAdelantados    = max(0, -$saldoReal);
+        $diasProximoPeriodo = $this->diasDelAnio($anios + 1);
+        $adelantoDisponible = max(0, $diasProximoPeriodo - $diasAdelantados);
+
         return [
             'anios_laborados'      => $anios,
             'dias_por_ley'         => $diasAcumulados,
@@ -115,9 +125,15 @@ class CalculoVacaciones
             'dias_previos'         => $diasPrevios,
             'dias_tomados'         => $tomadosTotal,
             'dias_tomados_periodo' => $tomadosPeriodo,
-            'saldo'                => max(0, $diasAcumulados - $tomadosTotal),
+            'saldo'                => max(0, $saldoReal),
             'periodo_inicio'       => $periodoInicio->format('Y-m-d'),
             'periodo_fin'          => $periodoFin->format('Y-m-d'),
+            'dias_adelantados'       => $diasAdelantados,
+            'dias_proximo_periodo'   => $diasProximoPeriodo,
+            'proximo_periodo_inicio' => $periodoFin->copy()->addDay()->format('Y-m-d'),
+            'adelanto_disponible'    => $adelantoDisponible,
+            // Con saldo se pide hasta el saldo; con el saldo en cero, hasta lo que se puede adelantar.
+            'maximo_solicitable'     => $saldoReal > 0 ? $saldoReal : $adelantoDisponible,
         ];
     }
 }

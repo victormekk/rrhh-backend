@@ -39,7 +39,8 @@ class VacacionController extends Controller
         ];
     }
 
-    private function calcularSaldo(Empleado $empleado): array
+    // $excluirId: solicitud que no se cuenta (al editarla, sus días vuelven al saldo).
+    private function calcularSaldo(Empleado $empleado, ?int $excluirId = null): array
     {
         $il = $empleado->informacionLaboral;
 
@@ -49,6 +50,9 @@ class VacacionController extends Controller
             'dias_tomados'        => 0, 'dias_tomados_periodo' => 0,
             'saldo'               => 0, 'periodo_inicio'       => null,
             'periodo_fin'         => null,
+            'dias_adelantados'    => 0, 'dias_proximo_periodo' => 0,
+            'proximo_periodo_inicio' => null, 'adelanto_disponible' => 0,
+            'maximo_solicitable'  => 0,
         ];
 
         if (!$il || !$il->fecha_inicio) {
@@ -67,12 +71,52 @@ class VacacionController extends Controller
 
         // Una sola query con SUM condicional en lugar de dos queries separadas
         $tomados = SolicitudVacacion::where('id_empleado', $empleado->id)
+            ->when($excluirId, fn ($q) => $q->where('id', '!=', $excluirId))
             ->selectRaw(
                 'SUM(dias_tomados) as total, SUM(CASE WHEN fecha_inicio >= ? THEN dias_tomados ELSE 0 END) as periodo',
                 [$periodoInicio->format('Y-m-d')]
             )->first();
 
         return $calculo->saldo($inicio, $hoy, (float) ($tomados->total ?? 0), (float) ($tomados->periodo ?? 0));
+    }
+
+    // Revisa si alcanzan los días. Mientras tenga días disponibles, la solicitud solo
+    // puede usar esos días (como siempre). Solo con el saldo en cero se puede adelantar:
+    // hasta los días del próximo período que aún no haya adelantado, y con $adelantar
+    // confirmado (botón "Adelantar vacaciones"). Devuelve [error o null, días adelantados].
+    private function validarDias(array $saldo, float $dias, bool $adelantar): array
+    {
+        $disponible = (float) $saldo['saldo'];
+        if ($disponible > 0) {
+            if ($dias > $disponible) {
+                return [response()->json([
+                    'message' => "No hay suficientes días disponibles. Disponibles: {$disponible} día(s), solicitados: {$dias}.",
+                ], 422), 0];
+            }
+
+            return [null, 0];
+        }
+
+        $adelanto = (float) $saldo['adelanto_disponible'];
+        if ($adelanto <= 0) {
+            return [response()->json([
+                'message' => 'No tiene días disponibles y ya adelantó todos los días de su próximo período.',
+            ], 422), 0];
+        }
+        if ($dias > $adelanto) {
+            return [response()->json([
+                'message' => "Se pueden adelantar como máximo {$adelanto} día(s) del próximo período. Solicitados: {$dias}.",
+            ], 422), 0];
+        }
+        if (!$adelantar) {
+            return [response()->json([
+                'message'          => "No tiene días disponibles: se adelantarían {$dias} día(s) del próximo período. Confirme el adelanto para continuar.",
+                'codigo'           => 'requiere_adelanto',
+                'dias_adelantados' => $dias,
+            ], 422), 0];
+        }
+
+        return [null, $dias];
     }
 
     // ── Endpoints ─────────────────────────────────────────────────────────────
@@ -114,7 +158,9 @@ class VacacionController extends Controller
             'fecha_inicio' => 'required|date',
             'fecha_fin'    => 'required|date|after_or_equal:fecha_inicio',
             'observaciones'=> 'nullable|string|max:500',
+            'adelantar'    => 'boolean',
         ]);
+        unset($data['adelantar']);
 
         $inicio  = Carbon::parse($data['fecha_inicio']);
         $fin     = Carbon::parse($data['fecha_fin']);
@@ -124,20 +170,23 @@ class VacacionController extends Controller
         $empleado = Empleado::with('informacionLaboral')->findOrFail($data['id_empleado']);
         $saldo    = $this->calcularSaldo($empleado);
 
-        if ($saldo['saldo'] < $dias) {
-            return response()->json([
-                'message' => "No hay suficientes días disponibles. Disponibles: {$saldo['saldo']} día(s), solicitados: {$dias}.",
-            ], 422);
+        [$error, $adelantados] = $this->validarDias($saldo, $dias, $request->boolean('adelantar'));
+        if ($error) {
+            return $error;
         }
 
         $solicitud = SolicitudVacacion::create([
             ...$data,
-            'dias_tomados' => $dias,
-            'id_usuario'   => $request->user()->id,
+            'dias_tomados'     => $dias,
+            'dias_adelantados' => $adelantados,
+            'id_usuario'       => $request->user()->id,
         ]);
 
         $solicitud->load('empleado:id,nombres,apellidos');
-        $this->logActividad('creado', 'Vacaciones', "Solicitud de {$dias} día(s) para {$solicitud->empleado->nombres} {$solicitud->empleado->apellidos}.", $solicitud->id);
+        $adelanto = $adelantados > 0
+            ? " ({$adelantados} adelantado(s) del período que inicia el " . Carbon::parse($saldo['proximo_periodo_inicio'])->format('d/m/Y') . ')'
+            : '';
+        $this->logActividad('creado', 'Vacaciones', "Solicitud de {$dias} día(s) para {$solicitud->empleado->nombres} {$solicitud->empleado->apellidos}{$adelanto}.", $solicitud->id);
 
         $solicitud->setAttribute('feriados_excluidos', $calculo['feriados']);
 
@@ -152,24 +201,24 @@ class VacacionController extends Controller
             'fecha_inicio'  => 'required|date',
             'fecha_fin'     => 'required|date|after_or_equal:fecha_inicio',
             'observaciones' => 'nullable|string|max:500',
+            'adelantar'     => 'boolean',
         ]);
+        unset($data['adelantar']);
 
         $inicio  = Carbon::parse($data['fecha_inicio']);
         $fin     = Carbon::parse($data['fecha_fin']);
         $calculo = $this->diasLaborables($inicio, $fin);
         $dias    = $calculo['dias'];
 
-        // Saldo efectivo: sumar de vuelta los días originales antes de comparar
-        $saldo         = $this->calcularSaldo($solicitud->empleado);
-        $saldoEfectivo = $saldo['saldo'] + $solicitud->dias_tomados;
+        // Saldo sin contar esta misma solicitud: sus días vuelven antes de comparar.
+        $saldo = $this->calcularSaldo($solicitud->empleado, $solicitud->id);
 
-        if ($saldoEfectivo < $dias) {
-            return response()->json([
-                'message' => "No hay suficientes días disponibles. Disponibles: {$saldoEfectivo} día(s), solicitados: {$dias}.",
-            ], 422);
+        [$error, $adelantados] = $this->validarDias($saldo, $dias, $request->boolean('adelantar'));
+        if ($error) {
+            return $error;
         }
 
-        $solicitud->update([...$data, 'dias_tomados' => $dias]);
+        $solicitud->update([...$data, 'dias_tomados' => $dias, 'dias_adelantados' => $adelantados]);
 
         $fresco = $solicitud->fresh(['empleado:id,nombres,apellidos']);
         $fresco->setAttribute('feriados_excluidos', $calculo['feriados']);
@@ -205,16 +254,17 @@ class VacacionController extends Controller
     {
         $sol = SolicitudVacacion::onlyTrashed()->with('empleado.informacionLaboral')->findOrFail($id);
 
-        $saldo = $this->calcularSaldo($sol->empleado)['saldo'];
-        if ($saldo < $sol->dias_tomados) {
-            return response()->json([
-                'message' => "No hay suficientes días disponibles para restaurarla. Disponibles: {$saldo} día(s), la solicitud tiene: " . (float) $sol->dias_tomados . ".",
-            ], 422);
+        // Mismas reglas que al crearla: con saldo, debe caber en el saldo; con el saldo en
+        // cero, se restaura como adelanto (restaurarla ya es la confirmación).
+        $saldo = $this->calcularSaldo($sol->empleado);
+        [$error, $adelantados] = $this->validarDias($saldo, (float) $sol->dias_tomados, true);
+        if ($error) {
+            return $error;
         }
 
-        DB::transaction(function () use ($sol) {
+        DB::transaction(function () use ($sol, $adelantados) {
             $sol->restore();
-            $sol->forceFill(['anulada_por' => null, 'motivo_anulacion' => null])->save();
+            $sol->forceFill(['anulada_por' => null, 'motivo_anulacion' => null, 'dias_adelantados' => $adelantados])->save();
         });
 
         $this->logActividad('editado', 'Vacaciones', "Solicitud de vacaciones de {$sol->empleado->nombres} {$sol->empleado->apellidos} restaurada.", $sol->id);
@@ -248,7 +298,17 @@ class VacacionController extends Controller
         // vacaciones, saltando domingos y feriados nacionales.
         $retorno = Feriados::siguienteDiaHabil(Carbon::parse($solicitud->fecha_fin));
 
-        $pdf = Pdf::loadView('vacaciones.solicitud', compact('solicitud', 'saldo', 'correlativo', 'solicitudAnterior', 'retorno'))
+        // Adelanto: los días se tomaron del período que empieza en el aniversario
+        // siguiente a la fecha en que se registró la solicitud.
+        $periodoAdelanto = null;
+        $il = $solicitud->empleado->informacionLaboral;
+        if ((float) $solicitud->dias_adelantados > 0 && $il?->fecha_inicio) {
+            [, $finPeriodo] = (new CalculoVacaciones($this->tasasDias()))
+                ->periodo(Carbon::parse($il->fecha_inicio), Carbon::parse($solicitud->created_at));
+            $periodoAdelanto = $finPeriodo->copy()->addDay();
+        }
+
+        $pdf = Pdf::loadView('vacaciones.solicitud', compact('solicitud', 'saldo', 'correlativo', 'solicitudAnterior', 'retorno', 'periodoAdelanto'))
             ->setPaper('letter', 'portrait');
 
         $nombres   = $solicitud->empleado->nombres;

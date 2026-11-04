@@ -17,13 +17,14 @@ class SolicitudVacacion extends Model
 
     protected $fillable = [
         'id_empleado', 'fecha_inicio', 'fecha_fin',
-        'dias_tomados', 'observaciones', 'id_usuario',
+        'dias_tomados', 'dias_adelantados', 'observaciones', 'id_usuario',
     ];
 
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin'    => 'date',
         'dias_tomados' => 'decimal:2',
+        'dias_adelantados' => 'decimal:2',
     ];
 
     public function empleado()
