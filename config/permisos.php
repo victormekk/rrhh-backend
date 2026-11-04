@@ -84,7 +84,7 @@ return [
                 'nombre'   => 'Cumpleaños',
                 'permisos' => [
                     'ver'      => 'Ver módulo',
-                    'exportar' => 'Exportar Excel',
+                    'exportar' => 'Exportar PDF',
                 ],
             ],
         ],

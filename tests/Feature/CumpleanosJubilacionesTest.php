@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\View;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -98,20 +99,48 @@ class CumpleanosJubilacionesTest extends TestCase
         $this->getJson('/api/dashboard/jubilaciones')->assertOk()->assertExactJson([]);
     }
 
-    public function test_excel_de_cumpleanos_trae_los_del_mes_en_orden(): void
+    public function test_pdf_de_cumpleanos_trae_los_del_mes_en_orden_y_sin_edad(): void
     {
         $this->empleado('SEGUNDO', '1990-11-20');
         $this->empleado('PRIMERO', '1985-11-03');
         $this->empleado('OTRO MES', '1985-10-03');
 
-        $respuesta = $this->get('/api/cumpleanos/excel?mes=11')->assertOk();
-        $hoja = \PhpOffice\PhpSpreadsheet\IOFactory::load($respuesta->baseResponse->getFile()->getPathname())->getActiveSheet();
+        // Se guardan los datos que recibe la vista para revisar después su HTML (el PDF no se puede leer).
+        $datos = null;
+        View::composer('cumpleanos.pdf', function ($vista) use (&$datos) {
+            $datos ??= $vista->getData();
+        });
 
-        $this->assertSame('Nombre completo', $hoja->getCell('A5')->getValue());
-        $this->assertSame(['PRIMERO PRUEBA', '3 de Noviembre', '41 años'],
-            [$hoja->getCell('A6')->getValue(), $hoja->getCell('C6')->getValue(), $hoja->getCell('D6')->getValue()]);
-        $this->assertSame('SEGUNDO PRUEBA', $hoja->getCell('A7')->getValue());
-        $this->assertNull($hoja->getCell('A8')->getValue());
+        $this->get('/api/cumpleanos/pdf?mes=11')->assertOk()->assertHeader('content-type', 'application/pdf');
+
+        $texto = preg_replace('/\s+/', ' ', strip_tags(view('cumpleanos.pdf', $datos)->render()));
+        $this->assertStringContainsString('Cumpleañeros de Noviembre', $texto);
+        $this->assertStringNotContainsString('N° ', $texto); // sin correlativo
+        $this->assertLessThan(strpos($texto, 'SEGUNDO PRUEBA'), strpos($texto, 'PRIMERO PRUEBA'));
+        $this->assertStringContainsString('3 de Noviembre', $texto);
+        $this->assertStringNotContainsString('OTRO MES', $texto);
+        // No se muestra la edad (ej. "41 años").
+        $this->assertDoesNotMatchRegularExpression('/\d+\s*años/u', $texto);
+    }
+
+    public function test_las_fotos_y_las_iniciales_salen_como_circulo_png(): void
+    {
+        $ruta = tempnam(sys_get_temp_dir(), 'foto') . '.jpg';
+        $img = imagecreatetruecolor(300, 400);
+        imagefill($img, 0, 0, imagecolorallocate($img, 200, 30, 30));
+        imagejpeg($img, $ruta);
+
+        foreach ([\App\Pdf\AvatarCircular::foto($ruta), \App\Pdf\AvatarCircular::iniciales('AB', '#8b5cf6')] as $uri) {
+            $this->assertStringStartsWith('data:image/png;base64,', $uri);
+            $png = imagecreatefromstring(base64_decode(substr($uri, strlen('data:image/png;base64,'))));
+            $this->assertSame([120, 120], [imagesx($png), imagesy($png)]);
+            // La esquina queda transparente (círculo) y el centro con color.
+            $this->assertSame(127, (imagecolorat($png, 0, 0) >> 24) & 0x7F);
+            $this->assertSame(0, (imagecolorat($png, 60, 30) >> 24) & 0x7F);
+        }
+        @unlink($ruta);
+
+        $this->assertNull(\App\Pdf\AvatarCircular::foto($ruta)); // archivo que ya no existe
     }
 
     public function test_sin_permiso_no_se_exporta_ni_se_ve_la_lista(): void
@@ -119,7 +148,7 @@ class CumpleanosJubilacionesTest extends TestCase
         $rol = Rol::create(['nombre' => 'Solo cumpleaños', 'permisos' => ['cumpleanos.ver']]);
         Sanctum::actingAs(User::factory()->create(['id_rol' => $rol->id, 'activo' => true]));
 
-        $this->get('/api/cumpleanos/excel?mes=11')->assertForbidden();
+        $this->get('/api/cumpleanos/pdf?mes=11')->assertForbidden();
         $this->getJson('/api/dashboard/jubilaciones')->assertForbidden();
     }
 }

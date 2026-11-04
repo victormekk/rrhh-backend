@@ -4,20 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Calculos\Fechas;
 use App\Models\Empleado;
-use App\Traits\EncabezadoExcel;
+use App\Pdf\AvatarCircular;
 use App\Traits\LogsActividad;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class CumpleanosController extends Controller
 {
-    use EncabezadoExcel, LogsActividad;
+    use LogsActividad;
 
     private const MESES = [
         1 => 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -29,64 +25,38 @@ class CumpleanosController extends Controller
         return response()->json($this->cumpleaneros($this->mes($request)));
     }
 
-    // Excel con la misma lista de la pantalla: empleados activos del mes, por día de cumpleaños.
-    public function excel(Request $request)
+    // Colores de las iniciales, los mismos de la pantalla de Cumpleaños (colorAvatar).
+    private const COLORES = ['#b9921a', '#10b981', '#8b5cf6', '#f43f5e', '#f59e0b', '#06b6d4', '#ec4899', '#6366f1'];
+
+    // PDF con la misma lista de la pantalla: tarjetas con foto o iniciales, nombre,
+    // departamento y fecha, por día de cumpleaños. No lleva la edad (hay empleados
+    // que prefieren que no se muestre) ni correlativo.
+    public function pdf(Request $request)
     {
-        $mes   = $this->mes($request);
-        $lista = $this->cumpleaneros($mes);
+        $mes       = $this->mes($request);
         $nombreMes = self::MESES[$mes];
+        $base      = $this->cumpleaneros($mes);
+        $fotos     = Empleado::whereIn('id', $base->pluck('id'))->pluck('foto_path', 'id');
 
-        $columnas  = ['A' => 'Nombre completo', 'B' => 'Departamento', 'C' => 'Cumpleaños', 'D' => 'Edad que cumple'];
-        $ultimaCol = 'D';
+        $lista = $base->map(function (array $emp) use ($fotos) {
+            $ruta    = $fotos[$emp['id']] ?? null;
+            $archivo = $ruta ? storage_path('app/public/' . $ruta) : null;
+            $color   = self::COLORES[$emp['id'] % count(self::COLORES)];
+            $iniciales = mb_substr($emp['nombres'] ?? '', 0, 1) . mb_substr($emp['apellidos'] ?? '', 0, 1);
 
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Cumpleaños ' . $nombreMes);
+            return [
+                ...$emp,
+                'color'  => $color,
+                'avatar' => ($archivo && is_file($archivo) ? AvatarCircular::foto($archivo) : null)
+                    ?? AvatarCircular::iniciales($iniciales, $color),
+            ];
+        });
 
-        $this->encabezadoExcel($sheet, $ultimaCol, [
-            ['INVERSIONES Y SERVICIOS S.A - HOTEL PALMA REAL', 14],
-            ['CUMPLEAÑOS DE ' . mb_strtoupper($nombreMes), 12],
-            [sprintf('Generado: %s   |   Empleados: %d', now()->format('d/m/Y'), $lista->count()), null],
-        ]);
+        $this->logActividad('generado', 'Empleados', "Exportó los cumpleaños de {$nombreMes} a PDF ({$lista->count()} empleado(s)).");
 
-        $row = 5;
-        foreach ($columnas as $col => $titulo) {
-            $sheet->setCellValue("{$col}{$row}", $titulo);
-        }
-        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
-            ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('3B2B16');
-        $row++;
-
-        foreach ($lista as $emp) {
-            $sheet->setCellValue("A{$row}", trim("{$emp['nombres']} {$emp['apellidos']}"));
-            $sheet->setCellValue("B{$row}", $emp['departamento']);
-            $sheet->setCellValue("C{$row}", "{$emp['dia']} de {$nombreMes}");
-            $sheet->setCellValue("D{$row}", "{$emp['edad_cumple']} años");
-            $row++;
-        }
-
-        if ($lista->isEmpty()) {
-            $sheet->setCellValue("A{$row}", "Ningún empleado activo cumple años en {$nombreMes}.");
-            $sheet->mergeCells("A{$row}:{$ultimaCol}{$row}");
-            $row++;
-        }
-
-        $sheet->getStyle("A5:{$ultimaCol}" . ($row - 1))->getBorders()->getAllBorders()
-            ->setBorderStyle(Border::BORDER_THIN)->getColor()->setRGB('D6D3D1');
-        $sheet->getStyle("C6:D" . ($row - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        foreach (array_keys($columnas) as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
-        }
-
-        $tempFile = tempnam(sys_get_temp_dir(), 'cumpleanos') . '.xlsx';
-        $this->anchoColumnaLogo($sheet);
-        (new Xlsx($spreadsheet))->save($tempFile);
-
-        $this->logActividad('generado', 'Empleados', "Exportó los cumpleaños de {$nombreMes} a Excel ({$lista->count()} empleado(s)).");
-
-        return response()->download($tempFile, "Cumpleanos_{$nombreMes}_" . now()->format('dmY') . '.xlsx')
-            ->deleteFileAfterSend(true);
+        return Pdf::loadView('cumpleanos.pdf', compact('lista', 'nombreMes'))
+            ->setPaper('letter', 'portrait')
+            ->download("Cumpleanos_{$nombreMes}_" . now()->format('dmY') . '.pdf');
     }
 
     private function mes(Request $request): int

@@ -70,7 +70,7 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
 
     // Cumpleaños
     Route::get('/cumpleanos', [CumpleanosController::class, 'index'])->middleware('permiso:cumpleanos.ver');
-    Route::get('/cumpleanos/excel', [CumpleanosController::class, 'excel'])->middleware('permiso:cumpleanos.exportar');
+    Route::get('/cumpleanos/pdf', [CumpleanosController::class, 'pdf'])->middleware('permiso:cumpleanos.exportar');
 
     // Empleados
     Route::post('/empleados/{empleado}/foto', [EmpleadoController::class, 'uploadFoto'])->middleware('permiso:empleados.crear,empleados.editar');
