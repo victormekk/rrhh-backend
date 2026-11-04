@@ -51,6 +51,7 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     // Dashboard: los conteos los ve cualquiera; el gráfico de montos, con permiso.
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('/dashboard/planillas-chart', [DashboardController::class, 'chartPlanillas'])->middleware('permiso:dashboard.ver_montos');
+    Route::get('/dashboard/jubilaciones', [DashboardController::class, 'jubilaciones'])->middleware('permiso:dashboard.ver_jubilaciones');
 
     // Marcas de los relojes (Cargar Marcas)
     Route::get('/asistencias/resumen', [AsistenciaController::class, 'resumen'])->middleware('permiso:marcas.ver,planillas.ver');
@@ -69,6 +70,7 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
 
     // Cumpleaños
     Route::get('/cumpleanos', [CumpleanosController::class, 'index'])->middleware('permiso:cumpleanos.ver');
+    Route::get('/cumpleanos/excel', [CumpleanosController::class, 'excel'])->middleware('permiso:cumpleanos.exportar');
 
     // Empleados
     Route::post('/empleados/{empleado}/foto', [EmpleadoController::class, 'uploadFoto'])->middleware('permiso:empleados.crear,empleados.editar');

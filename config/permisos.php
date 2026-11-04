@@ -21,7 +21,8 @@ return [
             'dashboard' => [
                 'nombre'   => 'Dashboard',
                 'permisos' => [
-                    'ver_montos' => 'Ver gráfico de planillas pagadas',
+                    'ver_montos'       => 'Ver gráfico de planillas pagadas',
+                    'ver_jubilaciones' => 'Ver próximos a jubilarse (59 años o más)',
                 ],
             ],
             'empleados' => [
@@ -82,7 +83,8 @@ return [
             'cumpleanos' => [
                 'nombre'   => 'Cumpleaños',
                 'permisos' => [
-                    'ver' => 'Ver módulo',
+                    'ver'      => 'Ver módulo',
+                    'exportar' => 'Exportar Excel',
                 ],
             ],
         ],

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Calculos\Fechas;
 use App\Models\CabeceraPlanilla;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
@@ -31,6 +32,44 @@ class DashboardController extends Controller
                 ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))
                 ->count(),
         ]);
+    }
+
+    // Control de jubilaciones (60 y 65 años): empleados activos desde los 59 años,
+    // con la fecha en que cumplen 60 y 65. Los más próximos a un cumpleaños clave van primero.
+    public function jubilaciones()
+    {
+        $hoy = Carbon::today();
+
+        return response()->json(
+            Empleado::with(['departamento:id,nombre', 'cargo:id,nombre'])
+                ->whereHas('informacionLaboral', fn($q) => $q->where('estado', 'Activo'))
+                ->whereNotNull('fecha_nacimiento')
+                ->whereDate('fecha_nacimiento', '<=', $hoy->copy()->subYears(59))
+                ->get()
+                ->map(function (Empleado $emp) use ($hoy) {
+                    $nac  = $emp->fecha_nacimiento;
+                    $a60  = Fechas::aniversarioEn($nac, $nac->year + 60);
+                    $a65  = Fechas::aniversarioEn($nac, $nac->year + 65);
+                    $edad = (int) $nac->diffInYears($hoy);
+
+                    // Próximo cumpleaños clave: 60 si aún no los cumple, si no 65; con 65 o más ya no hay.
+                    $proximo = $a60->gt($hoy) ? $a60 : ($a65->gt($hoy) ? $a65 : null);
+
+                    return [
+                        'id'             => $emp->id,
+                        'nombre'         => trim("{$emp->nombres} {$emp->apellidos}"),
+                        'departamento'   => $emp->departamento?->nombre ?? '—',
+                        'cargo'          => $emp->cargo?->nombre ?? '—',
+                        'edad'           => $edad,
+                        'fecha_60'       => $a60->toDateString(),
+                        'fecha_65'       => $a65->toDateString(),
+                        'proximo'        => $proximo ? ($proximo->eq($a60) ? 60 : 65) : null,
+                        'dias_proximo'   => $proximo ? (int) $hoy->diffInDays($proximo) : null,
+                    ];
+                })
+                ->sortBy(fn($e) => [$e['dias_proximo'] === null ? 1 : 0, $e['dias_proximo'] ?? -$e['edad']])
+                ->values()
+        );
     }
 
     public function chartPlanillas()
