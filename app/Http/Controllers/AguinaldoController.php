@@ -582,6 +582,9 @@ class AguinaldoController extends Controller
             }
             if ($agrupar) {
                 $escribirFila($sumar($grupo), "SUBTOTAL: {$departamento}", 'EEE3C3');
+                // Una fila en blanco después de cada subtotal (antes del siguiente departamento
+                // o del total). Generar Pago no agrupa: queda igual, para copiar y pegar.
+                $row++;
             }
         }
         $escribirFila($sumar($filas), 'TOTAL GENERAL', 'B9921A');

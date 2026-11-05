@@ -503,7 +503,8 @@ class PlanillaController extends Controller
             $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true);
             $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('EEE3C3');
-            $row++;
+            // Una fila en blanco después de cada subtotal (antes del siguiente departamento o del total).
+            $row += 2;
         }
 
         $sheet->setCellValue("A{$row}", 'TOTAL GENERAL');
