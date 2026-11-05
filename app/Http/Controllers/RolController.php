@@ -32,9 +32,22 @@ class RolController extends Controller
     }
 
     // Módulos y permisos que se muestran como checks (config/permisos.php).
+    // Los grupos que en el menú son submenús (Planillas, Reportes, Configuración)
+    // van en orden alfabético, igual que el menú; General sigue el orden del menú principal.
     public function catalogo()
     {
-        return response()->json(config('permisos'));
+        $catalogo = array_map(function (array $grupo) {
+            if ($grupo['grupo'] !== 'General') {
+                uasort($grupo['modulos'], fn ($a, $b) => strcasecmp(
+                    \Illuminate\Support\Str::ascii($a['nombre']),
+                    \Illuminate\Support\Str::ascii($b['nombre'])
+                ));
+            }
+
+            return $grupo;
+        }, config('permisos'));
+
+        return response()->json($catalogo);
     }
 
     public function store(Request $request)
