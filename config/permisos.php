@@ -136,6 +136,13 @@ return [
                     'exportar' => 'Exportar PDF',
                 ],
             ],
+            'listado_cumpleanos' => [
+                'nombre'   => 'Listado de Cumpleaños',
+                'permisos' => [
+                    'ver'      => 'Ver módulo',
+                    'exportar' => 'Exportar Excel',
+                ],
+            ],
             'salarios_devengados' => [
                 'nombre'   => 'Salarios Devengados',
                 'permisos' => [

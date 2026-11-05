@@ -20,6 +20,7 @@ use App\Http\Controllers\PlanillaController;
 use App\Http\Controllers\CargoController;
 use App\Http\Controllers\RolController;
 use App\Http\Controllers\SalariosDevengadosController;
+use App\Http\Controllers\ListadoCumpleanosController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VacacionController;
 use Illuminate\Support\Facades\Route;
@@ -198,6 +199,8 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     // Salarios devengados de varios o todos los empleados en un rango de fechas
     Route::get('salarios-devengados', [SalariosDevengadosController::class, 'index'])->middleware('permiso:salarios_devengados.ver');
     Route::get('salarios-devengados/excel', [SalariosDevengadosController::class, 'excel'])->middleware('permiso:salarios_devengados.exportar');
+    Route::get('listado-cumpleanos', [ListadoCumpleanosController::class, 'index'])->middleware('permiso:listado_cumpleanos.ver');
+    Route::get('listado-cumpleanos/excel', [ListadoCumpleanosController::class, 'excel'])->middleware('permiso:listado_cumpleanos.exportar');
 
     // Bitácora. Constancias muestra su propio historial (solo el módulo Constancias, ver LogSistemaController).
     Route::get('bitacora', [LogSistemaController::class, 'index'])
