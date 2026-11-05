@@ -40,7 +40,10 @@ class VacacionController extends Controller
     }
 
     // $excluirId: solicitud que no se cuenta (al editarla, sus días vuelven al saldo).
-    private function calcularSaldo(Empleado $empleado, ?int $excluirId = null): array
+    // Con $hasta, calcula el saldo tal como estaba cuando se registró esa solicitud
+    // (contándola a ella y a las registradas antes), para que su constancia no cambie
+    // cuando después se registran otras.
+    private function calcularSaldo(Empleado $empleado, ?int $excluirId = null, ?SolicitudVacacion $hasta = null): array
     {
         $il = $empleado->informacionLaboral;
 
@@ -60,7 +63,7 @@ class VacacionController extends Controller
         }
 
         $inicio = Carbon::parse($il->fecha_inicio)->startOfDay();
-        $hoy    = Carbon::today();
+        $hoy    = $hasta ? Carbon::parse($hasta->created_at)->startOfDay() : Carbon::today();
 
         if ($hoy->lt($inicio)) {
             return $zeroBase;
@@ -72,6 +75,7 @@ class VacacionController extends Controller
         // Una sola query con SUM condicional en lugar de dos queries separadas
         $tomados = SolicitudVacacion::where('id_empleado', $empleado->id)
             ->when($excluirId, fn ($q) => $q->where('id', '!=', $excluirId))
+            ->when($hasta, fn ($q) => $q->where('id', '<=', $hasta->id))
             ->selectRaw(
                 'SUM(dias_tomados) as total, SUM(CASE WHEN fecha_inicio >= ? THEN dias_tomados ELSE 0 END) as periodo',
                 [$periodoInicio->format('Y-m-d')]
@@ -290,16 +294,13 @@ class VacacionController extends Controller
             'empleado.departamento',
         ])->findOrFail($id);
 
-        $saldo = $this->calcularSaldo($solicitud->empleado);
+        // Números de cuando se registró la solicitud, no los de hoy.
+        $saldo = $this->calcularSaldo($solicitud->empleado, null, $solicitud);
         $correlativo = $this->siguienteCorrelativo('vacacion', $solicitud->id);
 
+        // Solo entre las registradas antes que esta, para que la constancia no cambie después.
         $solicitudAnterior = SolicitudVacacion::where('id_empleado', $solicitud->id_empleado)
-            ->where(function ($q) use ($solicitud) {
-                $q->where('fecha_inicio', '<', $solicitud->fecha_inicio)
-                    ->orWhere(function ($q2) use ($solicitud) {
-                        $q2->where('fecha_inicio', $solicitud->fecha_inicio)->where('id', '<', $solicitud->id);
-                    });
-            })
+            ->where('id', '<', $solicitud->id)
             ->orderByDesc('fecha_inicio')
             ->orderByDesc('id')
             ->first();

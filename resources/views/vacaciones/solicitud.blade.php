@@ -166,9 +166,9 @@ table.firmas td { width: 50%; text-align: center; vertical-align: top; padding: 
   <table class="dias">
     <tr>
       <td>
-        <div class="d-lbl">Días por ley</div>
-        <div class="d-num">{{ number_format($saldo['dias_por_ley'], 0) }}</div>
-        <div class="d-sub">según antigüedad</div>
+        <div class="d-lbl">Días del período</div>
+        <div class="d-num">{{ number_format($saldo['dias_anio_actual'], 0) }}</div>
+        <div class="d-sub">{{ $saldo['anios_laborados'] == 1 ? '1 año' : $saldo['anios_laborados'] . ' años' }} de antigüedad</div>
       </td>
       <td>
         <div class="d-lbl">Tomados este período</div>

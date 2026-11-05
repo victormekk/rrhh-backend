@@ -150,6 +150,40 @@ class VacacionesAdelantoTest extends TestCase
         ])->assertCreated();
     }
 
+    private function datosConstancia(int $id): array
+    {
+        $datos = null;
+        View::composer('vacaciones.solicitud', function ($vista) use (&$datos) {
+            $datos ??= $vista->getData();
+        });
+        $this->get("/api/vacaciones/{$id}/pdf")->assertOk();
+
+        return $datos;
+    }
+
+    public function test_la_constancia_conserva_los_numeros_de_cuando_se_registro(): void
+    {
+        // Un año cumplido: 10 días. Primero pide 4 y después 2.
+        DB::table('informacion_laboral')->update(['fecha_inicio' => '2025-08-01']);
+        $primera = $this->postJson('/api/vacaciones', [
+            'id_empleado' => $this->empleado, 'fecha_inicio' => '2026-12-07', 'fecha_fin' => '2026-12-10',
+        ])->assertCreated()->json('id');
+        $segunda = $this->postJson('/api/vacaciones', [
+            'id_empleado' => $this->empleado, 'fecha_inicio' => '2026-12-14', 'fecha_fin' => '2026-12-15',
+        ])->assertCreated()->json('id');
+
+        // La primera sigue diciendo 4 tomados y 6 disponibles aunque ya exista la segunda.
+        $d = $this->datosConstancia($primera);
+        $this->assertEquals(4, $d['saldo']['dias_tomados_periodo']);
+        $this->assertEquals(6, $d['saldo']['saldo']);
+        $this->assertNull($d['solicitudAnterior']);
+
+        $d = $this->datosConstancia($segunda);
+        $this->assertEquals(6, $d['saldo']['dias_tomados_periodo']);
+        $this->assertEquals(4, $d['saldo']['saldo']);
+        $this->assertEquals($primera, $d['solicitudAnterior']->id);
+    }
+
     public function test_una_solicitud_normal_no_lleva_adelanto(): void
     {
         // Con un año cumplido (10 días) pide 6: no hay adelanto ni aviso en la constancia.
