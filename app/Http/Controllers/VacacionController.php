@@ -296,7 +296,8 @@ class VacacionController extends Controller
 
         // Números de cuando se registró la solicitud, no los de hoy.
         $saldo = $this->calcularSaldo($solicitud->empleado, null, $solicitud);
-        $correlativo = $this->siguienteCorrelativo('vacacion', $solicitud->id);
+        // Siempre el mismo número para esta solicitud, aunque se descargue varias veces.
+        $correlativo = $this->correlativoFijo('vacacion', $solicitud->id);
 
         // Solo entre las registradas antes que esta, para que la constancia no cambie después.
         $solicitudAnterior = SolicitudVacacion::where('id_empleado', $solicitud->id_empleado)

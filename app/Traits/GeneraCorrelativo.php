@@ -30,4 +30,17 @@ trait GeneraCorrelativo
 
         return str_pad($numero, 6, '0', STR_PAD_LEFT);
     }
+
+    // Correlativo fijo para un documento: la primera descarga le asigna el siguiente
+    // número y las demás reutilizan ese mismo (si ya tenía varios, el primero).
+    protected function correlativoFijo(string $tipo, int $referenciaId): string
+    {
+        $existente = DocumentoGenerado::where('tipo', $tipo)
+            ->where('referencia_id', $referenciaId)
+            ->min('correlativo');
+
+        return $existente
+            ? str_pad($existente, 6, '0', STR_PAD_LEFT)
+            : $this->siguienteCorrelativo($tipo, $referenciaId);
+    }
 }

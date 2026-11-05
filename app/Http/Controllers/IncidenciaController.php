@@ -127,7 +127,8 @@ class IncidenciaController extends Controller
             'empleado.departamento',
         ])->findOrFail($id);
 
-        $correlativo = $this->siguienteCorrelativo('incidencia', $incidencia->id);
+        // Siempre el mismo número para esta incidencia, aunque se descargue varias veces.
+        $correlativo = $this->correlativoFijo('incidencia', $incidencia->id);
 
         $pdf = Pdf::loadView('incidencias.constancia', compact('incidencia', 'correlativo'))
             ->setPaper('letter', 'portrait');

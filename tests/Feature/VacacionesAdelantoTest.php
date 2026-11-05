@@ -184,6 +184,24 @@ class VacacionesAdelantoTest extends TestCase
         $this->assertEquals($primera, $d['solicitudAnterior']->id);
     }
 
+    public function test_cada_solicitud_conserva_su_correlativo_al_descargarla_de_nuevo(): void
+    {
+        DB::table('informacion_laboral')->update(['fecha_inicio' => '2025-08-01']);
+        $primera = $this->postJson('/api/vacaciones', [
+            'id_empleado' => $this->empleado, 'fecha_inicio' => '2026-12-07', 'fecha_fin' => '2026-12-10',
+        ])->assertCreated()->json('id');
+        $segunda = $this->postJson('/api/vacaciones', [
+            'id_empleado' => $this->empleado, 'fecha_inicio' => '2026-12-14', 'fecha_fin' => '2026-12-15',
+        ])->assertCreated()->json('id');
+
+        $n1 = $this->datosConstancia($primera)['correlativo'];
+        $this->assertSame($n1, $this->datosConstancia($primera)['correlativo']);
+        $n2 = $this->datosConstancia($segunda)['correlativo'];
+        $this->assertSame((int) $n1 + 1, (int) $n2);
+        $this->assertSame($n2, $this->datosConstancia($segunda)['correlativo']);
+        $this->assertSame($n1, $this->datosConstancia($primera)['correlativo']);
+    }
+
     public function test_una_solicitud_normal_no_lleva_adelanto(): void
     {
         // Con un año cumplido (10 días) pide 6: no hay adelanto ni aviso en la constancia.
