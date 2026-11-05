@@ -575,6 +575,7 @@ class AguinaldoController extends Controller
                 $sheet->setCellValue("A{$row}", $departamento);
                 $sheet->mergeCells("A{$row}:{$ultima}{$row}");
                 $this->pintarFila($sheet, "A{$row}", 'F8F2DF', '3B2B16');
+                $sheet->getStyle("A{$row}")->getFont()->setSize(12);
                 $row++;
             }
             foreach ($grupo as $r) {
@@ -582,12 +583,17 @@ class AguinaldoController extends Controller
             }
             if ($agrupar) {
                 $escribirFila($sumar($grupo), "SUBTOTAL: {$departamento}", 'EEE3C3');
+                $sheet->getStyle('A' . ($row - 1) . ":{$ultima}" . ($row - 1))->getFont()->setSize(12);
                 // Una fila en blanco después de cada subtotal (antes del siguiente departamento
                 // o del total). Generar Pago no agrupa: queda igual, para copiar y pegar.
                 $row++;
             }
         }
-        $escribirFila($sumar($filas), 'TOTAL GENERAL', 'B9921A');
+        $escribirFila($sumar($filas), 'TOTAL GENERAL', 'DCC78A');
+        // Departamento, subtotal y total en tamaño 12 (Generar Pago, sin agrupar, queda igual).
+        if ($agrupar) {
+            $sheet->getStyle('A' . ($row - 1) . ":{$ultima}" . ($row - 1))->getFont()->setSize(12);
+        }
 
         foreach (range(1, count($columnas)) as $i) {
             $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($i))->setAutoSize(true);

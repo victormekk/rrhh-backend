@@ -477,7 +477,7 @@ class PlanillaController extends Controller
         foreach ($detalles->groupBy('departamento') as $departamento => $filas) {
             $sheet->setCellValue("A{$row}", $departamento);
             $sheet->mergeCells("A{$row}:{$ultimaCol}{$row}");
-            $sheet->getStyle("A{$row}")->getFont()->setBold(true)->getColor()->setRGB('3B2B16');
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(12)->getColor()->setRGB('3B2B16');
             $sheet->getStyle("A{$row}")->getFill()
                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('F8F2DF');
             $row++;
@@ -500,7 +500,7 @@ class PlanillaController extends Controller
                 $sheet->setCellValueExplicit("{$col}{$row}", round((float) $filas->sum($campo), 2), DataType::TYPE_NUMERIC);
                 $col++;
             }
-            $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true);
+            $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true)->setSize(12);
             $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
                 ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('EEE3C3');
             // Una fila en blanco después de cada subtotal (antes del siguiente departamento o del total).
@@ -514,9 +514,9 @@ class PlanillaController extends Controller
             $sheet->setCellValueExplicit("{$col}{$row}", round((float) $totales[$campo], 2), DataType::TYPE_NUMERIC);
             $col++;
         }
-        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true);
+        $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFont()->setBold(true)->setSize(12);
         $sheet->getStyle("A{$row}:{$ultimaCol}{$row}")->getFill()
-            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('B9921A');
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('DCC78A');
 
         $sheet->getStyle("C6:{$ultimaCol}{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
         foreach (array_keys($columnas) as $col) {
@@ -579,7 +579,7 @@ class PlanillaController extends Controller
         $sheet->setCellValueExplicit("B{$row}", round((float) $detalles->sum('salario_neto'), 2), DataType::TYPE_NUMERIC);
         $sheet->getStyle("A{$row}:B{$row}")->getFont()->setBold(true);
         $sheet->getStyle("A{$row}:B{$row}")->getFill()
-            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('B9921A');
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('DCC78A');
 
         $sheet->getStyle("B6:B{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
         $sheet->getColumnDimension('A')->setWidth(38);

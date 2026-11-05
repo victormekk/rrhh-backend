@@ -26,7 +26,7 @@
   td { padding: 3px; border: 1px solid #e2e8f0; text-align: center; overflow-wrap: break-word; word-break: break-word; }
   td.left { text-align: left; }
   tr:nth-child(even) td { background: #f8fafc; }
-  .totals td { background: #b9921a !important; color: #3b2b16; font-weight: bold; }
+  .totals td { background: #dcc78a !important; color: #3b2b16; font-weight: bold; }
   .footer { margin-top: 20px; }
   /* Tabla en vez de flexbox: dompdf no soporta bien justify-content:space-around
      en divs (apilaba las 3 firmas en una sola columna en vez de ponerlas lado a lado).

@@ -41,7 +41,7 @@
   .badge-fijos  { background:#f8f2df; color:#8a6d10; border-radius:3px; padding:1px 4px; font-size:7px; }
   .badge-extras { background:#fef3c7; color:#92400e; border-radius:3px; padding:1px 4px; font-size:7px; }
 
-  .totals-row td { background-color: #b9921a; color: #3b2b16; font-weight: bold; font-size: 8px; padding: 4px; }
+  .totals-row td { background-color: #dcc78a; color: #3b2b16; font-weight: bold; font-size: 8px; padding: 4px; }
   .totals-row td.num { text-align: right; }
   .totals-row td.ctr { text-align: center; }
 

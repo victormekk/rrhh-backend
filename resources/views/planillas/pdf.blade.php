@@ -32,7 +32,7 @@
   tbody td.num { text-align: right; white-space: nowrap; }
   tbody td.emp { font-weight: 600; }
 
-  .totals-row td { background-color: #b9921a; color: #3b2b16; font-weight: bold; font-size: 6.5px; padding: 4px 3px; }
+  .totals-row td { background-color: #dcc78a; color: #3b2b16; font-weight: bold; font-size: 6.5px; padding: 4px 3px; }
   .totals-row td.num { text-align: right; }
 
   /* Los subtotales/totales suman muchos empleados y pueden dar cifras mucho
