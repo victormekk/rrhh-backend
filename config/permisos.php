@@ -35,15 +35,6 @@ return [
                     'baja'          => 'Dar de baja y reintegrar',
                 ],
             ],
-            'departamentos' => [
-                'nombre'   => 'Departamentos y Cargos',
-                'permisos' => [
-                    'ver'      => 'Ver módulo',
-                    'crear'    => 'Crear',
-                    'editar'   => 'Editar y desactivar',
-                    'eliminar' => 'Eliminar permanentemente',
-                ],
-            ],
             'bancos' => [
                 'nombre'   => 'Bancos',
                 'permisos' => [
@@ -136,7 +127,7 @@ return [
         ],
     ],
     [
-        'grupo'   => 'Estadística Laboral',
+        'grupo'   => 'Reportes',
         'modulos' => [
             'estadistica' => [
                 'nombre'   => 'Estadística Laboral',
@@ -172,6 +163,15 @@ return [
     [
         'grupo'   => 'Configuración',
         'modulos' => [
+            'departamentos' => [
+                'nombre'   => 'Departamentos y Cargos',
+                'permisos' => [
+                    'ver'      => 'Ver módulo',
+                    'crear'    => 'Crear',
+                    'editar'   => 'Editar y desactivar',
+                    'eliminar' => 'Eliminar permanentemente',
+                ],
+            ],
             'usuarios' => [
                 'nombre'   => 'Usuarios',
                 'permisos' => [
