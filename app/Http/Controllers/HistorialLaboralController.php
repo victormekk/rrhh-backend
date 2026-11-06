@@ -101,7 +101,7 @@ class HistorialLaboralController extends Controller
             ]);
         });
 
-        $this->logActividad('eliminado', 'Empleados',
+        $this->logActividad('desactivado', 'Empleados',
             "Empleado {$empleado->nombres} {$empleado->apellidos} dado de baja ({$request->motivo_cese}).", $empleado->id);
 
         return response()->json(['message' => 'Empleado dado de baja correctamente.']);

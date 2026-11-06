@@ -19,7 +19,6 @@ use App\Http\Controllers\LogSistemaController;
 use App\Http\Controllers\PlanillaController;
 use App\Http\Controllers\CargoController;
 use App\Http\Controllers\RolController;
-use App\Http\Controllers\SalariosDevengadosController;
 use App\Http\Controllers\ListadoCumpleanosController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\VacacionController;
@@ -45,7 +44,7 @@ Route::middleware('asistencia.token')->post('/asistencias/importar', [Asistencia
 Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     // La lista de empleados también la usan, para elegir empleado, estos módulos.
     $listaEmpleados = 'permiso:empleados.ver,vacaciones.ver,incidencias.ver,constancias.laboral,constancias.bancaria,'
-        . 'constancias.voucher,ingresos_deducciones.ver,estadistica.ver,informacion_laboral.ver,salarios_devengados.ver';
+        . 'constancias.voucher,ingresos_deducciones.ver,estadistica.ver,informacion_laboral.ver';
 
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -196,9 +195,6 @@ Route::middleware(['auth:sanctum', 'usuario.activo'])->group(function () {
     Route::get('estadistica-laboral/pdf', [EstadisticaLaboralController::class, 'exportPdf'])->middleware('permiso:estadistica.exportar');
     Route::get('estadistica-laboral/{empleado}', [EstadisticaLaboralController::class, 'show'])->middleware('permiso:estadistica.ver');
 
-    // Salarios devengados de varios o todos los empleados en un rango de fechas
-    Route::get('salarios-devengados', [SalariosDevengadosController::class, 'index'])->middleware('permiso:salarios_devengados.ver');
-    Route::get('salarios-devengados/excel', [SalariosDevengadosController::class, 'excel'])->middleware('permiso:salarios_devengados.exportar');
     Route::get('listado-cumpleanos', [ListadoCumpleanosController::class, 'index'])->middleware('permiso:listado_cumpleanos.ver');
     Route::get('listado-cumpleanos/excel', [ListadoCumpleanosController::class, 'excel'])->middleware('permiso:listado_cumpleanos.exportar');
 

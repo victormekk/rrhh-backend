@@ -74,6 +74,24 @@
       <strong>{{ $periodo['search'] }}</strong>
     </div>
     @endif
+    @if($periodo['departamentos'] ?? null)
+    <div class="meta-item">
+      <span>Departamentos: </span>
+      <strong>{{ $periodo['departamentos'] }}</strong>
+    </div>
+    @endif
+    @if($periodo['tipo_contrato'] ?? null)
+    <div class="meta-item">
+      <span>Contrato: </span>
+      <strong>{{ $periodo['tipo_contrato'] }}</strong>
+    </div>
+    @endif
+    @if($periodo['estado'] ?? null)
+    <div class="meta-item">
+      <span>Estado: </span>
+      <strong>{{ $periodo['estado'] }}</strong>
+    </div>
+    @endif
     <div class="meta-item">
       <span>Total empleados: </span>
       <strong>{{ $totales->total_empleados }}</strong>

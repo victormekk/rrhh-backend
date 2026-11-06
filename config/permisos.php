@@ -143,13 +143,6 @@ return [
                     'exportar' => 'Exportar Excel',
                 ],
             ],
-            'salarios_devengados' => [
-                'nombre'   => 'Salarios Devengados',
-                'permisos' => [
-                    'ver'      => 'Ver módulo',
-                    'exportar' => 'Exportar Excel',
-                ],
-            ],
             'informacion_laboral' => [
                 'nombre'   => 'Información Laboral',
                 'permisos' => [

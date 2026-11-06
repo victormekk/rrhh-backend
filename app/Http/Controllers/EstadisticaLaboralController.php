@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Departamento;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
 use App\Traits\GeneraCorrelativo;
@@ -29,6 +30,9 @@ class EstadisticaLaboralController extends Controller
                 $q->where('detalle_planillas.fecha_generada', '>=', $request->fecha_inicio))
             ->when($request->fecha_fin, fn($q) =>
                 $q->where('detalle_planillas.fecha_generada', '<=', $request->fecha_fin))
+            ->when($request->tipo_contrato, fn($q, $t) => $q->where('il.tipo_contrato', $t))
+            ->when($request->estado,        fn($q, $e) => $q->where('il.estado', $e))
+            ->when($request->departamentos, fn($q, $d) => $q->whereIn('empleados.id_departamento', (array) $d))
             ->when($request->id_empleado, fn($q, $id) => $q->where('empleados.id', $id))
             ->when(!$request->id_empleado && $request->search, function ($q) use ($request) {
                 $s = $request->search;
@@ -73,7 +77,10 @@ class EstadisticaLaboralController extends Controller
             DB::raw('empleados.apellidos'),
             DB::raw('departamentos.nombre'),
             DB::raw('il.fecha_inicio')
-        )->orderBy('empleados.apellidos')->orderBy('empleados.nombres');
+        )
+        // Por departamento y, dentro de cada uno, por nombre (sin departamento al final).
+        ->orderByRaw('departamentos.nombre IS NULL, departamentos.nombre')
+        ->orderBy('empleados.nombres')->orderBy('empleados.apellidos');
     }
 
     // ── endpoints ─────────────────────────────────────────────────────────────
@@ -139,6 +146,11 @@ class EstadisticaLaboralController extends Controller
             'inicio' => $request->fecha_inicio,
             'fin'    => $request->fecha_fin,
             'search' => $request->search,
+            'tipo_contrato' => $request->tipo_contrato,
+            'estado'        => $request->estado,
+            'departamentos' => $request->departamentos
+                ? Departamento::whereIn('id', (array) $request->departamentos)->orderBy('nombre')->pluck('nombre')->implode(', ')
+                : null,
         ];
 
         $correlativo = $this->siguienteCorrelativo('estadistica_laboral');
