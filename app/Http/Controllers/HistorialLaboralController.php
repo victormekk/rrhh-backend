@@ -155,7 +155,7 @@ class HistorialLaboralController extends Controller
             ]);
         });
 
-        $this->logActividad('editado', 'Empleados',
+        $this->logActividad('reactivado', 'Empleados',
             "Empleado {$empleado->nombres} {$empleado->apellidos} reintegrado como {$request->tipo_contrato}.", $empleado->id);
 
         return response()->json(['message' => 'Empleado reintegrado correctamente.']);

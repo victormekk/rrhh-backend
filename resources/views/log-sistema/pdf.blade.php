@@ -40,6 +40,7 @@
   .badge-editado   { background: #f8f2df; color: #8a6d10; }
   .badge-eliminado { background: #fee2e2; color: #991b1b; }
   .badge-desactivado { background: #fef3c7; color: #92400e; }
+  .badge-reactivado { background: #ccfbf1; color: #115e59; }
   .badge-login     { background: #ede9fe; color: #5b21b6; }
   .badge-logout    { background: #f1f5f9; color: #475569; }
   .badge-cerrado   { background: #dbeafe; color: #1e40af; }
