@@ -172,7 +172,7 @@ class PlanillaController extends Controller
         $request->validate([
             'dias_trabajados'        => 'sometimes|integer|min:0|max:30',
             'otros_ingresos'         => 'sometimes|numeric|min:0',
-            'desc_ingresos'          => 'nullable|string|max:100',
+            'desc_ingresos'          => 'nullable|string|max:65535',
             'horas_extras'           => 'sometimes|numeric|min:0|max:200',
             'recargo_horas_extras'   => ['sometimes', 'integer', Rule::in(DetallePlanilla::RECARGOS_HORAS_EXTRAS)],
             'ihss'                 => 'sometimes|numeric|min:0',
@@ -185,7 +185,7 @@ class PlanillaController extends Controller
             'garden'                 => 'sometimes|numeric|min:0',
             'i_vecinal'              => 'sometimes|numeric|min:0',
             'otras_deducciones'      => 'sometimes|numeric|min:0',
-            'desc_otras_deducciones' => 'nullable|string|max:100',
+            'desc_otras_deducciones' => 'nullable|string|max:65535',
         ]);
 
         // La fila se bloquea (lockForUpdate) mientras se lee, se calcula y se guarda: si
