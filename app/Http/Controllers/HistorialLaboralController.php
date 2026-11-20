@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Empleado;
 use App\Models\HistorialLaboral;
+use App\Services\PlanillasAbiertas;
 use App\Traits\EncabezadoExcel;
 use App\Traits\LogsActividad;
 use Carbon\Carbon;
@@ -80,7 +81,7 @@ class HistorialLaboralController extends Controller
             'fecha_cese.after_or_equal' => 'La fecha de cese no puede ser anterior a la fecha de inicio (' . $il->fecha_inicio->format('d/m/Y') . ').',
         ]);
 
-        DB::transaction(function () use ($request, $empleado, $il) {
+        $planillas = DB::transaction(function () use ($request, $empleado, $il) {
             $il->update([
                 'estado'      => 'Inactivo',
                 'fecha_cese'  => $request->fecha_cese,
@@ -99,12 +100,14 @@ class HistorialLaboralController extends Controller
                 'observaciones'          => $request->observaciones,
                 'id_usuario'             => $request->user()->id,
             ]);
+
+            return $this->sincronizarPlanillas($request, $empleado);
         });
 
         $this->logActividad('desactivado', 'Empleados',
             "Empleado {$empleado->nombres} {$empleado->apellidos} dado de baja ({$request->motivo_cese}).", $empleado->id);
 
-        return response()->json(['message' => 'Empleado dado de baja correctamente.']);
+        return response()->json(['message' => 'Empleado dado de baja correctamente.', 'planillas' => $planillas]);
     }
 
     // ─── Reintegro: nueva fecha de inicio y motivo obligatorio ────────────────
@@ -132,7 +135,7 @@ class HistorialLaboralController extends Controller
             'motivo.min'         => 'Describe un poco más el motivo del reintegro.',
         ]);
 
-        DB::transaction(function () use ($request, $empleado, $il) {
+        $planillas = DB::transaction(function () use ($request, $empleado, $il) {
             HistorialLaboral::create([
                 'id_empleado'            => $empleado->id,
                 'tipo_evento'            => HistorialLaboral::REINTEGRO,
@@ -153,12 +156,14 @@ class HistorialLaboralController extends Controller
                 'motivo_cese'       => null,
                 'sin_promedio_dias' => $request->tipo_contrato === 'Extra' && $il->sin_promedio_dias,
             ]);
+
+            return $this->sincronizarPlanillas($request, $empleado);
         });
 
         $this->logActividad('reactivado', 'Empleados',
             "Empleado {$empleado->nombres} {$empleado->apellidos} reintegrado como {$request->tipo_contrato}.", $empleado->id);
 
-        return response()->json(['message' => 'Empleado reintegrado correctamente.']);
+        return response()->json(['message' => 'Empleado reintegrado correctamente.', 'planillas' => $planillas]);
     }
 
     // ─── Actualizar la liquidación (p. ej. de Pendiente a Sí cuando contabilidad avisa) ──
@@ -297,5 +302,19 @@ class HistorialLaboralController extends Controller
 
         return response()->download($tempFile, 'MovimientosPersonal_' . now()->format('dmY') . '.xlsx')
             ->deleteFileAfterSend(true);
+    }
+
+    // Lo agrega o lo quita de las planillas de pago abiertas según su estado y contrato
+    // (ver App\Services\PlanillasAbiertas); queda en la bitácora. Devuelve el aviso.
+    private function sincronizarPlanillas(Request $request, Empleado $empleado): ?string
+    {
+        $resumen = PlanillasAbiertas::resumen(
+            app(PlanillasAbiertas::class)->sincronizarEmpleado($empleado->id, $request->user()->id)
+        );
+        if ($resumen) {
+            $this->logActividad('editado', 'Planillas', "{$empleado->nombres} {$empleado->apellidos}: {$resumen}", $empleado->id);
+        }
+
+        return $resumen;
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Calculos\CalculoAguinaldo;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class AguinaldoExtra extends Model
@@ -32,6 +34,18 @@ class AguinaldoExtra extends Model
         'anticipos'       => 'decimal:2',
         'total_aguinaldo' => 'decimal:2',
     ];
+
+    // Subtotal y total con los datos guardados y los anticipos indicados (mismo
+    // criterio que AguinaldoController::updateExtra: si la antigüedad es la de las
+    // fechas se usa el valor exacto, sin el redondeo de 4 decimales).
+    public function totalesCon(float $anticipos): array
+    {
+        $exacta = CalculoAguinaldo::antiguedadExtra(Carbon::parse($this->fecha_inicio), Carbon::parse($this->fecha_corte));
+        $antig  = abs((float) $this->antiguedad - round($exacta, 4)) < 0.00005 ? $exacta : (float) $this->antiguedad;
+
+        return CalculoAguinaldo::totalExtra((float) $this->diario, $antig,
+            $this->sin_promedio ? null : (int) $this->dias_promedio, $anticipos);
+    }
 
     public function empleado()
     {

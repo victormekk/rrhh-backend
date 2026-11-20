@@ -8,6 +8,7 @@ use App\Models\DetallePlanilla;
 use App\Models\Empleado;
 use App\Models\OtroIngreso;
 use App\Services\IngresosDeduccionesPlanilla;
+use App\Services\PlanillasAbiertas;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\EncabezadoExcel;
 use App\Traits\LogsActividad;
@@ -100,56 +101,13 @@ class PlanillaController extends Controller
 
             $usarMarcaciones = $request->boolean('usar_marcaciones');
 
+            $filas = app(PlanillasAbiertas::class);
             foreach ($empleados as $emp) {
-                $il              = $emp->informacionLaboral;
-                $diasTrabajados  = $usarMarcaciones
+                $diasTrabajados = $usarMarcaciones
                     ? $this->diasTrabajadosDesdeMarcaciones($emp->id, $request->periodo_desde, $request->periodo_hasta)
                     : 0;
-                $salarioBase     = round($il->salario_diario * $diasTrabajados, 2);
-
-                $empIngresos   = $ingresosMap->get($emp->id, collect());
-                $otrosIngresos = (float) $empIngresos->sum('monto');
-                $descIngresos  = $empIngresos->pluck('descripcion')->filter()->implode(', ');
-
-                // El personal de contrato Extra no cotiza IHSS en esta planilla.
-                $ihss = $request->tipo_planilla === 'Extras' ? 0 : $ihssFijo;
-
-                // RAP e ISR se editan a mano por empleado (no calzan con una formula automatica
-                // en la practica real de nomina), arrancan en 0. Los ingresos/deducciones
-                // recurrentes se suman abajo, al terminar de crear las filas.
-                $deduccionNeta = $ihss;
-                $salarioNeto   = $salarioBase + $otrosIngresos - $deduccionNeta;
-
-                DetallePlanilla::create([
-                    'id_cabecera_planilla'   => $cabecera->id,
-                    'id_empleado'            => $emp->id,
-                    'nombre_planilla'        => $request->nombre_planilla,
-                    'departamento'           => $emp->departamento?->nombre ?? '',
-                    'tipo_planilla'          => $request->tipo_planilla,
-                    'dias_trabajados'        => $diasTrabajados,
-                    'salario_diario'         => $il->salario_diario,
-                    'salario_base'           => $salarioBase,
-                    'desc_ingresos'          => $descIngresos ?: null,
-                    'otros_ingresos'         => $otrosIngresos,
-                    'horas_extras'           => 0,
-                    'monto_horas_extras'     => 0,
-                    'ihss'                   => $ihss,
-                    'retencion_ahorro'       => 0,
-                    'isr'                    => 0,
-                    'crefisa'                => 0,
-                    'transporte'             => 0,
-                    'radios'                 => 0,
-                    'uniforme'               => 0,
-                    'garden'                 => 0,
-                    'i_vecinal'              => 0,
-                    'otras_deducciones'      => 0,
-                    'desc_otras_deducciones' => null,
-                    'deduccion_neta'         => $deduccionNeta,
-                    'salario_neto'           => $salarioNeto,
-                    'cuenta_banco'           => $il->cuentaParaPago(),
-                    'fecha_generada'         => $request->fecha_generada,
-                    'id_usuario'             => $request->user()->id,
-                ]);
+                $filas->crearFila($cabecera, $emp, $diasTrabajados, $ihssFijo, $request->user()->id,
+                    $ingresosMap->get($emp->id, collect()));
             }
 
             $cargados = app(IngresosDeduccionesPlanilla::class)->cargar($cabecera);

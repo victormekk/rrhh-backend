@@ -29,10 +29,12 @@ class IngresosDeduccionesPlanilla
     }
 
     // Carga en la planilla (abierta) los registros activos que le tocan y que aún
-    // no están en ella. Devuelve cuántos se cargaron.
-    public function cargar(CabeceraPlanilla $planilla): int
+    // no están en ella. Devuelve cuántos se cargaron. Se puede limitar a un registro
+    // (recién creado, editado o reanudado) o a un empleado (recién agregado).
+    public function cargar(CabeceraPlanilla $planilla, ?int $soloRegistro = null, ?int $soloEmpleado = null): int
     {
         $detalles = DetallePlanilla::where('id_cabecera_planilla', $planilla->id)
+            ->when($soloEmpleado, fn ($q) => $q->where('id_empleado', $soloEmpleado))
             ->lockForUpdate()->get()->keyBy('id_empleado');
         if ($detalles->isEmpty()) {
             return 0;
@@ -46,7 +48,9 @@ class IngresosDeduccionesPlanilla
 
         $registros = IngresoDeduccion::withCount('aplicaciones')
             ->where('estado', 'Activo')
+            ->where('aplica_en', 'Planilla') // los anticipos de aguinaldo/catorceavo van a su planilla especial
             ->whereIn('id_empleado', $detalles->keys())
+            ->when($soloRegistro, fn ($q) => $q->where('id', $soloRegistro))
             ->whereDate('fecha_inicio', '<=', $fecha)
             ->where(fn ($q) => $q->where('frecuencia', 'Quincenal')->orWhere('quincena_mes', $quincena))
             ->orderBy('id')
@@ -124,6 +128,63 @@ class IngresosDeduccionesPlanilla
         }
 
         $aplicaciones->pluck('ingresoDeduccion')->unique('id')->each->recalcularEstado();
+    }
+
+    // Recién creado, editado o reanudado: se carga en las planillas abiertas donde
+    // está su empleado. Devuelve los nombres de las planillas.
+    public function cargarRegistro(IngresoDeduccion $registro): array
+    {
+        if ($registro->esAnticipo() || $registro->estado !== 'Activo') {
+            return [];
+        }
+
+        return CabeceraPlanilla::where('estado', 'Activo')
+            ->whereHas('detalles', fn ($q) => $q->where('id_empleado', $registro->id_empleado))
+            ->orderBy('fecha_generada')->orderBy('id')
+            ->get()
+            ->filter(fn ($p) => $this->cargar($p, soloRegistro: $registro->id) > 0)
+            ->pluck('nombre_planilla')->values()->all();
+    }
+
+    // Al pausarlo, cancelarlo, editarlo o eliminarlo: se saca de las planillas abiertas
+    // donde está pendiente. Solo se resta lo que sigue en la celda (su renglón
+    // "Concepto: monto" o, sin descripción, si el monto alcanza): si ya se había quitado
+    // a mano, no se toca lo demás de la celda.
+    public function quitarRegistro(IngresoDeduccion $registro): void
+    {
+        $pendientes = $registro->aplicaciones()->with('planilla:id,estado')
+            ->whereNotNull('id_cabecera_planilla')->where('aplicada', false)->get();
+
+        foreach ($pendientes as $a) {
+            $detalle = $a->planilla?->estado === 'Activo'
+                ? DetallePlanilla::lockForUpdate()->find($a->id_detalle_planilla)
+                : null;
+
+            if ($detalle) {
+                $columna   = $a->columna;
+                $campoDesc = IngresoDeduccion::DESCRIPCION_DE[$columna] ?? null;
+                $restar    = false;
+
+                if ($campoDesc) {
+                    $renglones = collect(explode(', ', (string) $detalle->$campoDesc))->filter()->values();
+                    $pos       = $renglones->search(self::item($registro->concepto, $a->monto));
+                    if ($pos !== false) {
+                        $renglones->forget($pos);
+                        $detalle->$campoDesc = $renglones->implode(', ') ?: null;
+                        $restar = true;
+                    }
+                } else {
+                    $restar = (float) $detalle->$columna + 0.005 >= (float) $a->monto;
+                }
+
+                if ($restar) {
+                    $detalle->$columna = max(0, round((float) $detalle->$columna - (float) $a->monto, 2));
+                    $this->recalcularTotales($detalle);
+                    $detalle->save();
+                }
+            }
+            $a->delete();
+        }
     }
 
     // Ids de los registros que tiene una planilla, para recalcular su estado después de borrarla.

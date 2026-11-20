@@ -7,6 +7,8 @@ use App\Models\AguinaldoExtra;
 use App\Models\AguinaldoFijo;
 use App\Models\DetallePlanilla;
 use App\Models\Empleado;
+use App\Models\IngresoDeduccionAplicada;
+use App\Services\AnticiposAguinaldo;
 use App\Traits\GeneraCorrelativo;
 use App\Traits\EncabezadoExcel;
 use App\Traits\LogsActividad;
@@ -91,6 +93,7 @@ class AguinaldoController extends Controller
             'fecha_corte'      => $meta->fecha_corte,
             'fijos'            => $fijos,
             'extras'           => $extras,
+            'anticipos_programados' => $this->anticiposProgramados($nombre),
             'totales_fijos'    => $this->totalesFijos($fijos),
             'totales_extras'   => $this->totalesExtras($extras),
         ]);
@@ -229,6 +232,9 @@ class AguinaldoController extends Controller
 
             abort_if($countFijo + $countExtr === 0, 422, 'No se encontraron empleados activos del tipo seleccionado.');
 
+            // Anticipos programados en Ingresos/Deducciones para este concepto.
+            $anticipos = app(AnticiposAguinaldo::class)->cargar($nombre);
+
             $this->logActividad('creado', 'Planillas Especiales', sprintf(
                 "Planilla especial '%s' (%s %s) creada con %d empleado(s).",
                 $nombre, $request->concepto, $tipo, $countFijo + $countExtr
@@ -239,6 +245,7 @@ class AguinaldoController extends Controller
                 'tipo_aguinaldo'   => $tipo,
                 'fijos_generados'  => $countFijo,
                 'extras_generados' => $countExtr,
+                'anticipos_cargados' => $anticipos,
             ], 201);
         });
     }
@@ -317,8 +324,11 @@ class AguinaldoController extends Controller
         $empleados = $fijos->count() + $extras->count();
         abort_if($empleados === 0, 404, 'Aguinaldo no encontrado o ya cerrado.');
 
-        $fijos->update(['estado'  => 'Cerrado']);
-        $extras->update(['estado' => 'Cerrado']);
+        DB::transaction(function () use ($nombre, $fijos, $extras) {
+            app(AnticiposAguinaldo::class)->confirmarAlCerrar($nombre);
+            $fijos->update(['estado'  => 'Cerrado']);
+            $extras->update(['estado' => 'Cerrado']);
+        });
 
         $this->logActividad('cerrado', 'Planillas Especiales',
             "Planilla especial '{$nombre}' cerrada: {$empleados} empleado(s).");
@@ -335,8 +345,11 @@ class AguinaldoController extends Controller
         $empleados = $fijos->count() + $extras->count();
         abort_if($empleados === 0, 404, 'Aguinaldo no encontrado o ya cerrado.');
 
-        $fijos->delete();
-        $extras->delete();
+        DB::transaction(function () use ($nombre, $fijos, $extras) {
+            app(AnticiposAguinaldo::class)->liberar($nombre);
+            $fijos->delete();
+            $extras->delete();
+        });
 
         $this->logActividad('anulado', 'Planillas Especiales',
             "Planilla especial '{$nombre}' anulada antes de cerrarse; tenía {$empleados} empleado(s).");
@@ -706,6 +719,20 @@ class AguinaldoController extends Controller
     }
 
     // ─── Helpers ─────────────────────────────────────────────────
+    // Anticipos de Ingresos/Deducciones cargados en el lote, por empleado:
+    // { id_empleado: [{ concepto, monto, aplicada }] }.
+    private function anticiposProgramados(string $nombre)
+    {
+        return IngresoDeduccionAplicada::with('ingresoDeduccion:id,id_empleado,concepto')
+            ->where('nombre_aguinaldo', $nombre)->orderBy('id')->get()
+            ->groupBy(fn ($a) => $a->ingresoDeduccion->id_empleado)
+            ->map(fn ($g) => $g->map(fn ($a) => [
+                'concepto' => $a->ingresoDeduccion->concepto,
+                'monto'    => (float) $a->monto,
+                'aplicada' => $a->aplicada,
+            ])->values());
+    }
+
     private function totalesFijos($fijos): array
     {
         return [

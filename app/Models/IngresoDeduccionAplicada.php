@@ -9,7 +9,7 @@ class IngresoDeduccionAplicada extends Model
     protected $table = 'ingresos_deducciones_aplicadas';
 
     protected $fillable = [
-        'id_ingreso_deduccion', 'id_cabecera_planilla', 'id_detalle_planilla', 'columna', 'monto', 'aplicada',
+        'id_ingreso_deduccion', 'id_cabecera_planilla', 'id_detalle_planilla', 'nombre_aguinaldo', 'columna', 'monto', 'aplicada',
     ];
 
     protected $casts = [

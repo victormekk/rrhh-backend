@@ -9,7 +9,7 @@ class IngresoDeduccion extends Model
     protected $table = 'ingresos_deducciones';
 
     protected $fillable = [
-        'id_empleado', 'tipo', 'concepto', 'columna', 'monto', 'frecuencia',
+        'id_empleado', 'tipo', 'aplica_en', 'concepto', 'columna', 'monto', 'frecuencia',
         'quincena_mes', 'total_cuotas', 'fecha_inicio', 'estado', 'observacion', 'id_usuario',
     ];
 
@@ -23,6 +23,15 @@ class IngresoDeduccion extends Model
     public const TIPOS       = ['Ingreso', 'Deduccion'];
     public const FRECUENCIAS = ['Quincenal', 'Mensual'];
     public const ESTADOS     = ['Activo', 'Pausado', 'Completado', 'Cancelado'];
+
+    // Dónde se descuenta: en las planillas quincenales o, como anticipo, completo
+    // y una sola vez en la planilla especial de Aguinaldo o de Catorceavo.
+    public const APLICA_EN = ['Planilla', 'Aguinaldo', 'Catorceavo'];
+
+    public function esAnticipo(): bool
+    {
+        return in_array($this->aplica_en, ['Aguinaldo', 'Catorceavo'], true);
+    }
 
     // Columnas de detalle_planillas en las que puede caer cada tipo. IHSS e ISR
     // quedan fuera: el IHSS sale de Campos Variables y el ISR se calcula a mano.

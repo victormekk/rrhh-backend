@@ -11,6 +11,7 @@ use App\Models\InformacionLaboral;
 use App\Traits\EncabezadoExcel;
 use App\Traits\LogsActividad;
 use Carbon\Carbon;
+use App\Services\PlanillasAbiertas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -164,9 +165,11 @@ class EmpleadoController extends Controller
             ]);
 
             $this->logActividad('creado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} registrado.", $empleado->id);
+            $planillas = $this->sincronizarPlanillas($request, $empleado);
 
             return response()->json(
-                $this->ocultarSalarios($request, $empleado->load(['informacionLaboral.banco', 'cargo', 'departamento'])),
+                $this->ocultarSalarios($request, $empleado->load(['informacionLaboral.banco', 'cargo', 'departamento']))
+                    ->setAttribute('planillas', $planillas),
                 201
             );
         });
@@ -341,11 +344,12 @@ class EmpleadoController extends Controller
             ]);
 
             $this->logActividad('editado', 'Empleados', "Empleado {$empleado->nombres} {$empleado->apellidos} actualizado.", $empleado->id);
+            $planillas = $this->sincronizarPlanillas($request, $empleado);
 
             return response()->json($this->ocultarSalarios(
                 $request,
                 $empleado->fresh(['informacionLaboral.banco', 'cargo', 'departamento'])
-            ));
+            )->setAttribute('planillas', $planillas));
         });
     }
 
@@ -585,5 +589,19 @@ class EmpleadoController extends Controller
                 'especiales_actualizadas' => $especiales,
             ]);
         });
+    }
+
+    // Lo agrega o lo quita de las planillas de pago abiertas según su estado y contrato
+    // (ver App\Services\PlanillasAbiertas); queda en la bitácora. Devuelve el aviso.
+    private function sincronizarPlanillas(Request $request, Empleado $empleado): ?string
+    {
+        $resumen = PlanillasAbiertas::resumen(
+            app(PlanillasAbiertas::class)->sincronizarEmpleado($empleado->id, $request->user()->id)
+        );
+        if ($resumen) {
+            $this->logActividad('editado', 'Planillas', "{$empleado->nombres} {$empleado->apellidos}: {$resumen}", $empleado->id);
+        }
+
+        return $resumen;
     }
 }
